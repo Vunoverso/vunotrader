@@ -1,0 +1,17 @@
+.venv/
+.venv-1/
+__pycache__/
+.env
+*.env
+backend/.env
+*.pyc
+*.log
+.pytest_cache/
+.mypy_cache/
+node_modules/
+web/node_modules/
+web/.next/
+web/.env.local
+.chrome-cdp-profile/
+.edge-cdp-profile/
+.playwright-mcp/

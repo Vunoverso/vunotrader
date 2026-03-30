@@ -1,0 +1,1 @@
+* text=auto\n*.ps1 text eol=crlf\n*.sh text eol=lf\n*.py text eol=lf\n*.ts text eol=lf\n*.tsx text eol=lf\n*.md text eol=lf\n

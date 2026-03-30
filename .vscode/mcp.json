@@ -1,0 +1,37 @@
+{
+  "servers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=mztrtovhjododrkzkehk"
+    },
+    "browser-automation-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp",
+        "--browser",
+        "chrome"
+      ]
+    },
+    "browser-mcp-extension-bridge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp",
+        "--extension"
+      ]
+    },
+    "browser-mcp-cdp-chrome": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp",
+        "--cdp-endpoint",
+        "http://127.0.0.1:9222"
+      ]
+    }
+  }
+}

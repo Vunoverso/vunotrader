@@ -1,0 +1,361 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+type RobotMode = "observer" | "demo" | "real";
+
+export interface ParametrosData {
+  id?: string;
+  organization_id?: string;
+  mode: RobotMode;
+  daily_profit_target: string;
+  weekly_profit_target: string;
+  monthly_profit_target: string;
+  daily_loss_limit: string;
+  max_drawdown_pct: string;
+  risk_per_trade_pct: string;
+  max_trades_per_day: string;
+  trading_start_time: string;
+  trading_end_time: string;
+  allowed_symbols: string;
+}
+
+const DEFAULT: ParametrosData = {
+  mode: "demo",
+  daily_profit_target: "",
+  weekly_profit_target: "",
+  monthly_profit_target: "",
+  daily_loss_limit: "",
+  max_drawdown_pct: "",
+  risk_per_trade_pct: "",
+  max_trades_per_day: "",
+  trading_start_time: "09:00",
+  trading_end_time: "17:30",
+  allowed_symbols: "",
+};
+
+// ── Helpers de UI ────────────────────────────────────────────
+function FieldGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
+      {hint && <p className="text-xs text-slate-600 mb-1.5">{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+function Input({
+  value, onChange, type = "text", placeholder, prefix, suffix, min, step,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  prefix?: string;
+  suffix?: string;
+  min?: string;
+  step?: string;
+}) {
+  return (
+    <div className="flex items-center rounded-lg border border-slate-700 bg-slate-800 overflow-hidden focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500/30 transition">
+      {prefix && (
+        <span className="px-3 py-2.5 text-xs text-slate-500 border-r border-slate-700 bg-slate-900 select-none">
+          {prefix}
+        </span>
+      )}
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        min={min}
+        step={step}
+        className="flex-1 bg-transparent px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none"
+      />
+      {suffix && (
+        <span className="px-3 py-2.5 text-xs text-slate-500 border-l border-slate-700 bg-slate-900 select-none">
+          {suffix}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const MODE_OPTIONS: { value: RobotMode; label: string; desc: string; color: string }[] = [
+  {
+    value: "observer",
+    label: "Observer",
+    desc: "Analisa o mercado e gera sinais sem executar ordens",
+    color: "border-yellow-500/50 bg-yellow-500/10 text-yellow-400",
+  },
+  {
+    value: "demo",
+    label: "Demo",
+    desc: "Opera em conta demo, aprende com os resultados",
+    color: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  },
+  {
+    value: "real",
+    label: "Real",
+    desc: "Opera na conta real com modelo aprovado e validado",
+    color: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  },
+];
+
+// ── Componente principal ─────────────────────────────────────
+export default function ParametrosForm({
+  initial,
+  userId,
+  organizationId,
+}: {
+  initial: ParametrosData | null;
+  userId: string;
+  organizationId: string | null;
+}) {
+  const [form, setForm] = useState<ParametrosData>(initial ?? DEFAULT);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  function set<K extends keyof ParametrosData>(key: K, value: ParametrosData[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setStatus("idle");
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setStatus("idle");
+
+    const supabase = createClient();
+
+    const payload = {
+      user_id: userId,
+      organization_id: organizationId,
+      mode: form.mode,
+      daily_profit_target: form.daily_profit_target ? parseFloat(form.daily_profit_target) : null,
+      weekly_profit_target: form.weekly_profit_target ? parseFloat(form.weekly_profit_target) : null,
+      monthly_profit_target: form.monthly_profit_target ? parseFloat(form.monthly_profit_target) : null,
+      daily_loss_limit: form.daily_loss_limit ? parseFloat(form.daily_loss_limit) : null,
+      max_drawdown_pct: form.max_drawdown_pct ? parseFloat(form.max_drawdown_pct) : null,
+      risk_per_trade_pct: form.risk_per_trade_pct ? parseFloat(form.risk_per_trade_pct) : null,
+      max_trades_per_day: form.max_trades_per_day ? parseInt(form.max_trades_per_day) : null,
+      trading_start_time: form.trading_start_time || null,
+      trading_end_time: form.trading_end_time || null,
+      allowed_symbols: form.allowed_symbols
+        ? form.allowed_symbols.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let error;
+
+    if (form.id) {
+      ({ error } = await supabase
+        .from("user_parameters")
+        .update(payload)
+        .eq("id", form.id));
+    } else {
+      const { data, error: insertError } = await supabase
+        .from("user_parameters")
+        .insert(payload)
+        .select("id")
+        .single();
+      error = insertError;
+      if (data) setForm((prev) => ({ ...prev, id: data.id }));
+    }
+
+    setSaving(false);
+    setStatus(error ? "error" : "saved");
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-100">Parâmetros do Robô</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Configurações que controlam o comportamento do brain Python e do EA no MT5
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {status === "saved" && (
+            <span className="text-xs text-emerald-400 flex items-center gap-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
+              </svg>
+              Salvo
+            </span>
+          )}
+          {status === "error" && (
+            <span className="text-xs text-red-400">Erro ao salvar. Tente novamente.</span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {saving ? "Salvando…" : "Salvar alterações"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Bloco 1: Modo de operação ── */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+          Modo de operação
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {MODE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => set("mode", opt.value)}
+              className={`rounded-lg border-2 px-4 py-3 text-left transition ${
+                form.mode === opt.value
+                  ? opt.color + " border-opacity-100"
+                  : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+              }`}
+            >
+              <p className="text-sm font-semibold mb-0.5">{opt.label}</p>
+              <p className="text-xs opacity-70 leading-snug">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+        {form.mode === "real" && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+            ⚠️ Modo real opera com dinheiro real. Certifique-se de que o modelo foi validado em demo antes de ativar.
+          </div>
+        )}
+      </section>
+
+      {/* ── Bloco 2: Metas de profit ── */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+          Metas de resultado
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <FieldGroup label="Meta diária" hint="Alvo de lucro por dia">
+            <Input
+              value={form.daily_profit_target}
+              onChange={(v) => set("daily_profit_target", v)}
+              type="number"
+              placeholder="Ex: 500"
+              prefix="R$"
+              min="0"
+              step="0.01"
+            />
+          </FieldGroup>
+          <FieldGroup label="Meta semanal" hint="Alvo de lucro por semana">
+            <Input
+              value={form.weekly_profit_target}
+              onChange={(v) => set("weekly_profit_target", v)}
+              type="number"
+              placeholder="Ex: 2000"
+              prefix="R$"
+              min="0"
+              step="0.01"
+            />
+          </FieldGroup>
+          <FieldGroup label="Meta mensal" hint="Alvo de lucro por mês">
+            <Input
+              value={form.monthly_profit_target}
+              onChange={(v) => set("monthly_profit_target", v)}
+              type="number"
+              placeholder="Ex: 8000"
+              prefix="R$"
+              min="0"
+              step="0.01"
+            />
+          </FieldGroup>
+        </div>
+      </section>
+
+      {/* ── Bloco 3: Limites de risco ── */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+          Limites de risco
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FieldGroup label="Limite de perda diária" hint="Robô para ao atingir este valor">
+            <Input
+              value={form.daily_loss_limit}
+              onChange={(v) => set("daily_loss_limit", v)}
+              type="number"
+              placeholder="Ex: 300"
+              prefix="R$"
+              min="0"
+              step="0.01"
+            />
+          </FieldGroup>
+          <FieldGroup label="Drawdown máximo" hint="Percentual máximo de drawdown permitido">
+            <Input
+              value={form.max_drawdown_pct}
+              onChange={(v) => set("max_drawdown_pct", v)}
+              type="number"
+              placeholder="Ex: 5"
+              suffix="%"
+              min="0"
+              step="0.1"
+            />
+          </FieldGroup>
+          <FieldGroup label="Risco por trade" hint="Percentual do capital por operação">
+            <Input
+              value={form.risk_per_trade_pct}
+              onChange={(v) => set("risk_per_trade_pct", v)}
+              type="number"
+              placeholder="Ex: 1"
+              suffix="%"
+              min="0"
+              step="0.1"
+            />
+          </FieldGroup>
+          <FieldGroup label="Máx. trades por dia" hint="Quantidade máxima de operações">
+            <Input
+              value={form.max_trades_per_day}
+              onChange={(v) => set("max_trades_per_day", v)}
+              type="number"
+              placeholder="Ex: 5"
+              min="1"
+              step="1"
+            />
+          </FieldGroup>
+        </div>
+      </section>
+
+      {/* ── Bloco 4: Horários e ativos ── */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+        <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+          Horários e ativos
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FieldGroup label="Início das operações">
+            <Input
+              value={form.trading_start_time}
+              onChange={(v) => set("trading_start_time", v)}
+              type="time"
+            />
+          </FieldGroup>
+          <FieldGroup label="Encerramento das operações">
+            <Input
+              value={form.trading_end_time}
+              onChange={(v) => set("trading_end_time", v)}
+              type="time"
+            />
+          </FieldGroup>
+        </div>
+        <FieldGroup
+          label="Ativos permitidos"
+          hint='Símbolos separados por vírgula. Deixe vazio para qualquer ativo. Ex: WIN$N, WDO$N, PETR4'
+        >
+          <Input
+            value={form.allowed_symbols}
+            onChange={(v) => set("allowed_symbols", v)}
+            placeholder="WIN$N, WDO$N"
+          />
+        </FieldGroup>
+      </section>
+    </div>
+  );
+}

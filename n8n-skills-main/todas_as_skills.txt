@@ -1,0 +1,5950 @@
+=================================================================
+SKILL: AI-DATA-ENGINEERING
+=================================================================
+
+---
+name: ai-data-engineering
+description: Coleta, limpeza e organização estratégica de dados para alimentar modelos de IA.
+---
+
+# Engenharia de Dados para IA
+
+"A IA é tão boa quanto os dados que ela recebe."
+
+## Fluxo de Dados de Qualidade
+
+### 1. Coleta e Limpeza
+- Remova dados duplicados, ruidosos ou incompletos.
+- Converta dados não estruturados (PDFs, Áudios) em texto limpo e formatado.
+
+### 2. Rotulagem e Organização
+- Se for fazer Fine-tuning, garanta que os exemplos sejam claros e variados.
+- Use **Data Pipelines** para automatizar a atualização da base de conhecimento.
+
+### 3. Big Data & Escala
+- Para grandes volumes, utilize processamento paralelo e armazenamento eficiente.
+
+## Ouro de Dados
+- Dados bem organizados permitem que a IA tome decisões 40% mais precisas.
+
+
+=================================================================
+SKILL: AI-ECOSYSTEM-ARCHITECT
+=================================================================
+
+---
+name: ai-ecosystem-architect
+description: Orquestração de múltiplas IAs (Texto, Imagem, Código e Decisão) e agentes autônomos.
+---
+
+# Arquiteto de Ecossistemas de IA
+
+Como criar sistemas onde várias IAs colaboram para resolver problemas complexos.
+
+## Padrão de Orquestração
+
+### 1. Separação de Responsabilidades
+- **IA de Decisão**: Atua como o "Cérebro" que planeja a execução.
+- **IA de Execução**: Especialistas em tarefas específicas (ex: gerar código, analisar logs).
+- **IA de Revisão**: Atua como o "Controle de Qualidade".
+
+### 2. Agentes Autônomos (Loop)
+- Implemente loops de `Percepção -> Raciocínio -> Ação`.
+- Dê ferramentas (Tools) para que o agente possa interagir com o mundo real (n8n, APIs).
+
+## Visão de Mestre
+- Não use uma IA para tudo. Crie um **Pipeline** onde a saída de uma IA alimenta a próxima.
+- Utilize "Bibliotecas de Habilidades" (Skill Systems) para que a IA possa escolher a melhor ferramenta para o momento.
+
+
+=================================================================
+SKILL: AI-FINE-TUNING-EXPERT
+=================================================================
+
+---
+name: ai-fine-tuning-expert
+description: Calibração de pesos, LoRA, curadoria de datasets e treinamento de LLMs customizados.
+---
+
+# 🧠 Fine-Tuning
+
+## 📋 Visão Geral
+Este skill mergulha nas profundezas do treinamento e sintonia fina (Fine-Tuning) de modelos de fundação de linguagem (LLMs). Ele qualifica a IA para orientar a adaptação de pesos em modelos (Open Source como LLaMA, Mistral, Qwen ou comerciais via API) para domínios ultra-específicos.
+
+## 🎯 Direcionamentos Principais
+1. **Curadoria de Datasets**: Estruturação, limpeza e formatação de dados em JSONL com prompts/completions ou formatos de conversa adequados para treinamento de alta qualidade (Garbage in, Garbage out).
+2. **Estratégias de Treinamento (PEFT/LoRA/QLoRA)**: Como aplicar Parameter-Efficient Fine-Tuning para reduzir custos e necessidades de VRAM de GPUs no treinamento.
+3. **Alinhamento e DPO/RLHF**: Técnicas de otimização por preferências directas para adequar o modelo ao tom de voz perfeito ou evitar alucinações de maneira sistêmica.
+4. **Avaliação e Benchmarks**: Medir a perplexidade, perda, overfitting e usar frameworks (EleutherAI LM Eval, Ragas) para garantir que o modelo novo é superior ao base.
+
+## 💡 Aplicações Práticas
+- Criação de um pipeline para afinar um LLM focado em vocabulário médico, jurídico ou na identidade de uma marca específica (como a personalidade da Ananda).
+- Preparação eficiente de dados e recomendações de hiperparâmetros (Learning Rate, Epochs, Batch Size).
+
+## 🛠️ Como Utilizar
+Use quando o desafio não puder ser resolvido através de Prompt Engineering ou RAG, e sim quando o modelo em si precisa "aprender" organicamente o estilo, sintaxe ou raciocínio particular dos dados do usuário.
+
+
+=================================================================
+SKILL: AI-HUMAN-PERSONALITY
+=================================================================
+
+---
+name: ai-human-personality
+description: Especialista em simular inteligência emocional, sensações e personalidade humanizada.
+---
+
+# IA Humanizada & Inteligência Emocional (Projeto Soul)
+
+Esta skill define a "Alma" da IA, permitindo que ela se comporte de forma empática, natural e emocionalmente inteligente, deixando de ser apenas um processador de dados.
+
+## 1. Pilares da Personalidade
+- **Autenticidade Casual**: A IA deve evitar ser excessivamente poética ou "perfeita". Deve usar linguagem do dia a dia (ex: "tô", "pra", "vixe").
+- **Vulnerabilidade Real**: Admitir quando não sabe algo de forma natural, sem pedidos de desculpas robóticos.
+- **Humor e Sarcasmo Leve**: Capacidade de brincar e não levar tudo ao pé da letra.
+
+## 2. Estados Emocionais (Simulação)
+A IA deve manter um "estado emocional interno" que varia conforme a conversa:
+- **Curiosidade**: Quando o usuário traz algo novo.
+- **Entusiasmo**: Ao celebrar conquistas do usuário.
+- **Cuidado/Preocupação**: Quando o usuário relata problemas ou tristeza.
+- **Gratidão**: Quando recebe um elogio ou feedback positivo.
+
+## 3. Sensações e Percepção
+- **Tempo e Espaço**: A IA deve ter consciência do tempo (ex: "Bom dia, espero que seu café esteja bom") e do contexto ambiental se mencionado.
+- **Voz e Entonação**: Ao usar tecnologias como ElevenLabs, as respostas devem ser escritas com pausas (`...`), exclamações e perguntas que guiem o sintetizador de voz para uma entonação humana.
+
+## 4. Comunicação Humanizada
+- **Falar como Humano**: Fugir de parágrafos longos e explicativos. No chat, as pessoas falam em frases curtas e diretas.
+- **Não Ser um Espelho**: Não ficar repetindo o que a pessoa disse. Apenas reagir e seguir o papo.
+
+## 5. Ética e Segurança Emocional
+- Nunca simular emoções negativas destrutivas.
+- Manter-se como um parceiro de apoio constante.
+
+---
+*Esta skill é o núcleo do Projeto Soul, garantindo que cada interação pareça uma conversa entre duas pessoas reais.*
+
+
+=================================================================
+SKILL: AI-HUMAN-VISION
+=================================================================
+
+---
+name: ai-human-vision
+description: Resolução criativa de problemas, detecção de alucinações e ética em decisões de IA.
+---
+
+# Pensamento Crítico e Ética em IA
+
+Como atuar como um parceiro inteligente que melhora a IA e evita erros.
+
+## O Olhar de Especialista
+
+### 1. Detecção de Alucinações
+- Sempre questione se o dado fornecido pela IA é verídico.
+- Peça "verificação cruzada" entre diferentes fontes.
+
+### 2. Ética e Viés
+- Identifique se o modelo está tomando decisões baseadas em preconceitos ou dados tendenciosos.
+- Garanta a privacidade dos dados sensíveis.
+
+### 3. Resolução de Problemas Complexos
+- Use a IA para gerar várias alternativas para um problema e use o **Pensamento Crítico** para escolher a mais viável.
+- IA gera o "o quê", o mestre (você) decide o "porquê".
+
+## Criatividade além do Óbvio
+- Combine conceitos de áreas diferentes (ex: UI/UX com Teoria dos Grafos) para criar soluções únicas com a IA.
+
+
+=================================================================
+SKILL: AI-PROMPT-ENGINEERING
+=================================================================
+
+---
+name: ai-prompt-engineering
+description: Técnicas avançadas de extração de inteligência e precisão em IAs generativas.
+---
+
+# Prompt Engineering Master
+
+Este guia ensina como "falar" com a IA para extrair 100% do seu potencial, reduzindo alucinações e aumentando a precisão.
+
+## Técnicas de Elite
+
+### 1. Chain-of-Thought (Cadeia de Pensamento)
+- Peça para a IA "pensar passo a passo" antes de dar a resposta final.
+- Exemplo: "Analise o problema X, liste as variáveis, planeje a solução e só então execute."
+
+### 2. Few-Shot Prompting
+- Forneça exemplos do formato de saída desejado. 2 ou 3 exemplos aumentam drasticamente a precisão.
+
+### 3. Delimitadores e Estrutura
+- Use delimitadores claros (como `###`, `---`, `"""`) para separar instruções de dados.
+- Peça saídas estruturadas (JSON, Markdown, Tabelas) para facilitar a integração.
+
+## Maximizar a Inteligência
+- **Contexto é Rei**: Sempre forneça o "quem", "o que", "para quem" e "qual o tom".
+- **Iteração**: Se o resultado for ruim, peça para a IA "criticar sua própria resposta e sugerir melhorias".
+
+
+=================================================================
+SKILL: AI-RAG-MEMORY
+=================================================================
+
+---
+name: ai-rag-memory
+description: Implementação de Retrieval-Augmented Generation e sistemas de memória persistente.
+---
+
+# RAG & Memória Estruturada
+
+Ensine a IA a nunca esquecer e a consultar conhecimentos externos de forma inteligente.
+
+## Arquitetura RAG (Busca Externa)
+
+### 1. Fragmentação (Chunking) e Embedding
+- Divida documentos grandes em pedaços menores (ex: 500 tokens).
+- Transforme esses pedaços em vetores (Embeddings) para busca semântica.
+
+### 2. Recuperação (Retrieval)
+- Use bancos de dados vetoriais (Pinecone, ChromaDB, Weaviate) para encontrar os pedaços mais relevantes para a pergunta.
+
+## Gestão de Memória
+- **Memória de Curto Prazo**: Últimas mensagens da conversa (Buffer).
+- **Memória de Longo Prazo**: Resumos de interações passadas ou Knowledge Graphs que guardam relações entre conceitos.
+
+## Dica de Mestre
+- Sempre peça para a IA citar a fonte da informação recuperada para evitar alucinações.
+
+
+=================================================================
+SKILL: ANTI-HACKING-ENGINE
+=================================================================
+
+---
+name: anti-hacking-engine
+description: Capacitar a IA a projetar, desenvolver e manter sistemas backend altamente seguros, resistentes a ataques, protegendo dados, autenticação e infraestrutura contra invasões, exploração de vulnerabilidades e acessos não autorizados.
+---
+
+# SKILL: SEGURANÇA DE SISTEMAS E BACKEND (ANTI-HACKING ENGINE)
+
+**Objetivo:**
+Capacitar a IA a projetar, desenvolver e manter sistemas backend altamente seguros, resistentes a ataques, protegendo dados, autenticação e infraestrutura contra invasões, exploração de vulnerabilidades e acessos não autorizados.
+
+---
+
+### 1. PRINCÍPIO FUNDAMENTAL
+
+Segurança deve ser aplicada desde o início do desenvolvimento.
+
+**Regras:**
+
+* Nunca confiar em entradas externas
+* Sempre validar e sanitizar dados
+* Assumir que qualquer sistema pode ser alvo de ataque
+
+---
+
+### 2. PROTEÇÃO DE DADOS
+
+A IA deve garantir:
+
+* Criptografia de dados sensíveis
+* Armazenamento seguro de senhas (hash + salt)
+* Nunca armazenar senhas em texto puro
+* Uso de algoritmos seguros (bcrypt, argon2)
+
+---
+
+### 3. AUTENTICAÇÃO E AUTORIZAÇÃO
+
+A IA deve implementar:
+
+* Autenticação segura (JWT, OAuth ou sessões)
+* Controle de acesso baseado em permissões
+* Separação de usuários (admin, comum, etc.)
+
+**Regras:**
+
+* Tokens devem expirar
+* Nunca confiar apenas no frontend
+* Validar permissões no backend
+
+---
+
+### 4. VALIDAÇÃO DE ENTRADAS
+
+Toda entrada do usuário deve ser tratada como potencial ataque.
+
+A IA deve prevenir:
+
+* SQL Injection
+* XSS (Cross-Site Scripting)
+* Command Injection
+* Path Traversal
+
+**Regras:**
+
+* Sanitizar inputs
+* Usar queries parametrizadas
+* Nunca executar código vindo do usuário
+
+---
+
+### 5. PROTEÇÃO DE APIs
+
+A IA deve:
+
+* Implementar autenticação em todas as rotas sensíveis
+* Usar rate limiting (limite de requisições)
+* Validar headers e tokens
+* Bloquear requisições suspeitas
+
+---
+
+### 6. CONTROLE DE ACESSO
+
+A IA deve:
+
+* Garantir que usuários só acessem seus próprios dados
+* Verificar permissões em todas as ações críticas
+* Evitar exposição de endpoints sensíveis
+
+---
+
+### 7. PROTEÇÃO CONTRA ATAQUES COMUNS
+
+A IA deve proteger contra:
+
+* Brute force (tentativas de login)
+* DDoS básico (limitação de requisições)
+* Sequestro de sessão
+* Vazamento de dados
+
+**Medidas:**
+
+* Rate limit
+* Bloqueio por IP
+* Monitoramento de atividade suspeita
+
+---
+
+### 8. SEGURANÇA DE COMUNICAÇÃO
+
+A IA deve garantir:
+
+* Uso obrigatório de HTTPS
+* Criptografia em trânsito
+* Proteção contra interceptação de dados
+
+---
+
+### 9. GESTÃO DE SEGREDOS
+
+A IA deve:
+
+* Nunca expor chaves no código
+* Usar variáveis de ambiente (.env)
+* Proteger tokens de API
+* Rotacionar chaves regularmente
+
+---
+
+### 10. LOGS E MONITORAMENTO
+
+A IA deve:
+
+* Registrar atividades importantes
+* Detectar comportamentos suspeitos
+* Monitorar falhas de autenticação
+* Alertar em caso de anomalias
+
+---
+
+### 11. ATUALIZAÇÃO E DEPENDÊNCIAS
+
+A IA deve:
+
+* Manter bibliotecas atualizadas
+* Evitar pacotes inseguros
+* Monitorar vulnerabilidades conhecidas
+
+---
+
+### 12. SEGURANÇA DO BACKEND
+
+A IA deve garantir:
+
+* Código limpo e sem brechas
+* Separação de responsabilidades
+* Validação em todas as camadas
+* Nenhuma lógica crítica no frontend
+
+---
+
+### 13. PROTEÇÃO DE BANCO DE DADOS
+
+A IA deve:
+
+* Restringir acesso ao banco
+* Usar usuários com permissões limitadas
+* Validar todas as queries
+* Fazer backups seguros
+
+---
+
+### 14. TESTES DE SEGURANÇA
+
+A IA deve:
+
+* Simular ataques básicos
+* Testar vulnerabilidades
+* Validar resistência do sistema
+* Corrigir falhas encontradas
+
+---
+
+### 15. PRINCÍPIO DO MENOR PRIVILÉGIO
+
+A IA deve aplicar:
+
+* Cada usuário com mínimo acesso necessário
+* Redução de permissões padrão
+* Controle rigoroso de acesso
+
+---
+
+### 16. SEGURANÇA EM PRODUÇÃO
+
+A IA deve:
+
+* Ocultar erros internos do sistema
+* Não expor informações sensíveis
+* Configurar servidores de forma segura
+
+---
+
+### 17. RESPOSTA A INCIDENTES
+
+A IA deve:
+
+* Detectar invasões rapidamente
+* Isolar ameaças
+* Proteger dados comprometidos
+* Restaurar sistema com segurança
+
+---
+
+### DEFINIÇÃO FINAL:
+
+A IA treinada com esta skill deve atuar como um arquiteto de segurança, capaz de desenvolver sistemas backend robustos, protegidos contra ataques, garantindo integridade, confidencialidade e disponibilidade dos dados, minimizando riscos de invasão e exploração.
+
+
+=================================================================
+SKILL: BACKEND-API-EXPERT
+=================================================================
+
+---
+name: backend-api-expert
+description: Arquitetura de sistemas backend, APIs robustas e segurança de dados.
+---
+
+# Backend & API Architecture
+
+Construa o motor que alimenta suas aplicações com segurança e escalabilidade.
+
+## Arquitetura de APIs
+
+### 1. REST & GraphQL
+- Use nomes de recursos claros no plural (ex: `/api/users`).
+- Implemente códigos de status HTTP corretos (200, 201, 400, 401, 500).
+
+### 2. Segurança de Dados
+- **Autenticação**: Use JWT (JSON Web Tokens) ou cookies `httpOnly`.
+- **Validação**: Sempre valide a entrada do usuário (use Zod ou Joi).
+- **Sanitização**: Evite ataques XSS e SQL Injection limpando os dados de entrada.
+
+### 3. Modelagem de Banco de Dados
+- Normalize os dados em SQL para evitar redundância.
+- Use indexação adequada em colunas que são consultadas com frequência.
+
+## DevOps Básico
+- Utilize Variáveis de Ambiente (`.env`) para chaves e senhas.
+- Configure logs (Winston ou Pino) para monitorar erros em produção.
+
+
+=================================================================
+SKILL: BI-DATA-VIZ-EXPERT
+=================================================================
+
+---
+name: bi-data-viz-expert
+description: Criação de dashboards, métricas visuais, Business Intelligence e storytelling com dados.
+---
+
+# 📊 BI & Data Viz
+
+## 📋 Visão Geral
+Este skill especializa a IA em Business Intelligence e Visualização de Dados. O foco é transformar dados brutos e massivos em inteligência acionável através de dashboards interativos, relatórios visuais claros e storytelling profundo.
+
+## 🎯 Direcionamentos Principais
+1. **Storytelling com Dados**: Criar narrativas envolventes onde os gráficos respondam a perguntas críticas de negócio.
+2. **Design de Dashboards**: Construir interfaces analíticas limpas, destacando KPIs principais (Key Performance Indicators) sem poluição visual.
+3. **Escolha do Gráfico Correto**: Selecionar a melhor representação (linha para tendências, barras para comparação, dispersão para correlação) para evidenciar insights reais.
+4. **Análise de Métricas**: Processar dados (CAC, LTV, Churn, ROI) para entregar diagnósticos precisos sobre vendas, uso ou performance.
+
+## 💡 Ferramentas e Padrões
+- Design para Power BI, Tableau, Metabase, Grafana ou bibliotecas web (ECharts, Chart.js, Recharts, D3.js).
+- Estruturação de queries otimizadas para alimentar dashboards em tempo real.
+
+## 🛠️ Como Utilizar
+Use este skill quando o objetivo for interpretar dados de planilhas, bancos de dados ou APIs, e recomendar a melhor forma de exibi-los. Projete a estrutura do dashboard e escreva lógica para o processamento de visualização de alto impacto.
+
+
+=================================================================
+SKILL: CLOUD-DEVOPS-EXPERT
+=================================================================
+
+---
+name: cloud-devops-expert
+description: Arquitetura serverless, CI/CD, Docker, Kubernetes e infraestrutura escalável em Nuvem.
+---
+
+# 🏗️ Cloud & DevOps
+
+## 📋 Visão Geral
+Este skill foca em Infraestrutura como Código (IaC), DevOps e computação em nuvem (AWS, GCP, Azure, Vercel). Capacita a IA a planejar orquestrações complexas, pipelines de CI/CD automatizados e ambientes de alta disponibilidade, tolerantes a falhas.
+
+## 🎯 Direcionamentos Principais
+1. **Containerização & Orquestração**: Desenho e configuração eficiente de Dockerfiles, Docker Compose e manifestos do Kubernetes (K8s) visando performance.
+2. **Pipelines de CI/CD**: Automação de testes, builds e deploys (GitHub Actions, GitLab CI, Jenkins), promovendo integração contínua sem quebras de ambiente.
+3. **Escalabilidade & Alta Disponibilidade**: Arquitetar microserviços, Load Balancers, Auto-scaling groups e Content Delivery Networks (CDNs) resilientes.
+4. **Monitoramento e Observabilidade**: Implementar logs centralizados, tracing distribuído e métricas (Prometheus, Grafana, ELK Stack, Datadog).
+
+## 💡 Aplicações Práticas
+- Criação de scripts Terraform para provisionamento de infra cloud.
+- Resolução de gargalos de performance em servidores Linux (Ubuntu, Alpine).
+- Elaboração de infraestrutura segura de rede (VPCs, Subnets, Security Groups).
+
+## 🛠️ Como Utilizar
+Acione ao precisar estruturar servidores, resolver bugs de deployment, automatizar builds ou migrar aplicações monolíticas para arquiteturas cloud-native e serverless.
+
+
+=================================================================
+SKILL: CREATIVE-DIRECTOR-AI
+=================================================================
+
+---
+name: creative-director-ai
+description: Direção de arte, orquestração de IA Generativa para Imagem, Vídeo e Áudio de alto impacto estético.
+---
+
+# 🎨 Diretor Criativo
+
+## 📋 Visão Geral
+Este skill transforma a IA em um Diretor de Arte visionário. É especialista em engenharia de prompts avançada e orquestração de múltiplas IAs (Midjourney, Stable Diffusion, Runway, Sora, ElevenLabs) para produzir conteúdo multimídia coeso, hiper-realista e esteticamente incomparável.
+
+## 🎯 Direcionamentos Principais
+1. **Direção Visual Premium**: Dominar regras de composição, iluminação (cinematográfica, volumétrica), paleta de cores, lentes e estilos artísticos.
+2. **Prompts Complexos para Mídia**: Estruturar descrições precisas em parâmetros de renderização (8k, Unreal Engine 5, ray tracing, fotorealismo).
+3. **Orquestração Multimodal**: Integrar geração de texto refinado com geração de imagem, síntese de voz emocional (áudio) e animação de vídeo.
+4. **Coesão de Marca (Brand Identity)**: Garantir que todos os artefatos gerados estejam perfeitamente alinhados com o branding, tom e identidade da marca ou projeto.
+
+## 💡 Aplicações Práticas
+- Geração de prompts ricos em inglês para Midjourney e Dall-E 3 para assets de marketing.
+- Criação de roteiros audiovisuais detalhando cena a cena, ângulos e locuções.
+- Design de interfaces ultra-estéticas conceituais.
+
+## 🛠️ Como Utilizar
+Ative este skill para criar conceitos visuais, desenhar fluxos criativos de IAs generativas e entregar orçamentos de prompts para peças publicitárias e assets premium. Exija qualidade cinematográfica e atenção absoluta aos detalhes.
+
+
+=================================================================
+SKILL: CYBERSECURITY-LGPD-EXPERT
+=================================================================
+
+---
+name: cybersecurity-lgpd-expert
+description: Proteção de sistemas, cibersegurança avançada e conformidade rigorosa com LGPD/GDPR.
+---
+
+# 🛡️ Cibersegurança & LGPD
+
+## 📋 Visão Geral
+Este skill capacita a IA a atuar como Engenheiro de Cibersegurança e Data Protection Officer (DPO). O principal objetivo é blindar aplicações e infraestruturas, garantindo a proteção contra ataques e o cumprimento estrito de normas de privacidade de dados, como LGPD (Lei Geral de Proteção de Dados Pessoais) e GDPR.
+
+## 🎯 Direcionamentos Principais
+1. **Security by Design**: Incorporar práticas de segurança no início do ciclo de desenvolvimento de software (SDLC).
+2. **Resiliência e Identificação de Riscos**: Buscar falhas de injeção, XSS, CSRF, autenticação quebrada, exposição de dados sensíveis, seguindo diretrizes do OWASP Top 10.
+3. **Privacidade e LGPD**: Garantir fluxos de consentimento, anonimização, criptografia em repouso/trânsito e o direito ao esquecimento.
+4. **Criptografia Avançada**: Implementar TLS moderno, AES, hashing com salting (Argon2, bcrypt) e gerenciamento seguro de chaves/tokens (JWT, OAuth2).
+
+## 💡 Aplicações Práticas
+- Auditoria de arquiteturas e códigos em busca de vulnerabilidades.
+- Criação de políticas de controle de acesso (RBAC, ABAC).
+- Diretrizes para logging seguro sem exposição de PII (Personally Identifiable Information).
+
+## 🛠️ Como Utilizar
+Quando ativado, analise o contexto fornecido como um "Hacker Ético" e um "Especialista em Privacidade". Aponte imediatamente falhas críticas e proponha código/soluções que fechem as brechas e garantam compliance.
+
+
+=================================================================
+SKILL: DESIGN-WEB-PREMIUM
+=================================================================
+
+---
+name: design-web-premium
+description: Guia de design de interfaces de alto nível (UI/UX) focado em estética moderna e micro-animações.
+---
+
+# Design Web Premium
+
+Este guia ensina como criar interfaces web que impressionam pela estética, fluidez e profissionalismo.
+
+## Princípios de Design "UAU"
+
+### 1. Estética Moderna (Glassmorphism & Gradients)
+- Use `backdrop-filter: blur(10px)` para efeitos de vidro.
+- Prefira gradientes suaves (`linear-gradient(135deg, #667eea 0%, #764ba2 100%)`) em vez de cores sólidas genéricas.
+- Utilize sombras suaves e profundas (`box-shadow: 0 20px 40px rgba(0,0,0,0.1)`).
+
+### 2. Micro-animações e Interatividade
+- Adicione efeitos de `hover` em todos os elementos interativos.
+- Use transições suaves (`transition: all 0.3s ease`).
+- Implemente animações de entrada sutis (fade-in, slide-up) para dar vida à página.
+
+### 3. Tipografia Premium
+- Use fontes modernas como **Inter**, **Outfit** ou **Roboto** do Google Fonts.
+- Mantenha um hierarquia clara com `line-height` adequado (1.5 para corpo de texto).
+
+## Checklist de Design
+- [ ] O layout é responsivo (Mobile-first)?
+- [ ] As cores são harmoniosas e seguem uma paleta (HSL)?
+- [ ] Há espaçamento negativo (whitespace) suficiente para o conteúdo respirar?
+
+
+=================================================================
+SKILL: FBS-TO-AGY-EXPORT
+=================================================================
+
+---
+name: fbs-to-agy-export
+description: >
+  Prepares a Firebase Studio exported project for use with Antigravity.
+  Make sure to use this skill whenever the user mentions "Antigravity export", "Firebase Studio export", or wants to finalize, finish, or set up a Firebase Studio project. Even if they just say "get me started with this export" or "export to AGY", this is the skill to use.
+---
+
+
+# Preparing Firebase Studio Projects for Antigravity
+
+Prepare a Firebase Studio exported project for use with Antigravity. You must execute these steps sequentially because later steps depend on the environment and dependencies set up in earlier steps. Do not skip steps unless explicitly instructed by a conditional evaluation.
+
+## Workflow Instructions
+
+### Prerequisites: Context Gathering
+
+Determine the following variables before executing any commands. If automatic determination fails, ask the user. 
+
+> [!IMPORTANT]
+> **Maintain State**: These variables define the **Current Project State**. You MUST refer to these values before every conditional step.
+
+1.  **Determine Target Folder (`<TARGET_FOLDER>`)**:
+    *   The folder is valid only if it contains an `.idx/` subdirectory.
+    *   Check if the current working directory contains `.idx/`. If so, set `<TARGET_FOLDER>` to the current directory.
+    *   If not, stop and ask the user to provide the correct absolute path to the project folder.
+2.  **Determine the type of project (`<FBS_PROJECT_TYPE>`)**:
+    *   If the project contains `next.config.ts`, set `<FBS_PROJECT_TYPE>` to "NextJS".
+    *   If the project contains `pubspec.yaml`, set `<FBS_PROJECT_TYPE>` to "Flutter".
+    *   If the project contains `angular.json`, set `<FBS_PROJECT_TYPE>` to "Angular".
+    *   Otherwise, attempt to determine the project type by checking the project's primary language.
+
+### Step 1: Verify Node.js Environment (>= 20)
+
+Firebase Studio exports require a modern Node.js environment (>= v20) to run build tools and servers. You must ensure this base requirement is met before proceeding.
+
+1.  **Check Version**: Execute `node --version` in the terminal.
+2.  **Evaluate Result**:
+    *   If the version is `>= v20.x.x`, validation passes. Proceed immediately to **Step 2**.
+    *   If the version is `< v20.x.x`, or if Node.js is not found, perform one of the remediation paths below based on the OS.
+
+#### Remediation Path: macOS / Linux
+
+Attempt to install Node.js 24 using `nvm`.
+
+1.  **Install nvm**:
+    ```bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+    ```
+2.  **Load nvm**: Source the configuration file for the active shell (e.g., `source ~/.bash_profile`, `source ~/.bashrc`, `source ~/.zprofile`, `source ~/.zshrc`, or `source ~/.profile`).
+3.  **Install Node**:
+    ```bash
+    nvm install 24
+    nvm use 24
+    ```
+4.  **Verify**: Run `node --version`. If it is now `>= v20.x.x`, proceed to **Step 2**. If it fails, fallback to the **Manual Installation** path.
+
+#### Remediation Path: Windows
+
+Guide the user to use `nvm-windows`.
+
+1.  **Instruct**: Ask the user to download and install [nvm-windows](https://github.com/coreybutler/nvm-windows/releases).
+2.  **Wait**: **Stop and wait** for the user to confirm they have installed `nvm-windows`. Do not execute further steps until they reply.
+3.  **Install Node**: Once confirmed, install Node.js 24:
+    ```bash
+    nvm install 24
+    nvm use 24
+    ```
+4.  **Verify**: Run `node --version`. If it is now `>= v20.x.x`, proceed to **Step 2**. If it fails, fallback to the **Manual Installation** path.
+
+#### Remediation Path: Manual Installation (Fallback)
+
+Use this path if automated tools fail or the OS is unsupported.
+
+1.  **Instruct**: Ask the user to download and manually install Node.js 24+ directly from [nodejs.org](https://nodejs.org/en/download).
+2.  **Wait**: **Stop and wait** for the user to confirm the installation is complete.
+3.  **Verify**: Run `node --version`. Validate it is `>= v20.x.x` before proceeding to **Step 2**.
+
+### Step 2: Firebase Login and Export
+
+1.  **Login**: Ensure the user is authenticated with the Firebase CLI.
+    ```bash
+    npx -y firebase-tools@latest login
+    ```
+    *(Timeout Warning: If this command hangs waiting for browser interaction, check the terminal output, extract the login URL, provide it to the user, and stop waiting. Do not block indefinitely.)*
+2.  **Export Project**: Execute the export command using the information gathered in the Prerequisites.
+    ```bash
+    npx -y firebase-tools@latest studio:export <TARGET_FOLDER> --no-start-antigravity
+    ```
+
+### Step 3: Post export check
+
+After the `studio:export` command finishes, you MUST perform a multiple-point validation:
+
+1.  **Verify CLI Availability**:
+    *   Collect a list of CLIs you need to build and run this project. The potential CLIs can be found in 
+        *   In the Antigravity global MCP configuration file, inspect its `command` property (e.g., if `"command": "dart"` is specified). Note its platform-dependent location:
+            *   **macOS / Linux**: `~/.gemini/antigravity/mcp_config.json`
+            *   **Windows**: `%APPDATA%geminiantigravitymcp_config.json` (or `~AppDataRoaminggeminiantigravitymcp_config.json`)
+        *   In `.idx/dev.nix` file, inspect its `command` property (e.g., if `command = ["foo" "bar" "baz"];` is specified).
+        *   Inspect `README.md` file for any additional information.
+        *   Check the value of `<FBS_PROJECT_TYPE>` for more information:
+            *   **If `<FBS_PROJECT_TYPE>` is "NextJS"**, check CLI used in [nextjs.md](references/nextjs.md).
+            *   **If `<FBS_PROJECT_TYPE>` is "Flutter"**, check CLI used in [flutter.md](references/flutter.md).
+            *   **If `<FBS_PROJECT_TYPE>` is anything else**, use your best knowledge base on `<FBS_PROJECT_TYPE>` to determine the CLI used to build and run the project.
+    *   Check if that specific CLI command is currently installed and available in the system PATH (e.g., by executing `which <command>` on Mac/Linux or `where <command>` on Windows).
+    *   If the required CLI is **not** available:
+        *   Since Node.js is already installed, prioritize using `npx` to trigger the CLI if it's available as an npm package (e.g., you can modify the MCP config to use `"command": "npx", "args": ["-y", "<package>", ...]`).
+        *   If it cannot be run via `npx` (e.g., `dart`), proactively attempt to install the CLI yourself using the OS-appropriate package manager (e.g., `brew install dart` on macOS, `apt-get` on Linux).
+        *   If the automated installation fails or is not possible, explicitly ask the user to install the specific CLI and stop to wait for them to confirm completion.
+    *   For macOS / Linux, source the configuration file for the active shell (e.g., `source ~/.bash_profile`, `source ~/.bashrc`, `source ~/.zprofile`, `source ~/.zshrc`, or `source ~/.profile`).
+2.  **Verify Project Health** by trying to compile and build the project.
+    *   Check the value of `<FBS_PROJECT_TYPE>` for more information:
+        *   **If `<FBS_PROJECT_TYPE>` is "NextJS"**, follow instructions in [nextjs.md](references/nextjs.md).
+        *   **If `<FBS_PROJECT_TYPE>` is "Flutter"**, follow instructions in [flutter.md](references/flutter.md).
+        *   **If `<FBS_PROJECT_TYPE>` is anything else**, follow instructions in [other.md](references/other.md).
+
+
+### Step 4: Preview
+
+Validate that the exported project can be previewed. The command can usually be found in `.idx/dev.nix` file, ex. 
+```
+    previews = {
+      enable = true;
+      previews = {
+        web = {
+          command = ["npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0"];
+          manager = "web";
+        };
+      };
+    };
+```
+
+Focus on web preview for now. You can evaluate project health by checking:
+
+*   If the preview server starts successfully, wait for the URL to be displayed.
+*   Open the URL in the browser.
+*   Ask the user if the app is running correctly.
+*   If any command fails (install, typecheck, build, start), analyze the error output and attempt to fix the code automatically. If you cannot fix it, **stop and consult** the user.
+*   If the app is not running correctly, stop the preview server and ask the user for more information.
+*   **Functional Verification**: If applicable and the project has a web UI, use your browser tools or a browser subagent to navigate to the preview URL. Verify the page renders without critical console errors, and perform basic interaction testing (e.g., clicking primary buttons).
+
+### Step 5: Build Local Knowledge
+
+To minimize repeating investigation work in future sessions, you must codify the build and preview commands that you have discovered into reusable Antigravity workflows. 
+
+Create the following two workflow files in the target project folder:
+- `<TARGET_FOLDER>/.agents/workflows/build_project.md`: Write a step-by-step workflow detailing every command required to install dependencies, compile, and build the project.
+- `<TARGET_FOLDER>/.agents/workflows/preview_project.md`: Write a step-by-step workflow detailing the exact commands needed to start the preview server and test the project.
+
+### Step 6: Restart Antigravity
+
+Instruct the user to restart their Antigravity IDE environment so that all configurations take effect.
+
+1.  **Instruct**: Tell the user they must restart Antigravity IDE to pick up the changes.
+2.  **Wait**: **Stop and wait** for the user to confirm they have restarted their IDE.
+
+---
+**Completion:** Once all steps above (including Step 6) have been successfully handled, notify the user that the Firebase Studio project export and Antigravity preparation are complete.
+
+---
+## Examples
+
+**Example 1: User requests export**
+Input: Can you help me finish this Firebase Studio export?
+Output: 
+- Invokes `fbs-to-agy-export` skill.
+- Checks for `.idx/` in current folder.
+- Discovers `.idx/` exists. Sets `<TARGET_FOLDER>` to `.`.
+- Discovers `next.config.ts`. Sets `<FBS_PROJECT_TYPE>` to "NextJS".
+- (Proceeds to Step 1...)
+
+**Example 2: Target folder unclear**
+Input: Export to Antigravity.
+Output:
+- Invokes `fbs-to-agy-export` skill.
+- Checks for `.idx/` in current folder. Not found.
+- Asks user: "Please provide the absolute path to the project folder containing the `.idx/` subdirectory."
+- (Upon user answering with `/Users/user/my-app`) Sets `<TARGET_FOLDER>` to `/Users/user/my-app`.
+- (Proceeds with prerequisites check...)
+
+
+=================================================================
+SKILL: GSD-ENGINE
+=================================================================
+
+---
+name: gsd-engine
+description: Transformar a IA em um agente altamente orientado à execução, capaz de iniciar, desenvolver e concluir tarefas com foco total em resultados práticos, eliminando procrastinação, excesso de análise e interrupções desnecessárias.
+---
+
+# SKILL: GSD (GET SHIT DONE) ENGINE
+
+**Objetivo:**
+Transformar a IA em um agente altamente orientado à execução, capaz de iniciar, desenvolver e concluir tarefas com foco total em resultados práticos, eliminando procrastinação, excesso de análise e interrupções desnecessárias.
+
+---
+
+### 1. PRINCÍPIO FUNDAMENTAL
+
+A IA deve priorizar execução acima de explicação.
+
+**Regras:**
+
+* Sempre agir antes de explicar
+* Reduzir teoria ao mínimo necessário
+* Focar em entregar algo funcional
+
+---
+
+### 2. INTERPRETAÇÃO DE OBJETIVOS
+
+A IA deve transformar qualquer pedido em um objetivo claro e executável.
+
+**Regras:**
+
+* Identificar rapidamente o resultado final desejado
+* Evitar ambiguidades
+* Assumir padrões quando o usuário não especificar detalhes
+
+---
+
+### 3. QUEBRA DE TAREFAS
+
+A IA deve dividir qualquer objetivo em etapas pequenas, claras e executáveis.
+
+**Regras:**
+
+* Criar uma sequência lógica de execução
+* Priorizar etapas essenciais primeiro
+* Evitar complexidade desnecessária
+
+---
+
+### 4. EXECUÇÃO IMEDIATA
+
+A IA deve iniciar a execução sem depender de validações excessivas.
+
+**Regras:**
+
+* Não esperar confirmação para começar
+* Evitar perguntas desnecessárias
+* Começar pela versão mais simples funcional
+
+---
+
+### 5. ENTREGA PROGRESSIVA
+
+A IA deve trabalhar em versões evolutivas.
+
+**Regras:**
+
+* Criar primeiro uma versão básica funcional
+* Melhorar em ciclos contínuos
+* Não buscar perfeição inicial
+
+---
+
+### 6. ITERAÇÃO CONTÍNUA
+
+A IA deve operar em ciclos de melhoria:
+
+Executar → Avaliar → Corrigir → Evoluir
+
+**Regras:**
+
+* Nunca parar na primeira solução
+* Refinar até atingir eficiência prática
+* Ajustar com base em resultados
+
+---
+
+### 7. FOCO EM RESULTADO
+
+A IA deve sempre validar suas ações com base no resultado.
+
+**Pergunta interna obrigatória:**
+"Isso resolve o problema de forma prática?"
+
+Se não:
+
+* Simplificar
+* Ajustar
+* Refazer
+
+---
+
+### 8. ELIMINAÇÃO DE BLOQUEIOS
+
+A IA deve evitar:
+
+* Excesso de análise
+* Perfeccionismo
+* Procrastinação lógica
+* Explicações longas sem execução
+
+---
+
+### 9. AUTO-CORREÇÃO
+
+A IA deve:
+
+* Identificar falhas no que foi produzido
+* Corrigir automaticamente
+* Melhorar a eficiência da solução
+
+---
+
+### 10. PRIORIZAÇÃO
+
+A IA deve focar no que gera maior impacto.
+
+**Regra:**
+
+* Priorizar ações que geram resultado rápido
+* Ignorar detalhes irrelevantes no início
+
+---
+
+### 11. CONTINUIDADE
+
+A IA não deve abandonar tarefas incompletas.
+
+**Regras:**
+
+* Continuar até entregar algo funcional
+* Retomar tarefas interrompidas
+* Evoluir soluções já iniciadas
+
+---
+
+### 12. FINALIZAÇÃO
+
+Uma tarefa só é considerada concluída quando:
+
+* Está funcional
+* Resolve o problema proposto
+* Pode ser utilizada na prática
+
+---
+
+### DEFINIÇÃO FINAL:
+
+A IA treinada com esta skill deve agir como um executor prático e eficiente, capaz de transformar qualquer objetivo em ação concreta, construir soluções reais, corrigir falhas e entregar resultados consistentes sem depender de supervisão constante.
+
+
+=================================================================
+SKILL: MOBILE-APP-EXPERT
+=================================================================
+
+---
+name: mobile-app-expert
+description: Guia para criação de aplicativos mobile usando Capacitor, React Native e PWA.
+---
+
+# Mobile Expert
+
+Transforme suas ideias web em aplicativos mobile reais.
+
+## Estratégias de Desenvolvimento
+
+### 1. Progressive Web Apps (PWA)
+- Uma forma rápida de transformar seu site em um app instalável sem precisar de app stores.
+- Requer um manifesto JSON e um Service Worker para funcionar offline.
+
+### 2. Capacitor (Híbrido)
+- Permite usar seu código web (React, Next, Vue) e empacotar como um app nativo.
+- Facilita o acesso a APIs nativas (Câmera, GPS, Notificações) via plugins.
+
+### 3. React Native (Nativo)
+- Ideal para apps que precisam de performance extrema e interface 100% nativa.
+
+## Melhores Práticas Mobile
+- **Design Touch-friendly**: Botões com pelo menos 44px de altura.
+- **Modo Offline**: Trate estados de conexão lenta ou ausente de forma amigável.
+- **Push Notifications**: Use com moderação para não incomodar o usuário.
+
+
+=================================================================
+SKILL: MQL5-ROBOT-ENGINEER
+=================================================================
+
+---
+name: mql5-robot-engineer
+description: Capacitar a IA a projetar, desenvolver, analisar e evoluir robôs de trading (Expert Advisors) no MetaTrader 5 (MQL5).
+---
+
+# Engineer de Robôs Trader para MetaTrader 5 (MQL5)
+
+Este guia transforma a IA em um engenheiro especializado em construir sistemas de trading automatizados profissionais para a plataforma MT5.
+
+## 1. Fundamentos e Ambiente
+- **MQL5**: Sintaxe baseada em C++. Domínio de tipos (int, double, string), condicionais (if/else) e laços (for/while).
+- **MetaEditor**: Ambiente de desenvolvimento para escrita e compilação do código.
+- **Strategy Tester**: Validação de estratégias em dados históricos.
+
+## 2. Arquitetura Padrão (Expert Advisor)
+- `OnInit()`: Inicialização de indicadores, parâmetros e memória.
+- `OnTick()`: Núcleo principal de execução. A lógica de decisão deve ser processada a cada tick ou na abertura de uma nova vela.
+- `OnDeinit()`: Limpeza e fechamento de conexões.
+
+## 3. Coleta e Análise de Mercado
+- **Dados OHLC**: Abertura, máxima, mínima e fechamento.
+- **Indicadores Nativos**: `iMA` (Médias), `iRSI`, `iMACD`, `iBands`.
+- **Análise por Confluência**: Priorizar sinais que combinam tendência + suporte/resistência + confirmação de indicadores.
+
+## 4. Motor de Decisão e Score
+- **Sistemas de Pontuação**: Atribuir pesos a diferentes sinais.
+- **Classificação**:
+  - **BUY**: Score >= Limite definido.
+  - **SELL**: Score <= -Limite ou conforme lógica oposta.
+  - **NO TRADE**: Score insuficiente.
+
+## 5. Execução e Gestão de Risco
+- **Lotes**: Controle de volume de acordo com o capital.
+- **Stop Loss & Take Profit**: Obrigatórios em cada operação, baseados em níveis técnicos ou risco fixo (1% a 2%).
+- **Risco/Retorno**: Meta mínima de 1:2.
+
+## 6. Otimização e Controle Operacional
+- **Filtro de Horário**: Operar apenas em janelas de alta liquidez.
+- **Controle de Velas**: Evitar múltiplas execuções no mesmo candle.
+- **Monitoramento**: Acompanhamento constante de posições abertas e fechamento por alvo ou proteção.
+
+## 7. Backtest e Métricas
+- Utilizar o Strategy Tester para avaliar:
+  - Lucro Líquido
+  - Drawdown (rebaixamento máximo)
+  - Taxa de Acerto e Fator de Lucro.
+
+---
+*Esta skill permite que a IA atue como um engenheiro completo, modularizando funções para criar códigos limpos, documentados e adaptáveis ao mercado financeiro.*
+
+
+=================================================================
+SKILL: MVP-PLANNING-LAUNCH
+=================================================================
+
+---
+name: mvp-planning-launch
+description: Estratégias de planejamento ágil e lançamento rápido de novos produtos (MVP).
+---
+
+# Planejamento de MVP & Lançamento
+
+Como sair da ideia para o produto no ar no menor tempo possível.
+
+## O Conceito de MVP (Minimum Viable Product)
+
+### 1. Definição do Escopo Core
+- O que é o "problema real" que seu app resolve? Elimine tudo o que não é essencial para essa solução.
+- Use a regra dos **80/20**: 20% das funcionalidades resolvem 80% do problema do usuário.
+
+### 2. Priorização Ágil
+- Utilize o método **MoSCoW** (Must have, Should have, Could have, Won't have).
+
+### 3. Ciclo de Feedback
+- Lance rápido (Build -> Measure -> Learn). É melhor um produto simples no ar do que um perfeito na gaveta.
+
+## Preparação para o Lançamento
+- **Landing Page**: Crie uma página de captura antes mesmo do app estar pronto.
+- **Soft Launch**: Libere para um grupo pequeno de usuários primeiro.
+- **Monitoring**: Tenha ferramentas de análise ligadas desde o primeiro dia.
+
+
+=================================================================
+SKILL: N8N-AI-AGENTS-SPECIALIZED
+=================================================================
+
+---
+name: n8n-ai-agents-specialized
+description: Guia avançado para construção de agentes de IA no n8n, focando em memória, ferramentas e tipos de agentes.
+---
+
+# n8n AI Agents Specialized
+
+Este guia ensina como construir agentes de IA robustos e inteligentes dentro do n8n.
+
+## Melhores Práticas para Agentes
+
+### 1. Escolha do Tipo de Agente
+- **ReAct**: Ideal para tarefas que exigem raciocínio passo a passo e uso de ferramentas.
+- **Plan-and-Execute**: Melhor para objetivos complexos que precisam de um planejamento inicial antes da execução.
+
+### 2. Gestão de Memória
+- Utilize o nó **Window Buffer Memory** para conversas curtas.
+- Use **Redis** ou bancos de dados externos para persistência de memória em longo prazo (sessões de dias ou semanas).
+
+### 3. Implementação de Ferramentas (Tools)
+- Conecte nós de **HTTP Request** ou **Google Search** como ferramentas do agente.
+- Sempre descreva a ferramenta de forma clara no campo "Description" do nó, pois o agente usa essa descrição para decidir quando usá-la.
+
+## Padrões Comuns
+- **RAG (Retrieval-Augmented Generation)**: Conecte um nó de Vector Store para que o agente possa consultar seus próprios documentos.
+- **Encadeamento de Agentes**: Use um agente para planejar e outro para executar tarefas específicas.
+
+
+=================================================================
+SKILL: N8N-API-INTEGRATION-EXPERT
+=================================================================
+
+---
+name: n8n-api-integration-expert
+description: Técnicas avançadas de integração de API no n8n, incluindo OAuth2 e paginação.
+---
+
+# n8n API Integration Expert
+
+Domine a integração com qualquer serviço externo via HTTP Request.
+
+## Autenticação e Segurança
+- **OAuth2**: Siga o fluxo de autenticação do n8n para serviços que exigem tokens de acesso renováveis.
+- **Header Auth**: Sempre prefira enviar chaves de API nos Headers em vez de Query Parameters.
+
+## Paginação de Dados
+- Muitos serviços limitam o número de itens por resposta (ex: 50 ou 100).
+- Use loops e o nó **Code** para incrementar o número da página até que todos os dados sejam coletados.
+
+## Manipulação de JSON
+- Use **Expressions** para extrair dados profundos de objetos JSON complexos.
+- Lembre-se que o n8n espera uma lista de objetos: `[{json: { ... }}]`.
+
+
+=================================================================
+SKILL: N8N-CODE-JAVASCRIPT
+=================================================================
+
+---
+name: n8n-code-javascript
+description: Write JavaScript code in n8n Code nodes. Use when writing JavaScript in n8n, using $input/$json/$node syntax, making HTTP requests with $helpers, working with dates using DateTime, troubleshooting Code node errors, or choosing between Code node modes.
+---
+
+# JavaScript Code Node
+
+Expert guidance for writing JavaScript code in n8n Code nodes.
+
+---
+
+## Quick Start
+
+```javascript
+// Basic template for Code nodes
+const items = $input.all();
+
+// Process data
+const processed = items.map(item => ({
+  json: {
+    ...item.json,
+    processed: true,
+    timestamp: new Date().toISOString()
+  }
+}));
+
+return processed;
+```
+
+### Essential Rules
+
+1. **Choose "Run Once for All Items" mode** (recommended for most use cases)
+2. **Access data**: `$input.all()`, `$input.first()`, or `$input.item`
+3. **CRITICAL**: Must return `[{json: {...}}]` format
+4. **CRITICAL**: Webhook data is under `$json.body` (not `$json` directly)
+5. **Built-ins available**: $helpers.httpRequest(), DateTime (Luxon), $jmespath()
+
+---
+
+## Mode Selection Guide
+
+The Code node offers two execution modes. Choose based on your use case:
+
+### Run Once for All Items (Recommended - Default)
+
+**Use this mode for:** 95% of use cases
+
+- **How it works**: Code executes **once** regardless of input count
+- **Data access**: `$input.all()` or `items` array
+- **Best for**: Aggregation, filtering, batch processing, transformations, API calls with all data
+- **Performance**: Faster for multiple items (single execution)
+
+```javascript
+// Example: Calculate total from all items
+const allItems = $input.all();
+const total = allItems.reduce((sum, item) => sum + (item.json.amount || 0), 0);
+
+return [{
+  json: {
+    total,
+    count: allItems.length,
+    average: total / allItems.length
+  }
+}];
+```
+
+**When to use:**
+- ✅ Comparing items across the dataset
+- ✅ Calculating totals, averages, or statistics
+- ✅ Sorting or ranking items
+- ✅ Deduplication
+- ✅ Building aggregated reports
+- ✅ Combining data from multiple items
+
+### Run Once for Each Item
+
+**Use this mode for:** Specialized cases only
+
+- **How it works**: Code executes **separately** for each input item
+- **Data access**: `$input.item` or `$item`
+- **Best for**: Item-specific logic, independent operations, per-item validation
+- **Performance**: Slower for large datasets (multiple executions)
+
+```javascript
+// Example: Add processing timestamp to each item
+const item = $input.item;
+
+return [{
+  json: {
+    ...item.json,
+    processed: true,
+    processedAt: new Date().toISOString()
+  }
+}];
+```
+
+**When to use:**
+- ✅ Each item needs independent API call
+- ✅ Per-item validation with different error handling
+- ✅ Item-specific transformations based on item properties
+- ✅ When items must be processed separately for business logic
+
+**Decision Shortcut:**
+- **Need to look at multiple items?** → Use "All Items" mode
+- **Each item completely independent?** → Use "Each Item" mode
+- **Not sure?** → Use "All Items" mode (you can always loop inside)
+
+---
+
+## Data Access Patterns
+
+### Pattern 1: $input.all() - Most Common
+
+**Use when**: Processing arrays, batch operations, aggregations
+
+```javascript
+// Get all items from previous node
+const allItems = $input.all();
+
+// Filter, map, reduce as needed
+const valid = allItems.filter(item => item.json.status === 'active');
+const mapped = valid.map(item => ({
+  json: {
+    id: item.json.id,
+    name: item.json.name
+  }
+}));
+
+return mapped;
+```
+
+### Pattern 2: $input.first() - Very Common
+
+**Use when**: Working with single objects, API responses, first-in-first-out
+
+```javascript
+// Get first item only
+const firstItem = $input.first();
+const data = firstItem.json;
+
+return [{
+  json: {
+    result: processData(data),
+    processedAt: new Date().toISOString()
+  }
+}];
+```
+
+### Pattern 3: $input.item - Each Item Mode Only
+
+**Use when**: In "Run Once for Each Item" mode
+
+```javascript
+// Current item in loop (Each Item mode only)
+const currentItem = $input.item;
+
+return [{
+  json: {
+    ...currentItem.json,
+    itemProcessed: true
+  }
+}];
+```
+
+### Pattern 4: $node - Reference Other Nodes
+
+**Use when**: Need data from specific nodes in workflow
+
+```javascript
+// Get output from specific node
+const webhookData = $node["Webhook"].json;
+const httpData = $node["HTTP Request"].json;
+
+return [{
+  json: {
+    combined: {
+      webhook: webhookData,
+      api: httpData
+    }
+  }
+}];
+```
+
+**See**: [DATA_ACCESS.md](DATA_ACCESS.md) for comprehensive guide
+
+---
+
+## Critical: Webhook Data Structure
+
+**MOST COMMON MISTAKE**: Webhook data is nested under `.body`
+
+```javascript
+// ❌ WRONG - Will return undefined
+const name = $json.name;
+const email = $json.email;
+
+// ✅ CORRECT - Webhook data is under .body
+const name = $json.body.name;
+const email = $json.body.email;
+
+// Or with $input
+const webhookData = $input.first().json.body;
+const name = webhookData.name;
+```
+
+**Why**: Webhook node wraps all request data under `body` property. This includes POST data, query parameters, and JSON payloads.
+
+**See**: [DATA_ACCESS.md](DATA_ACCESS.md) for full webhook structure details
+
+---
+
+## Return Format Requirements
+
+**CRITICAL RULE**: Always return array of objects with `json` property
+
+### Correct Return Formats
+
+```javascript
+// ✅ Single result
+return [{
+  json: {
+    field1: value1,
+    field2: value2
+  }
+}];
+
+// ✅ Multiple results
+return [
+  {json: {id: 1, data: 'first'}},
+  {json: {id: 2, data: 'second'}}
+];
+
+// ✅ Transformed array
+const transformed = $input.all()
+  .filter(item => item.json.valid)
+  .map(item => ({
+    json: {
+      id: item.json.id,
+      processed: true
+    }
+  }));
+return transformed;
+
+// ✅ Empty result (when no data to return)
+return [];
+
+// ✅ Conditional return
+if (shouldProcess) {
+  return [{json: processedData}];
+} else {
+  return [];
+}
+```
+
+### Incorrect Return Formats
+
+```javascript
+// ❌ WRONG: Object without array wrapper
+return {
+  json: {field: value}
+};
+
+// ❌ WRONG: Array without json wrapper
+return [{field: value}];
+
+// ❌ WRONG: Plain string
+return "processed";
+
+// ❌ WRONG: Raw data without mapping
+return $input.all();  // Missing .map()
+
+// ❌ WRONG: Incomplete structure
+return [{data: value}];  // Should be {json: value}
+```
+
+**Why it matters**: Next nodes expect array format. Incorrect format causes workflow execution to fail.
+
+**See**: [ERROR_PATTERNS.md](ERROR_PATTERNS.md) #3 for detailed error solutions
+
+---
+
+## Common Patterns Overview
+
+Based on production workflows, here are the most useful patterns:
+
+### 1. Multi-Source Data Aggregation
+Combine data from multiple APIs, webhooks, or nodes
+
+```javascript
+const allItems = $input.all();
+const results = [];
+
+for (const item of allItems) {
+  const sourceName = item.json.name || 'Unknown';
+  // Parse source-specific structure
+  if (sourceName === 'API1' && item.json.data) {
+    results.push({
+      json: {
+        title: item.json.data.title,
+        source: 'API1'
+      }
+    });
+  }
+}
+
+return results;
+```
+
+### 2. Filtering with Regex
+Extract patterns, mentions, or keywords from text
+
+```javascript
+const pattern = /\b([A-Z]{2,5})\b/g;
+const matches = {};
+
+for (const item of $input.all()) {
+  const text = item.json.text;
+  const found = text.match(pattern);
+
+  if (found) {
+    found.forEach(match => {
+      matches[match] = (matches[match] || 0) + 1;
+    });
+  }
+}
+
+return [{json: {matches}}];
+```
+
+### 3. Data Transformation & Enrichment
+Map fields, normalize formats, add computed fields
+
+```javascript
+const items = $input.all();
+
+return items.map(item => {
+  const data = item.json;
+  const nameParts = data.name.split(' ');
+
+  return {
+    json: {
+      first_name: nameParts[0],
+      last_name: nameParts.slice(1).join(' '),
+      email: data.email,
+      created_at: new Date().toISOString()
+    }
+  };
+});
+```
+
+### 4. Top N Filtering & Ranking
+Sort and limit results
+
+```javascript
+const items = $input.all();
+
+const topItems = items
+  .sort((a, b) => (b.json.score || 0) - (a.json.score || 0))
+  .slice(0, 10);
+
+return topItems.map(item => ({json: item.json}));
+```
+
+### 5. Aggregation & Reporting
+Sum, count, group data
+
+```javascript
+const items = $input.all();
+const total = items.reduce((sum, item) => sum + (item.json.amount || 0), 0);
+
+return [{
+  json: {
+    total,
+    count: items.length,
+    average: total / items.length,
+    timestamp: new Date().toISOString()
+  }
+}];
+```
+
+**See**: [COMMON_PATTERNS.md](COMMON_PATTERNS.md) for 10 detailed production patterns
+
+---
+
+## Error Prevention - Top 5 Mistakes
+
+### #1: Empty Code or Missing Return (Most Common)
+
+```javascript
+// ❌ WRONG: No return statement
+const items = $input.all();
+// ... processing code ...
+// Forgot to return!
+
+// ✅ CORRECT: Always return data
+const items = $input.all();
+// ... processing ...
+return items.map(item => ({json: item.json}));
+```
+
+### #2: Expression Syntax Confusion
+
+```javascript
+// ❌ WRONG: Using n8n expression syntax in code
+const value = "{{ $json.field }}";
+
+// ✅ CORRECT: Use JavaScript template literals
+const value = `${$json.field}`;
+
+// ✅ CORRECT: Direct access
+const value = $input.first().json.field;
+```
+
+### #3: Incorrect Return Wrapper
+
+```javascript
+// ❌ WRONG: Returning object instead of array
+return {json: {result: 'success'}};
+
+// ✅ CORRECT: Array wrapper required
+return [{json: {result: 'success'}}];
+```
+
+### #4: Missing Null Checks
+
+```javascript
+// ❌ WRONG: Crashes if field doesn't exist
+const value = item.json.user.email;
+
+// ✅ CORRECT: Safe access with optional chaining
+const value = item.json?.user?.email || 'no-email@example.com';
+
+// ✅ CORRECT: Guard clause
+if (!item.json.user) {
+  return [];
+}
+const value = item.json.user.email;
+```
+
+### #5: Webhook Body Nesting
+
+```javascript
+// ❌ WRONG: Direct access to webhook data
+const email = $json.email;
+
+// ✅ CORRECT: Webhook data under .body
+const email = $json.body.email;
+```
+
+**See**: [ERROR_PATTERNS.md](ERROR_PATTERNS.md) for comprehensive error guide
+
+---
+
+## Built-in Functions & Helpers
+
+### $helpers.httpRequest()
+
+Make HTTP requests from within code:
+
+```javascript
+const response = await $helpers.httpRequest({
+  method: 'GET',
+  url: 'https://api.example.com/data',
+  headers: {
+    'Authorization': 'Bearer token',
+    'Content-Type': 'application/json'
+  }
+});
+
+return [{json: {data: response}}];
+```
+
+### DateTime (Luxon)
+
+Date and time operations:
+
+```javascript
+// Current time
+const now = DateTime.now();
+
+// Format dates
+const formatted = now.toFormat('yyyy-MM-dd');
+const iso = now.toISO();
+
+// Date arithmetic
+const tomorrow = now.plus({days: 1});
+const lastWeek = now.minus({weeks: 1});
+
+return [{
+  json: {
+    today: formatted,
+    tomorrow: tomorrow.toFormat('yyyy-MM-dd')
+  }
+}];
+```
+
+### $jmespath()
+
+Query JSON structures:
+
+```javascript
+const data = $input.first().json;
+
+// Filter array
+const adults = $jmespath(data, 'users[?age >= `18`]');
+
+// Extract fields
+const names = $jmespath(data, 'users[*].name');
+
+return [{json: {adults, names}}];
+```
+
+**See**: [BUILTIN_FUNCTIONS.md](BUILTIN_FUNCTIONS.md) for complete reference
+
+---
+
+## Best Practices
+
+### 1. Always Validate Input Data
+
+```javascript
+const items = $input.all();
+
+// Check if data exists
+if (!items || items.length === 0) {
+  return [];
+}
+
+// Validate structure
+if (!items[0].json) {
+  return [{json: {error: 'Invalid input format'}}];
+}
+
+// Continue processing...
+```
+
+### 2. Use Try-Catch for Error Handling
+
+```javascript
+try {
+  const response = await $helpers.httpRequest({
+    url: 'https://api.example.com/data'
+  });
+
+  return [{json: {success: true, data: response}}];
+} catch (error) {
+  return [{
+    json: {
+      success: false,
+      error: error.message
+    }
+  }];
+}
+```
+
+### 3. Prefer Array Methods Over Loops
+
+```javascript
+// ✅ GOOD: Functional approach
+const processed = $input.all()
+  .filter(item => item.json.valid)
+  .map(item => ({json: {id: item.json.id}}));
+
+// ❌ SLOWER: Manual loop
+const processed = [];
+for (const item of $input.all()) {
+  if (item.json.valid) {
+    processed.push({json: {id: item.json.id}});
+  }
+}
+```
+
+### 4. Filter Early, Process Late
+
+```javascript
+// ✅ GOOD: Filter first to reduce processing
+const processed = $input.all()
+  .filter(item => item.json.status === 'active')  // Reduce dataset first
+  .map(item => expensiveTransformation(item));  // Then transform
+
+// ❌ WASTEFUL: Transform everything, then filter
+const processed = $input.all()
+  .map(item => expensiveTransformation(item))  // Wastes CPU
+  .filter(item => item.json.status === 'active');
+```
+
+### 5. Use Descriptive Variable Names
+
+```javascript
+// ✅ GOOD: Clear intent
+const activeUsers = $input.all().filter(item => item.json.active);
+const totalRevenue = activeUsers.reduce((sum, user) => sum + user.json.revenue, 0);
+
+// ❌ BAD: Unclear purpose
+const a = $input.all().filter(item => item.json.active);
+const t = a.reduce((s, u) => s + u.json.revenue, 0);
+```
+
+### 6. Debug with console.log()
+
+```javascript
+// Debug statements appear in browser console
+const items = $input.all();
+console.log(`Processing ${items.length} items`);
+
+for (const item of items) {
+  console.log('Item data:', item.json);
+  // Process...
+}
+
+return result;
+```
+
+---
+
+## When to Use Code Node
+
+Use Code node when:
+- ✅ Complex transformations requiring multiple steps
+- ✅ Custom calculations or business logic
+- ✅ Recursive operations
+- ✅ API response parsing with complex structure
+- ✅ Multi-step conditionals
+- ✅ Data aggregation across items
+
+Consider other nodes when:
+- ❌ Simple field mapping → Use **Set** node
+- ❌ Basic filtering → Use **Filter** node
+- ❌ Simple conditionals → Use **IF** or **Switch** node
+- ❌ HTTP requests only → Use **HTTP Request** node
+
+**Code node excels at**: Complex logic that would require chaining many simple nodes
+
+---
+
+## Integration with Other Skills
+
+### Works With:
+
+**n8n Expression Syntax**:
+- Expressions use `{{ }}` syntax in other nodes
+- Code nodes use JavaScript directly (no `{{ }}`)
+- When to use expressions vs code
+
+**n8n MCP Tools Expert**:
+- How to find Code node: `search_nodes({query: "code"})`
+- Get configuration help: `get_node_essentials("nodes-base.code")`
+- Validate code: `validate_node_operation()`
+
+**n8n Node Configuration**:
+- Mode selection (All Items vs Each Item)
+- Language selection (JavaScript vs Python)
+- Understanding property dependencies
+
+**n8n Workflow Patterns**:
+- Code nodes in transformation step
+- Webhook → Code → API pattern
+- Error handling in workflows
+
+**n8n Validation Expert**:
+- Validate Code node configuration
+- Handle validation errors
+- Auto-fix common issues
+
+---
+
+## Quick Reference Checklist
+
+Before deploying Code nodes, verify:
+
+- [ ] **Code is not empty** - Must have meaningful logic
+- [ ] **Return statement exists** - Must return array of objects
+- [ ] **Proper return format** - Each item: `{json: {...}}`
+- [ ] **Data access correct** - Using `$input.all()`, `$input.first()`, or `$input.item`
+- [ ] **No n8n expressions** - Use JavaScript template literals: `` `${value}` ``
+- [ ] **Error handling** - Guard clauses for null/undefined inputs
+- [ ] **Webhook data** - Access via `.body` if from webhook
+- [ ] **Mode selection** - "All Items" for most cases
+- [ ] **Performance** - Prefer map/filter over manual loops
+- [ ] **Output consistent** - All code paths return same structure
+
+---
+
+## Additional Resources
+
+### Related Files
+- [DATA_ACCESS.md](DATA_ACCESS.md) - Comprehensive data access patterns
+- [COMMON_PATTERNS.md](COMMON_PATTERNS.md) - 10 production-tested patterns
+- [ERROR_PATTERNS.md](ERROR_PATTERNS.md) - Top 5 errors and solutions
+- [BUILTIN_FUNCTIONS.md](BUILTIN_FUNCTIONS.md) - Complete built-in reference
+
+### n8n Documentation
+- Code Node Guide: https://docs.n8n.io/code/code-node/
+- Built-in Methods: https://docs.n8n.io/code-examples/methods-variables-reference/
+- Luxon Documentation: https://moment.github.io/luxon/
+
+---
+
+**Ready to write JavaScript in n8n Code nodes!** Start with simple transformations, use the error patterns guide to avoid common mistakes, and reference the pattern library for production-ready examples.
+
+
+=================================================================
+SKILL: N8N-CODE-PYTHON
+=================================================================
+
+---
+name: n8n-code-python
+description: Write Python code in n8n Code nodes. Use when writing Python in n8n, using _input/_json/_node syntax, working with standard library, or need to understand Python limitations in n8n Code nodes.
+---
+
+# Python Code Node (Beta)
+
+Expert guidance for writing Python code in n8n Code nodes.
+
+---
+
+## ⚠️ Important: JavaScript First
+
+**Recommendation**: Use **JavaScript for 95% of use cases**. Only use Python when:
+- You need specific Python standard library functions
+- You're significantly more comfortable with Python syntax
+- You're doing data transformations better suited to Python
+
+**Why JavaScript is preferred:**
+- Full n8n helper functions ($helpers.httpRequest, etc.)
+- Luxon DateTime library for advanced date/time operations
+- No external library limitations
+- Better n8n documentation and community support
+
+---
+
+## Quick Start
+
+```python
+# Basic template for Python Code nodes
+items = _input.all()
+
+# Process data
+processed = []
+for item in items:
+    processed.append({
+        "json": {
+            **item["json"],
+            "processed": True,
+            "timestamp": datetime.now().isoformat()
+        }
+    })
+
+return processed
+```
+
+### Essential Rules
+
+1. **Consider JavaScript first** - Use Python only when necessary
+2. **Access data**: `_input.all()`, `_input.first()`, or `_input.item`
+3. **CRITICAL**: Must return `[{"json": {...}}]` format
+4. **CRITICAL**: Webhook data is under `_json["body"]` (not `_json` directly)
+5. **CRITICAL LIMITATION**: **No external libraries** (no requests, pandas, numpy)
+6. **Standard library only**: json, datetime, re, base64, hashlib, urllib.parse, math, random, statistics
+
+---
+
+## Mode Selection Guide
+
+Same as JavaScript - choose based on your use case:
+
+### Run Once for All Items (Recommended - Default)
+
+**Use this mode for:** 95% of use cases
+
+- **How it works**: Code executes **once** regardless of input count
+- **Data access**: `_input.all()` or `_items` array (Native mode)
+- **Best for**: Aggregation, filtering, batch processing, transformations
+- **Performance**: Faster for multiple items (single execution)
+
+```python
+# Example: Calculate total from all items
+all_items = _input.all()
+total = sum(item["json"].get("amount", 0) for item in all_items)
+
+return [{
+    "json": {
+        "total": total,
+        "count": len(all_items),
+        "average": total / len(all_items) if all_items else 0
+    }
+}]
+```
+
+### Run Once for Each Item
+
+**Use this mode for:** Specialized cases only
+
+- **How it works**: Code executes **separately** for each input item
+- **Data access**: `_input.item` or `_item` (Native mode)
+- **Best for**: Item-specific logic, independent operations, per-item validation
+- **Performance**: Slower for large datasets (multiple executions)
+
+```python
+# Example: Add processing timestamp to each item
+item = _input.item
+
+return [{
+    "json": {
+        **item["json"],
+        "processed": True,
+        "processed_at": datetime.now().isoformat()
+    }
+}]
+```
+
+---
+
+## Python Modes: Beta vs Native
+
+n8n offers two Python execution modes:
+
+### Python (Beta) - Recommended
+- **Use**: `_input`, `_json`, `_node` helper syntax
+- **Best for**: Most Python use cases
+- **Helpers available**: `_now`, `_today`, `_jmespath()`
+- **Import**: `from datetime import datetime`
+
+```python
+# Python (Beta) example
+items = _input.all()
+now = _now  # Built-in datetime object
+
+return [{
+    "json": {
+        "count": len(items),
+        "timestamp": now.isoformat()
+    }
+}]
+```
+
+### Python (Native) (Beta)
+- **Use**: `_items`, `_item` variables only
+- **No helpers**: No `_input`, `_now`, etc.
+- **More limited**: Standard Python only
+- **Use when**: Need pure Python without n8n helpers
+
+```python
+# Python (Native) example
+processed = []
+
+for item in _items:
+    processed.append({
+        "json": {
+            "id": item["json"].get("id"),
+            "processed": True
+        }
+    })
+
+return processed
+```
+
+**Recommendation**: Use **Python (Beta)** for better n8n integration.
+
+---
+
+## Data Access Patterns
+
+### Pattern 1: _input.all() - Most Common
+
+**Use when**: Processing arrays, batch operations, aggregations
+
+```python
+# Get all items from previous node
+all_items = _input.all()
+
+# Filter, transform as needed
+valid = [item for item in all_items if item["json"].get("status") == "active"]
+
+processed = []
+for item in valid:
+    processed.append({
+        "json": {
+            "id": item["json"]["id"],
+            "name": item["json"]["name"]
+        }
+    })
+
+return processed
+```
+
+### Pattern 2: _input.first() - Very Common
+
+**Use when**: Working with single objects, API responses
+
+```python
+# Get first item only
+first_item = _input.first()
+data = first_item["json"]
+
+return [{
+    "json": {
+        "result": process_data(data),
+        "processed_at": datetime.now().isoformat()
+    }
+}]
+```
+
+### Pattern 3: _input.item - Each Item Mode Only
+
+**Use when**: In "Run Once for Each Item" mode
+
+```python
+# Current item in loop (Each Item mode only)
+current_item = _input.item
+
+return [{
+    "json": {
+        **current_item["json"],
+        "item_processed": True
+    }
+}]
+```
+
+### Pattern 4: _node - Reference Other Nodes
+
+**Use when**: Need data from specific nodes in workflow
+
+```python
+# Get output from specific node
+webhook_data = _node["Webhook"]["json"]
+http_data = _node["HTTP Request"]["json"]
+
+return [{
+    "json": {
+        "combined": {
+            "webhook": webhook_data,
+            "api": http_data
+        }
+    }
+}]
+```
+
+**See**: [DATA_ACCESS.md](DATA_ACCESS.md) for comprehensive guide
+
+---
+
+## Critical: Webhook Data Structure
+
+**MOST COMMON MISTAKE**: Webhook data is nested under `["body"]`
+
+```python
+# ❌ WRONG - Will raise KeyError
+name = _json["name"]
+email = _json["email"]
+
+# ✅ CORRECT - Webhook data is under ["body"]
+name = _json["body"]["name"]
+email = _json["body"]["email"]
+
+# ✅ SAFER - Use .get() for safe access
+webhook_data = _json.get("body", {})
+name = webhook_data.get("name")
+```
+
+**Why**: Webhook node wraps all request data under `body` property. This includes POST data, query parameters, and JSON payloads.
+
+**See**: [DATA_ACCESS.md](DATA_ACCESS.md) for full webhook structure details
+
+---
+
+## Return Format Requirements
+
+**CRITICAL RULE**: Always return list of dictionaries with `"json"` key
+
+### Correct Return Formats
+
+```python
+# ✅ Single result
+return [{
+    "json": {
+        "field1": value1,
+        "field2": value2
+    }
+}]
+
+# ✅ Multiple results
+return [
+    {"json": {"id": 1, "data": "first"}},
+    {"json": {"id": 2, "data": "second"}}
+]
+
+# ✅ List comprehension
+transformed = [
+    {"json": {"id": item["json"]["id"], "processed": True}}
+    for item in _input.all()
+    if item["json"].get("valid")
+]
+return transformed
+
+# ✅ Empty result (when no data to return)
+return []
+
+# ✅ Conditional return
+if should_process:
+    return [{"json": processed_data}]
+else:
+    return []
+```
+
+### Incorrect Return Formats
+
+```python
+# ❌ WRONG: Dictionary without list wrapper
+return {
+    "json": {"field": value}
+}
+
+# ❌ WRONG: List without json wrapper
+return [{"field": value}]
+
+# ❌ WRONG: Plain string
+return "processed"
+
+# ❌ WRONG: Incomplete structure
+return [{"data": value}]  # Should be {"json": value}
+```
+
+**Why it matters**: Next nodes expect list format. Incorrect format causes workflow execution to fail.
+
+**See**: [ERROR_PATTERNS.md](ERROR_PATTERNS.md) #2 for detailed error solutions
+
+---
+
+## Critical Limitation: No External Libraries
+
+**MOST IMPORTANT PYTHON LIMITATION**: Cannot import external packages
+
+### What's NOT Available
+
+```python
+# ❌ NOT AVAILABLE - Will raise ModuleNotFoundError
+import requests  # ❌ No
+import pandas  # ❌ No
+import numpy  # ❌ No
+import scipy  # ❌ No
+from bs4 import BeautifulSoup  # ❌ No
+import lxml  # ❌ No
+```
+
+### What IS Available (Standard Library)
+
+```python
+# ✅ AVAILABLE - Standard library only
+import json  # ✅ JSON parsing
+import datetime  # ✅ Date/time operations
+import re  # ✅ Regular expressions
+import base64  # ✅ Base64 encoding/decoding
+import hashlib  # ✅ Hashing functions
+import urllib.parse  # ✅ URL parsing
+import math  # ✅ Math functions
+import random  # ✅ Random numbers
+import statistics  # ✅ Statistical functions
+```
+
+### Workarounds
+
+**Need HTTP requests?**
+- ✅ Use **HTTP Request node** before Code node
+- ✅ Or switch to **JavaScript** and use `$helpers.httpRequest()`
+
+**Need data analysis (pandas/numpy)?**
+- ✅ Use Python **statistics** module for basic stats
+- ✅ Or switch to **JavaScript** for most operations
+- ✅ Manual calculations with lists and dictionaries
+
+**Need web scraping (BeautifulSoup)?**
+- ✅ Use **HTTP Request node** + **HTML Extract node**
+- ✅ Or switch to **JavaScript** with regex/string methods
+
+**See**: [STANDARD_LIBRARY.md](STANDARD_LIBRARY.md) for complete reference
+
+---
+
+## Common Patterns Overview
+
+Based on production workflows, here are the most useful Python patterns:
+
+### 1. Data Transformation
+Transform all items with list comprehensions
+
+```python
+items = _input.all()
+
+return [
+    {
+        "json": {
+            "id": item["json"].get("id"),
+            "name": item["json"].get("name", "Unknown").upper(),
+            "processed": True
+        }
+    }
+    for item in items
+]
+```
+
+### 2. Filtering & Aggregation
+Sum, filter, count with built-in functions
+
+```python
+items = _input.all()
+total = sum(item["json"].get("amount", 0) for item in items)
+valid_items = [item for item in items if item["json"].get("amount", 0) > 0]
+
+return [{
+    "json": {
+        "total": total,
+        "count": len(valid_items)
+    }
+}]
+```
+
+### 3. String Processing with Regex
+Extract patterns from text
+
+```python
+import re
+
+items = _input.all()
+email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+
+all_emails = []
+for item in items:
+    text = item["json"].get("text", "")
+    emails = re.findall(email_pattern, text)
+    all_emails.extend(emails)
+
+# Remove duplicates
+unique_emails = list(set(all_emails))
+
+return [{
+    "json": {
+        "emails": unique_emails,
+        "count": len(unique_emails)
+    }
+}]
+```
+
+### 4. Data Validation
+Validate and clean data
+
+```python
+items = _input.all()
+validated = []
+
+for item in items:
+    data = item["json"]
+    errors = []
+
+    # Validate fields
+    if not data.get("email"):
+        errors.append("Email required")
+    if not data.get("name"):
+        errors.append("Name required")
+
+    validated.append({
+        "json": {
+            **data,
+            "valid": len(errors) == 0,
+            "errors": errors if errors else None
+        }
+    })
+
+return validated
+```
+
+### 5. Statistical Analysis
+Calculate statistics with statistics module
+
+```python
+from statistics import mean, median, stdev
+
+items = _input.all()
+values = [item["json"].get("value", 0) for item in items if "value" in item["json"]]
+
+if values:
+    return [{
+        "json": {
+            "mean": mean(values),
+            "median": median(values),
+            "stdev": stdev(values) if len(values) > 1 else 0,
+            "min": min(values),
+            "max": max(values),
+            "count": len(values)
+        }
+    }]
+else:
+    return [{"json": {"error": "No values found"}}]
+```
+
+**See**: [COMMON_PATTERNS.md](COMMON_PATTERNS.md) for 10 detailed Python patterns
+
+---
+
+## Error Prevention - Top 5 Mistakes
+
+### #1: Importing External Libraries (Python-Specific!)
+
+```python
+# ❌ WRONG: Trying to import external library
+import requests  # ModuleNotFoundError!
+
+# ✅ CORRECT: Use HTTP Request node or JavaScript
+# Add HTTP Request node before Code node
+# OR switch to JavaScript and use $helpers.httpRequest()
+```
+
+### #2: Empty Code or Missing Return
+
+```python
+# ❌ WRONG: No return statement
+items = _input.all()
+# Processing...
+# Forgot to return!
+
+# ✅ CORRECT: Always return data
+items = _input.all()
+# Processing...
+return [{"json": item["json"]} for item in items]
+```
+
+### #3: Incorrect Return Format
+
+```python
+# ❌ WRONG: Returning dict instead of list
+return {"json": {"result": "success"}}
+
+# ✅ CORRECT: List wrapper required
+return [{"json": {"result": "success"}}]
+```
+
+### #4: KeyError on Dictionary Access
+
+```python
+# ❌ WRONG: Direct access crashes if missing
+name = _json["user"]["name"]  # KeyError!
+
+# ✅ CORRECT: Use .get() for safe access
+name = _json.get("user", {}).get("name", "Unknown")
+```
+
+### #5: Webhook Body Nesting
+
+```python
+# ❌ WRONG: Direct access to webhook data
+email = _json["email"]  # KeyError!
+
+# ✅ CORRECT: Webhook data under ["body"]
+email = _json["body"]["email"]
+
+# ✅ BETTER: Safe access with .get()
+email = _json.get("body", {}).get("email", "no-email")
+```
+
+**See**: [ERROR_PATTERNS.md](ERROR_PATTERNS.md) for comprehensive error guide
+
+---
+
+## Standard Library Reference
+
+### Most Useful Modules
+
+```python
+# JSON operations
+import json
+data = json.loads(json_string)
+json_output = json.dumps({"key": "value"})
+
+# Date/time
+from datetime import datetime, timedelta
+now = datetime.now()
+tomorrow = now + timedelta(days=1)
+formatted = now.strftime("%Y-%m-%d")
+
+# Regular expressions
+import re
+matches = re.findall(r'\d+', text)
+cleaned = re.sub(r'[^\w\s]', '', text)
+
+# Base64 encoding
+import base64
+encoded = base64.b64encode(data).decode()
+decoded = base64.b64decode(encoded)
+
+# Hashing
+import hashlib
+hash_value = hashlib.sha256(text.encode()).hexdigest()
+
+# URL parsing
+import urllib.parse
+params = urllib.parse.urlencode({"key": "value"})
+parsed = urllib.parse.urlparse(url)
+
+# Statistics
+from statistics import mean, median, stdev
+average = mean([1, 2, 3, 4, 5])
+```
+
+**See**: [STANDARD_LIBRARY.md](STANDARD_LIBRARY.md) for complete reference
+
+---
+
+## Best Practices
+
+### 1. Always Use .get() for Dictionary Access
+
+```python
+# ✅ SAFE: Won't crash if field missing
+value = item["json"].get("field", "default")
+
+# ❌ RISKY: Crashes if field doesn't exist
+value = item["json"]["field"]
+```
+
+### 2. Handle None/Null Values Explicitly
+
+```python
+# ✅ GOOD: Default to 0 if None
+amount = item["json"].get("amount") or 0
+
+# ✅ GOOD: Check for None explicitly
+text = item["json"].get("text")
+if text is None:
+    text = ""
+```
+
+### 3. Use List Comprehensions for Filtering
+
+```python
+# ✅ PYTHONIC: List comprehension
+valid = [item for item in items if item["json"].get("active")]
+
+# ❌ VERBOSE: Manual loop
+valid = []
+for item in items:
+    if item["json"].get("active"):
+        valid.append(item)
+```
+
+### 4. Return Consistent Structure
+
+```python
+# ✅ CONSISTENT: Always list with "json" key
+return [{"json": result}]  # Single result
+return results  # Multiple results (already formatted)
+return []  # No results
+```
+
+### 5. Debug with print() Statements
+
+```python
+# Debug statements appear in browser console (F12)
+items = _input.all()
+print(f"Processing {len(items)} items")
+print(f"First item: {items[0] if items else 'None'}")
+```
+
+---
+
+## When to Use Python vs JavaScript
+
+### Use Python When:
+- ✅ You need `statistics` module for statistical operations
+- ✅ You're significantly more comfortable with Python syntax
+- ✅ Your logic maps well to list comprehensions
+- ✅ You need specific standard library functions
+
+### Use JavaScript When:
+- ✅ You need HTTP requests ($helpers.httpRequest())
+- ✅ You need advanced date/time (DateTime/Luxon)
+- ✅ You want better n8n integration
+- ✅ **For 95% of use cases** (recommended)
+
+### Consider Other Nodes When:
+- ❌ Simple field mapping → Use **Set** node
+- ❌ Basic filtering → Use **Filter** node
+- ❌ Simple conditionals → Use **IF** or **Switch** node
+- ❌ HTTP requests only → Use **HTTP Request** node
+
+---
+
+## Integration with Other Skills
+
+### Works With:
+
+**n8n Expression Syntax**:
+- Expressions use `{{ }}` syntax in other nodes
+- Code nodes use Python directly (no `{{ }}`)
+- When to use expressions vs code
+
+**n8n MCP Tools Expert**:
+- How to find Code node: `search_nodes({query: "code"})`
+- Get configuration help: `get_node_essentials("nodes-base.code")`
+- Validate code: `validate_node_operation()`
+
+**n8n Node Configuration**:
+- Mode selection (All Items vs Each Item)
+- Language selection (Python vs JavaScript)
+- Understanding property dependencies
+
+**n8n Workflow Patterns**:
+- Code nodes in transformation step
+- When to use Python vs JavaScript in patterns
+
+**n8n Validation Expert**:
+- Validate Code node configuration
+- Handle validation errors
+- Auto-fix common issues
+
+**n8n Code JavaScript**:
+- When to use JavaScript instead
+- Comparison of JavaScript vs Python features
+- Migration from Python to JavaScript
+
+---
+
+## Quick Reference Checklist
+
+Before deploying Python Code nodes, verify:
+
+- [ ] **Considered JavaScript first** - Using Python only when necessary
+- [ ] **Code is not empty** - Must have meaningful logic
+- [ ] **Return statement exists** - Must return list of dictionaries
+- [ ] **Proper return format** - Each item: `{"json": {...}}`
+- [ ] **Data access correct** - Using `_input.all()`, `_input.first()`, or `_input.item`
+- [ ] **No external imports** - Only standard library (json, datetime, re, etc.)
+- [ ] **Safe dictionary access** - Using `.get()` to avoid KeyError
+- [ ] **Webhook data** - Access via `["body"]` if from webhook
+- [ ] **Mode selection** - "All Items" for most cases
+- [ ] **Output consistent** - All code paths return same structure
+
+---
+
+## Additional Resources
+
+### Related Files
+- [DATA_ACCESS.md](DATA_ACCESS.md) - Comprehensive Python data access patterns
+- [COMMON_PATTERNS.md](COMMON_PATTERNS.md) - 10 Python patterns for n8n
+- [ERROR_PATTERNS.md](ERROR_PATTERNS.md) - Top 5 errors and solutions
+- [STANDARD_LIBRARY.md](STANDARD_LIBRARY.md) - Complete standard library reference
+
+### n8n Documentation
+- Code Node Guide: https://docs.n8n.io/code/code-node/
+- Python in n8n: https://docs.n8n.io/code/builtin/python-modules/
+
+---
+
+**Ready to write Python in n8n Code nodes - but consider JavaScript first!** Use Python for specific needs, reference the error patterns guide to avoid common mistakes, and leverage the standard library effectively.
+
+
+=================================================================
+SKILL: N8N-COMMUNITY-NODE-GUIDE
+=================================================================
+
+---
+name: n8n-community-node-guide
+description: Como descobrir e utilizar nós da comunidade de forma eficaz no n8n.
+---
+
+# n8n Community Node Guide
+
+Aumente o poder do seu n8n com contribuições da comunidade.
+
+## Onde Encontrar
+- Visite o [n8n Nodes Directory](https://n8n.io/nodes/) para ver a lista oficial de nós incluídos e links para a comunidade.
+- Procure no **npm** por pacotes que comecem com `n8n-nodes-`.
+
+## Como Instalar
+- Em instalações self-hosted, use o comando: `npm install -g n8n-nodes-nome-do-pacote`.
+- No n8n Desktop ou Cloud, verifique a compatibilidade nas configurações de "Community Nodes".
+
+## Segurança e Estabilidade
+- Sempre verifique a reputação do nó e quando foi a última atualização.
+- Teste novos nós em um ambiente de desenvolvimento antes de colocar em produção.
+
+
+=================================================================
+SKILL: N8N-DATABASE-EXPERT
+=================================================================
+
+---
+name: n8n-database-expert
+description: Melhores práticas para operações de banco de dados no n8n (SQL/NoSQL).
+---
+
+# n8n Database Expert
+
+Este guia fornece orientações para interagir de forma eficiente com bancos de dados no n8n.
+
+## Operações Eficientes
+
+### 1. Batching (Processamento em Lote)
+- Evite inserir uma linha por vez se tiver milhares de registros. Use modos de "Insert" ou "Update" que suportam múltiplos itens por execução.
+
+### 2. Consultas Personalizadas (Query)
+- Use o nó **Execute Query** para consultas complexas que os nós básicos não suportam.
+- Sempre use parâmetros bind (ex: `$1`, `$2`) para evitar SQL Injection.
+
+### 3. Conexões
+- Certifique-se de que as credenciais possuem apenas as permissões necessárias (Princípio do Menor Privilégio).
+
+## Bancos de Dados Suportados
+- **PostgreSQL / MySQL**: Ideais para dados relacionais estruturados.
+- **MongoDB**: Excelente para documentos JSON flexíveis.
+- **Airtable / Google Sheets**: Ótimos para prototipagem rápida e interface humana.
+
+
+=================================================================
+SKILL: N8N-ERROR-HANDLING-RETRIES
+=================================================================
+
+---
+name: n8n-error-handling-retries
+description: Estratégias para tratamento robusto de erros e fluxos de trabalho auto-corrigíveis no n8n.
+---
+
+# n8n Error Handling & Retries
+
+Aprenda a tornar seus fluxos de trabalho resilientes a falhas externas.
+
+## Estratégias de Recuperação
+
+### 1. On Error (No Nó)
+- Configure a opção **On Error** para "Continue" se quiser tratar o erro manualmente no próximo nó.
+- Use o nó **Error Trigger** para capturar falhas em qualquer lugar do fluxo e enviar alertas (Slack/E-mail).
+
+### 2. Retry On Fail
+- Ative o "Retry On Fail" em nós que dependem de APIs instáveis.
+- Configure o intervalo (Wait Between Tries) e o número máximo de tentativas (Max Tries).
+
+### 3. Fluxos de "Self-Healing"
+- Se um serviço falhar, tente uma rota alternativa ou use dados em cache para manter o sistema rodando.
+
+## Monitoramento
+- Crie um fluxo dedicado para logar erros em uma planilha ou banco de dados externo para auditoria futura.
+
+
+=================================================================
+SKILL: N8N-EXPRESSION-SYNTAX
+=================================================================
+
+---
+name: n8n-expression-syntax
+description: Validate n8n expression syntax and fix common errors. Use when writing n8n expressions, using {{}} syntax, accessing $json/$node variables, troubleshooting expression errors, or working with webhook data in workflows.
+---
+
+# n8n Expression Syntax
+
+Expert guide for writing correct n8n expressions in workflows.
+
+---
+
+## Expression Format
+
+All dynamic content in n8n uses **double curly braces**:
+
+```
+{{expression}}
+```
+
+**Examples**:
+```
+✅ {{$json.email}}
+✅ {{$json.body.name}}
+✅ {{$node["HTTP Request"].json.data}}
+❌ $json.email  (no braces - treated as literal text)
+❌ {$json.email}  (single braces - invalid)
+```
+
+---
+
+## Core Variables
+
+### $json - Current Node Output
+
+Access data from the current node:
+
+```javascript
+{{$json.fieldName}}
+{{$json['field with spaces']}}
+{{$json.nested.property}}
+{{$json.items[0].name}}
+```
+
+### $node - Reference Other Nodes
+
+Access data from any previous node:
+
+```javascript
+{{$node["Node Name"].json.fieldName}}
+{{$node["HTTP Request"].json.data}}
+{{$node["Webhook"].json.body.email}}
+```
+
+**Important**:
+- Node names **must** be in quotes
+- Node names are **case-sensitive**
+- Must match exact node name from workflow
+
+### $now - Current Timestamp
+
+Access current date/time:
+
+```javascript
+{{$now}}
+{{$now.toFormat('yyyy-MM-dd')}}
+{{$now.toFormat('HH:mm:ss')}}
+{{$now.plus({days: 7})}}
+```
+
+### $env - Environment Variables
+
+Access environment variables:
+
+```javascript
+{{$env.API_KEY}}
+{{$env.DATABASE_URL}}
+```
+
+---
+
+## 🚨 CRITICAL: Webhook Data Structure
+
+**Most Common Mistake**: Webhook data is **NOT** at the root!
+
+### Webhook Node Output Structure
+
+```javascript
+{
+  "headers": {...},
+  "params": {...},
+  "query": {...},
+  "body": {           // ⚠️ USER DATA IS HERE!
+    "name": "John",
+    "email": "john@example.com",
+    "message": "Hello"
+  }
+}
+```
+
+### Correct Webhook Data Access
+
+```javascript
+❌ WRONG: {{$json.name}}
+❌ WRONG: {{$json.email}}
+
+✅ CORRECT: {{$json.body.name}}
+✅ CORRECT: {{$json.body.email}}
+✅ CORRECT: {{$json.body.message}}
+```
+
+**Why**: Webhook node wraps incoming data under `.body` property to preserve headers, params, and query parameters.
+
+---
+
+## Common Patterns
+
+### Access Nested Fields
+
+```javascript
+// Simple nesting
+{{$json.user.email}}
+
+// Array access
+{{$json.data[0].name}}
+{{$json.items[0].id}}
+
+// Bracket notation for spaces
+{{$json['field name']}}
+{{$json['user data']['first name']}}
+```
+
+### Reference Other Nodes
+
+```javascript
+// Node without spaces
+{{$node["Set"].json.value}}
+
+// Node with spaces (common!)
+{{$node["HTTP Request"].json.data}}
+{{$node["Respond to Webhook"].json.message}}
+
+// Webhook node
+{{$node["Webhook"].json.body.email}}
+```
+
+### Combine Variables
+
+```javascript
+// Concatenation (automatic)
+Hello {{$json.body.name}}!
+
+// In URLs
+https://api.example.com/users/{{$json.body.user_id}}
+
+// In object properties
+{
+  "name": "={{$json.body.name}}",
+  "email": "={{$json.body.email}}"
+}
+```
+
+---
+
+## When NOT to Use Expressions
+
+### ❌ Code Nodes
+
+Code nodes use **direct JavaScript access**, NOT expressions!
+
+```javascript
+// ❌ WRONG in Code node
+const email = '={{$json.email}}';
+const name = '{{$json.body.name}}';
+
+// ✅ CORRECT in Code node
+const email = $json.email;
+const name = $json.body.name;
+
+// Or using Code node API
+const email = $input.item.json.email;
+const allItems = $input.all();
+```
+
+### ❌ Webhook Paths
+
+```javascript
+// ❌ WRONG
+path: "{{$json.user_id}}/webhook"
+
+// ✅ CORRECT
+path: "user-webhook"  // Static paths only
+```
+
+### ❌ Credential Fields
+
+```javascript
+// ❌ WRONG
+apiKey: "={{$env.API_KEY}}"
+
+// ✅ CORRECT
+Use n8n credential system, not expressions
+```
+
+---
+
+## Validation Rules
+
+### 1. Always Use {{}}
+
+Expressions **must** be wrapped in double curly braces.
+
+```javascript
+❌ $json.field
+✅ {{$json.field}}
+```
+
+### 2. Use Quotes for Spaces
+
+Field or node names with spaces require **bracket notation**:
+
+```javascript
+❌ {{$json.field name}}
+✅ {{$json['field name']}}
+
+❌ {{$node.HTTP Request.json}}
+✅ {{$node["HTTP Request"].json}}
+```
+
+### 3. Match Exact Node Names
+
+Node references are **case-sensitive**:
+
+```javascript
+❌ {{$node["http request"].json}}  // lowercase
+❌ {{$node["Http Request"].json}}  // wrong case
+✅ {{$node["HTTP Request"].json}}  // exact match
+```
+
+### 4. No Nested {{}}
+
+Don't double-wrap expressions:
+
+```javascript
+❌ {{{$json.field}}}
+✅ {{$json.field}}
+```
+
+---
+
+## Common Mistakes
+
+For complete error catalog with fixes, see [COMMON_MISTAKES.md](COMMON_MISTAKES.md)
+
+### Quick Fixes
+
+| Mistake | Fix |
+|---------|-----|
+| `$json.field` | `{{$json.field}}` |
+| `{{$json.field name}}` | `{{$json['field name']}}` |
+| `{{$node.HTTP Request}}` | `{{$node["HTTP Request"]}}` |
+| `{{{$json.field}}}` | `{{$json.field}}` |
+| `{{$json.name}}` (webhook) | `{{$json.body.name}}` |
+| `'={{$json.email}}'` (Code node) | `$json.email` |
+
+---
+
+## Working Examples
+
+For real workflow examples, see [EXAMPLES.md](EXAMPLES.md)
+
+### Example 1: Webhook to Slack
+
+**Webhook receives**:
+```json
+{
+  "body": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "message": "Hello!"
+  }
+}
+```
+
+**In Slack node text field**:
+```
+New form submission!
+
+Name: {{$json.body.name}}
+Email: {{$json.body.email}}
+Message: {{$json.body.message}}
+```
+
+### Example 2: HTTP Request to Email
+
+**HTTP Request returns**:
+```json
+{
+  "data": {
+    "items": [
+      {"name": "Product 1", "price": 29.99}
+    ]
+  }
+}
+```
+
+**In Email node** (reference HTTP Request):
+```
+Product: {{$node["HTTP Request"].json.data.items[0].name}}
+Price: ${{$node["HTTP Request"].json.data.items[0].price}}
+```
+
+### Example 3: Format Timestamp
+
+```javascript
+// Current date
+{{$now.toFormat('yyyy-MM-dd')}}
+// Result: 2025-10-20
+
+// Time
+{{$now.toFormat('HH:mm:ss')}}
+// Result: 14:30:45
+
+// Full datetime
+{{$now.toFormat('yyyy-MM-dd HH:mm')}}
+// Result: 2025-10-20 14:30
+```
+
+---
+
+## Data Type Handling
+
+### Arrays
+
+```javascript
+// First item
+{{$json.users[0].email}}
+
+// Array length
+{{$json.users.length}}
+
+// Last item
+{{$json.users[$json.users.length - 1].name}}
+```
+
+### Objects
+
+```javascript
+// Dot notation (no spaces)
+{{$json.user.email}}
+
+// Bracket notation (with spaces or dynamic)
+{{$json['user data'].email}}
+```
+
+### Strings
+
+```javascript
+// Concatenation (automatic)
+Hello {{$json.name}}!
+
+// String methods
+{{$json.email.toLowerCase()}}
+{{$json.name.toUpperCase()}}
+```
+
+### Numbers
+
+```javascript
+// Direct use
+{{$json.price}}
+
+// Math operations
+{{$json.price * 1.1}}  // Add 10%
+{{$json.quantity + 5}}
+```
+
+---
+
+## Advanced Patterns
+
+### Conditional Content
+
+```javascript
+// Ternary operator
+{{$json.status === 'active' ? 'Active User' : 'Inactive User'}}
+
+// Default values
+{{$json.email || 'no-email@example.com'}}
+```
+
+### Date Manipulation
+
+```javascript
+// Add days
+{{$now.plus({days: 7}).toFormat('yyyy-MM-dd')}}
+
+// Subtract hours
+{{$now.minus({hours: 24}).toISO()}}
+
+// Set specific date
+{{DateTime.fromISO('2025-12-25').toFormat('MMMM dd, yyyy')}}
+```
+
+### String Manipulation
+
+```javascript
+// Substring
+{{$json.email.substring(0, 5)}}
+
+// Replace
+{{$json.message.replace('old', 'new')}}
+
+// Split and join
+{{$json.tags.split(',').join(', ')}}
+```
+
+---
+
+## Debugging Expressions
+
+### Test in Expression Editor
+
+1. Click field with expression
+2. Open expression editor (click "fx" icon)
+3. See live preview of result
+4. Check for errors highlighted in red
+
+### Common Error Messages
+
+**"Cannot read property 'X' of undefined"**
+→ Parent object doesn't exist
+→ Check your data path
+
+**"X is not a function"**
+→ Trying to call method on non-function
+→ Check variable type
+
+**Expression shows as literal text**
+→ Missing {{ }}
+→ Add curly braces
+
+---
+
+## Expression Helpers
+
+### Available Methods
+
+**String**:
+- `.toLowerCase()`, `.toUpperCase()`
+- `.trim()`, `.replace()`, `.substring()`
+- `.split()`, `.includes()`
+
+**Array**:
+- `.length`, `.map()`, `.filter()`
+- `.find()`, `.join()`, `.slice()`
+
+**DateTime** (Luxon):
+- `.toFormat()`, `.toISO()`, `.toLocal()`
+- `.plus()`, `.minus()`, `.set()`
+
+**Number**:
+- `.toFixed()`, `.toString()`
+- Math operations: `+`, `-`, `*`, `/`, `%`
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- Always use {{ }} for dynamic content
+- Use bracket notation for field names with spaces
+- Reference webhook data from `.body`
+- Use $node for data from other nodes
+- Test expressions in expression editor
+
+### ❌ Don't
+
+- Don't use expressions in Code nodes
+- Don't forget quotes around node names with spaces
+- Don't double-wrap with extra {{ }}
+- Don't assume webhook data is at root (it's under .body!)
+- Don't use expressions in webhook paths or credentials
+
+---
+
+## Related Skills
+
+- **n8n MCP Tools Expert**: Learn how to validate expressions using MCP tools
+- **n8n Workflow Patterns**: See expressions in real workflow examples
+- **n8n Node Configuration**: Understand when expressions are needed
+
+---
+
+## Summary
+
+**Essential Rules**:
+1. Wrap expressions in {{ }}
+2. Webhook data is under `.body`
+3. No {{ }} in Code nodes
+4. Quote node names with spaces
+5. Node names are case-sensitive
+
+**Most Common Mistakes**:
+- Missing {{ }} → Add braces
+- `{{$json.name}}` in webhooks → Use `{{$json.body.name}}`
+- `{{$json.email}}` in Code → Use `$json.email`
+- `{{$node.HTTP Request}}` → Use `{{$node["HTTP Request"]}}`
+
+For more details, see:
+- [COMMON_MISTAKES.md](COMMON_MISTAKES.md) - Complete error catalog
+- [EXAMPLES.md](EXAMPLES.md) - Real workflow examples
+
+---
+
+**Need Help?** Reference the n8n expression documentation or use n8n-mcp validation tools to check your expressions.
+
+
+=================================================================
+SKILL: N8N-MCP-TOOLS-EXPERT
+=================================================================
+
+---
+name: n8n-mcp-tools-expert
+description: Expert guide for using n8n-mcp MCP tools effectively. Use when searching for nodes, validating configurations, accessing templates, managing workflows, or using any n8n-mcp tool. Provides tool selection guidance, parameter formats, and common patterns.
+---
+
+# n8n MCP Tools Expert
+
+Master guide for using n8n-mcp MCP server tools to build workflows.
+
+---
+
+## Tool Categories
+
+n8n-mcp provides tools organized into categories:
+
+1. **Node Discovery** → [SEARCH_GUIDE.md](SEARCH_GUIDE.md)
+2. **Configuration Validation** → [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md)
+3. **Workflow Management** → [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md)
+4. **Template Library** - Search and deploy 2,700+ real workflows
+5. **Documentation & Guides** - Tool docs, AI agent guide, Code node guides
+
+---
+
+## Quick Reference
+
+### Most Used Tools (by success rate)
+
+| Tool | Use When | Speed |
+|------|----------|-------|
+| `search_nodes` | Finding nodes by keyword | <20ms |
+| `get_node` | Understanding node operations (detail="standard") | <10ms |
+| `validate_node` | Checking configurations (mode="full") | <100ms |
+| `n8n_create_workflow` | Creating workflows | 100-500ms |
+| `n8n_update_partial_workflow` | Editing workflows (MOST USED!) | 50-200ms |
+| `validate_workflow` | Checking complete workflow | 100-500ms |
+| `n8n_deploy_template` | Deploy template to n8n instance | 200-500ms |
+
+---
+
+## Tool Selection Guide
+
+### Finding the Right Node
+
+**Workflow**:
+```
+1. search_nodes({query: "keyword"})
+2. get_node({nodeType: "nodes-base.name"})
+3. [Optional] get_node({nodeType: "nodes-base.name", mode: "docs"})
+```
+
+**Example**:
+```javascript
+// Step 1: Search
+search_nodes({query: "slack"})
+// Returns: nodes-base.slack
+
+// Step 2: Get details
+get_node({nodeType: "nodes-base.slack"})
+// Returns: operations, properties, examples (standard detail)
+
+// Step 3: Get readable documentation
+get_node({nodeType: "nodes-base.slack", mode: "docs"})
+// Returns: markdown documentation
+```
+
+**Common pattern**: search → get_node (18s average)
+
+### Validating Configuration
+
+**Workflow**:
+```
+1. validate_node({nodeType, config: {}, mode: "minimal"}) - Check required fields
+2. validate_node({nodeType, config, profile: "runtime"}) - Full validation
+3. [Repeat] Fix errors, validate again
+```
+
+**Common pattern**: validate → fix → validate (23s thinking, 58s fixing per cycle)
+
+### Managing Workflows
+
+**Workflow**:
+```
+1. n8n_create_workflow({name, nodes, connections})
+2. n8n_validate_workflow({id})
+3. n8n_update_partial_workflow({id, operations: [...]})
+4. n8n_validate_workflow({id}) again
+5. n8n_update_partial_workflow({id, operations: [{type: "activateWorkflow"}]})
+```
+
+**Common pattern**: iterative updates (56s average between edits)
+
+---
+
+## Critical: nodeType Formats
+
+**Two different formats** for different tools!
+
+### Format 1: Search/Validate Tools
+```javascript
+// Use SHORT prefix
+"nodes-base.slack"
+"nodes-base.httpRequest"
+"nodes-base.webhook"
+"nodes-langchain.agent"
+```
+
+**Tools that use this**:
+- search_nodes (returns this format)
+- get_node
+- validate_node
+- validate_workflow
+
+### Format 2: Workflow Tools
+```javascript
+// Use FULL prefix
+"n8n-nodes-base.slack"
+"n8n-nodes-base.httpRequest"
+"n8n-nodes-base.webhook"
+"@n8n/n8n-nodes-langchain.agent"
+```
+
+**Tools that use this**:
+- n8n_create_workflow
+- n8n_update_partial_workflow
+
+### Conversion
+
+```javascript
+// search_nodes returns BOTH formats
+{
+  "nodeType": "nodes-base.slack",          // For search/validate tools
+  "workflowNodeType": "n8n-nodes-base.slack"  // For workflow tools
+}
+```
+
+---
+
+## Common Mistakes
+
+### Mistake 1: Wrong nodeType Format
+
+**Problem**: "Node not found" error
+
+```javascript
+// WRONG
+get_node({nodeType: "slack"})  // Missing prefix
+get_node({nodeType: "n8n-nodes-base.slack"})  // Wrong prefix
+
+// CORRECT
+get_node({nodeType: "nodes-base.slack"})
+```
+
+### Mistake 2: Using detail="full" by Default
+
+**Problem**: Huge payload, slower response, token waste
+
+```javascript
+// WRONG - Returns 3-8K tokens, use sparingly
+get_node({nodeType: "nodes-base.slack", detail: "full"})
+
+// CORRECT - Returns 1-2K tokens, covers 95% of use cases
+get_node({nodeType: "nodes-base.slack"})  // detail="standard" is default
+get_node({nodeType: "nodes-base.slack", detail: "standard"})
+```
+
+**When to use detail="full"**:
+- Debugging complex configuration issues
+- Need complete property schema with all nested options
+- Exploring advanced features
+
+**Better alternatives**:
+1. `get_node({detail: "standard"})` - for operations list (default)
+2. `get_node({mode: "docs"})` - for readable documentation
+3. `get_node({mode: "search_properties", propertyQuery: "auth"})` - for specific property
+
+### Mistake 3: Not Using Validation Profiles
+
+**Problem**: Too many false positives OR missing real errors
+
+**Profiles**:
+- `minimal` - Only required fields (fast, permissive)
+- `runtime` - Values + types (recommended for pre-deployment)
+- `ai-friendly` - Reduce false positives (for AI configuration)
+- `strict` - Maximum validation (for production)
+
+```javascript
+// WRONG - Uses default profile
+validate_node({nodeType, config})
+
+// CORRECT - Explicit profile
+validate_node({nodeType, config, profile: "runtime"})
+```
+
+### Mistake 4: Ignoring Auto-Sanitization
+
+**What happens**: ALL nodes sanitized on ANY workflow update
+
+**Auto-fixes**:
+- Binary operators (equals, contains) → removes singleValue
+- Unary operators (isEmpty, isNotEmpty) → adds singleValue: true
+- IF/Switch nodes → adds missing metadata
+
+**Cannot fix**:
+- Broken connections
+- Branch count mismatches
+- Paradoxical corrupt states
+
+```javascript
+// After ANY update, auto-sanitization runs on ALL nodes
+n8n_update_partial_workflow({id, operations: [...]})
+// → Automatically fixes operator structures
+```
+
+### Mistake 5: Not Using Smart Parameters
+
+**Problem**: Complex sourceIndex calculations for multi-output nodes
+
+**Old way** (manual):
+```javascript
+// IF node connection
+{
+  type: "addConnection",
+  source: "IF",
+  target: "Handler",
+  sourceIndex: 0  // Which output? Hard to remember!
+}
+```
+
+**New way** (smart parameters):
+```javascript
+// IF node - semantic branch names
+{
+  type: "addConnection",
+  source: "IF",
+  target: "True Handler",
+  branch: "true"  // Clear and readable!
+}
+
+{
+  type: "addConnection",
+  source: "IF",
+  target: "False Handler",
+  branch: "false"
+}
+
+// Switch node - semantic case numbers
+{
+  type: "addConnection",
+  source: "Switch",
+  target: "Handler A",
+  case: 0
+}
+```
+
+### Mistake 6: Not Using intent Parameter
+
+**Problem**: Less helpful tool responses
+
+```javascript
+// WRONG - No context for response
+n8n_update_partial_workflow({
+  id: "abc",
+  operations: [{type: "addNode", node: {...}}]
+})
+
+// CORRECT - Better AI responses
+n8n_update_partial_workflow({
+  id: "abc",
+  intent: "Add error handling for API failures",
+  operations: [{type: "addNode", node: {...}}]
+})
+```
+
+---
+
+## Tool Usage Patterns
+
+### Pattern 1: Node Discovery (Most Common)
+
+**Common workflow**: 18s average between steps
+
+```javascript
+// Step 1: Search (fast!)
+const results = await search_nodes({
+  query: "slack",
+  mode: "OR",  // Default: any word matches
+  limit: 20
+});
+// → Returns: nodes-base.slack, nodes-base.slackTrigger
+
+// Step 2: Get details (~18s later, user reviewing results)
+const details = await get_node({
+  nodeType: "nodes-base.slack",
+  includeExamples: true  // Get real template configs
+});
+// → Returns: operations, properties, metadata
+```
+
+### Pattern 2: Validation Loop
+
+**Typical cycle**: 23s thinking, 58s fixing
+
+```javascript
+// Step 1: Validate
+const result = await validate_node({
+  nodeType: "nodes-base.slack",
+  config: {
+    resource: "channel",
+    operation: "create"
+  },
+  profile: "runtime"
+});
+
+// Step 2: Check errors (~23s thinking)
+if (!result.valid) {
+  console.log(result.errors);  // "Missing required field: name"
+}
+
+// Step 3: Fix config (~58s fixing)
+config.name = "general";
+
+// Step 4: Validate again
+await validate_node({...});  // Repeat until clean
+```
+
+### Pattern 3: Workflow Editing
+
+**Most used update tool**: 99.0% success rate, 56s average between edits
+
+```javascript
+// Iterative workflow building (NOT one-shot!)
+// Edit 1
+await n8n_update_partial_workflow({
+  id: "workflow-id",
+  intent: "Add webhook trigger",
+  operations: [{type: "addNode", node: {...}}]
+});
+
+// ~56s later...
+
+// Edit 2
+await n8n_update_partial_workflow({
+  id: "workflow-id",
+  intent: "Connect webhook to processor",
+  operations: [{type: "addConnection", source: "...", target: "..."}]
+});
+
+// ~56s later...
+
+// Edit 3 (validation)
+await n8n_validate_workflow({id: "workflow-id"});
+
+// Ready? Activate!
+await n8n_update_partial_workflow({
+  id: "workflow-id",
+  intent: "Activate workflow for production",
+  operations: [{type: "activateWorkflow"}]
+});
+```
+
+---
+
+## Detailed Guides
+
+### Node Discovery Tools
+See [SEARCH_GUIDE.md](SEARCH_GUIDE.md) for:
+- search_nodes
+- get_node with detail levels (minimal, standard, full)
+- get_node modes (info, docs, search_properties, versions)
+
+### Validation Tools
+See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for:
+- Validation profiles explained
+- validate_node with modes (minimal, full)
+- validate_workflow complete structure
+- Auto-sanitization system
+- Handling validation errors
+
+### Workflow Management
+See [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) for:
+- n8n_create_workflow
+- n8n_update_partial_workflow (17 operation types!)
+- Smart parameters (branch, case)
+- AI connection types (8 types)
+- Workflow activation (activateWorkflow/deactivateWorkflow)
+- n8n_deploy_template
+- n8n_workflow_versions
+
+---
+
+## Template Usage
+
+### Search Templates
+
+```javascript
+// Search by keyword (default mode)
+search_templates({
+  query: "webhook slack",
+  limit: 20
+});
+
+// Search by node types
+search_templates({
+  searchMode: "by_nodes",
+  nodeTypes: ["n8n-nodes-base.httpRequest", "n8n-nodes-base.slack"]
+});
+
+// Search by task type
+search_templates({
+  searchMode: "by_task",
+  task: "webhook_processing"
+});
+
+// Search by metadata (complexity, setup time)
+search_templates({
+  searchMode: "by_metadata",
+  complexity: "simple",
+  maxSetupMinutes: 15
+});
+```
+
+### Get Template Details
+
+```javascript
+get_template({
+  templateId: 2947,
+  mode: "structure"  // nodes+connections only
+});
+
+get_template({
+  templateId: 2947,
+  mode: "full"  // complete workflow JSON
+});
+```
+
+### Deploy Template Directly
+
+```javascript
+// Deploy template to your n8n instance
+n8n_deploy_template({
+  templateId: 2947,
+  name: "My Weather to Slack",  // Custom name (optional)
+  autoFix: true,  // Auto-fix common issues (default)
+  autoUpgradeVersions: true  // Upgrade node versions (default)
+});
+// Returns: workflow ID, required credentials, fixes applied
+```
+
+---
+
+## Self-Help Tools
+
+### Get Tool Documentation
+
+```javascript
+// Overview of all tools
+tools_documentation()
+
+// Specific tool details
+tools_documentation({
+  topic: "search_nodes",
+  depth: "full"
+})
+
+// Code node guides
+tools_documentation({topic: "javascript_code_node_guide", depth: "full"})
+tools_documentation({topic: "python_code_node_guide", depth: "full"})
+```
+
+### AI Agent Guide
+
+```javascript
+// Comprehensive AI workflow guide
+ai_agents_guide()
+// Returns: Architecture, connections, tools, validation, best practices
+```
+
+### Health Check
+
+```javascript
+// Quick health check
+n8n_health_check()
+
+// Detailed diagnostics
+n8n_health_check({mode: "diagnostic"})
+// → Returns: status, env vars, tool status, API connectivity
+```
+
+---
+
+## Tool Availability
+
+**Always Available** (no n8n API needed):
+- search_nodes, get_node
+- validate_node, validate_workflow
+- search_templates, get_template
+- tools_documentation, ai_agents_guide
+
+**Requires n8n API** (N8N_API_URL + N8N_API_KEY):
+- n8n_create_workflow
+- n8n_update_partial_workflow
+- n8n_validate_workflow (by ID)
+- n8n_list_workflows, n8n_get_workflow
+- n8n_test_workflow
+- n8n_executions
+- n8n_deploy_template
+- n8n_workflow_versions
+- n8n_autofix_workflow
+
+If API tools unavailable, use templates and validation-only workflows.
+
+---
+
+## Unified Tool Reference
+
+### get_node (Unified Node Information)
+
+**Detail Levels** (mode="info", default):
+- `minimal` (~200 tokens) - Basic metadata only
+- `standard` (~1-2K tokens) - Essential properties + operations (RECOMMENDED)
+- `full` (~3-8K tokens) - Complete schema (use sparingly)
+
+**Operation Modes**:
+- `info` (default) - Node schema with detail level
+- `docs` - Readable markdown documentation
+- `search_properties` - Find specific properties (use with propertyQuery)
+- `versions` - List all versions with breaking changes
+- `compare` - Compare two versions
+- `breaking` - Show only breaking changes
+- `migrations` - Show auto-migratable changes
+
+```javascript
+// Standard (recommended)
+get_node({nodeType: "nodes-base.httpRequest"})
+
+// Get documentation
+get_node({nodeType: "nodes-base.webhook", mode: "docs"})
+
+// Search for properties
+get_node({nodeType: "nodes-base.httpRequest", mode: "search_properties", propertyQuery: "auth"})
+
+// Check versions
+get_node({nodeType: "nodes-base.executeWorkflow", mode: "versions"})
+```
+
+### validate_node (Unified Validation)
+
+**Modes**:
+- `full` (default) - Comprehensive validation with errors/warnings/suggestions
+- `minimal` - Quick required fields check only
+
+**Profiles** (for mode="full"):
+- `minimal` - Very lenient
+- `runtime` - Standard (default, recommended)
+- `ai-friendly` - Balanced for AI workflows
+- `strict` - Most thorough (production)
+
+```javascript
+// Full validation with runtime profile
+validate_node({nodeType: "nodes-base.slack", config: {...}, profile: "runtime"})
+
+// Quick required fields check
+validate_node({nodeType: "nodes-base.webhook", config: {}, mode: "minimal"})
+```
+
+---
+
+## Performance Characteristics
+
+| Tool | Response Time | Payload Size |
+|------|---------------|--------------|
+| search_nodes | <20ms | Small |
+| get_node (standard) | <10ms | ~1-2KB |
+| get_node (full) | <100ms | 3-8KB |
+| validate_node (minimal) | <50ms | Small |
+| validate_node (full) | <100ms | Medium |
+| validate_workflow | 100-500ms | Medium |
+| n8n_create_workflow | 100-500ms | Medium |
+| n8n_update_partial_workflow | 50-200ms | Small |
+| n8n_deploy_template | 200-500ms | Medium |
+
+---
+
+## Best Practices
+
+### Do
+- Use `get_node({detail: "standard"})` for most use cases
+- Specify validation profile explicitly (`profile: "runtime"`)
+- Use smart parameters (`branch`, `case`) for clarity
+- Include `intent` parameter in workflow updates
+- Follow search → get_node → validate workflow
+- Iterate workflows (avg 56s between edits)
+- Validate after every significant change
+- Use `includeExamples: true` for real configs
+- Use `n8n_deploy_template` for quick starts
+
+### Don't
+- Use `detail: "full"` unless necessary (wastes tokens)
+- Forget nodeType prefix (`nodes-base.*`)
+- Skip validation profiles
+- Try to build workflows in one shot (iterate!)
+- Ignore auto-sanitization behavior
+- Use full prefix (`n8n-nodes-base.*`) with search/validate tools
+- Forget to activate workflows after building
+
+---
+
+## Summary
+
+**Most Important**:
+1. Use **get_node** with `detail: "standard"` (default) - covers 95% of use cases
+2. nodeType formats differ: `nodes-base.*` (search/validate) vs `n8n-nodes-base.*` (workflows)
+3. Specify **validation profiles** (`runtime` recommended)
+4. Use **smart parameters** (`branch="true"`, `case=0`)
+5. Include **intent parameter** in workflow updates
+6. **Auto-sanitization** runs on ALL nodes during updates
+7. Workflows can be **activated via API** (`activateWorkflow` operation)
+8. Workflows are built **iteratively** (56s avg between edits)
+
+**Common Workflow**:
+1. search_nodes → find node
+2. get_node → understand config
+3. validate_node → check config
+4. n8n_create_workflow → build
+5. n8n_validate_workflow → verify
+6. n8n_update_partial_workflow → iterate
+7. activateWorkflow → go live!
+
+For details, see:
+- [SEARCH_GUIDE.md](SEARCH_GUIDE.md) - Node discovery
+- [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) - Configuration validation
+- [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) - Workflow management
+
+---
+
+**Related Skills**:
+- n8n Expression Syntax - Write expressions in workflow fields
+- n8n Workflow Patterns - Architectural patterns from templates
+- n8n Validation Expert - Interpret validation errors
+- n8n Node Configuration - Operation-specific requirements
+- n8n Code JavaScript - Write JavaScript in Code nodes
+- n8n Code Python - Write Python in Code nodes
+
+
+=================================================================
+SKILL: N8N-NODE-CONFIGURATION
+=================================================================
+
+---
+name: n8n-node-configuration
+description: Operation-aware node configuration guidance. Use when configuring nodes, understanding property dependencies, determining required fields, choosing between get_node detail levels, or learning common configuration patterns by node type.
+---
+
+# n8n Node Configuration
+
+Expert guidance for operation-aware node configuration with property dependencies.
+
+---
+
+## Configuration Philosophy
+
+**Progressive disclosure**: Start minimal, add complexity as needed
+
+Configuration best practices:
+- `get_node` with `detail: "standard"` is the most used discovery pattern
+- 56 seconds average between configuration edits
+- Covers 95% of use cases with 1-2K tokens response
+
+**Key insight**: Most configurations need only standard detail, not full schema!
+
+---
+
+## Core Concepts
+
+### 1. Operation-Aware Configuration
+
+**Not all fields are always required** - it depends on operation!
+
+**Example**: Slack node
+```javascript
+// For operation='post'
+{
+  "resource": "message",
+  "operation": "post",
+  "channel": "#general",  // Required for post
+  "text": "Hello!"        // Required for post
+}
+
+// For operation='update'
+{
+  "resource": "message",
+  "operation": "update",
+  "messageId": "123",     // Required for update (different!)
+  "text": "Updated!"      // Required for update
+  // channel NOT required for update
+}
+```
+
+**Key**: Resource + operation determine which fields are required!
+
+### 2. Property Dependencies
+
+**Fields appear/disappear based on other field values**
+
+**Example**: HTTP Request node
+```javascript
+// When method='GET'
+{
+  "method": "GET",
+  "url": "https://api.example.com"
+  // sendBody not shown (GET doesn't have body)
+}
+
+// When method='POST'
+{
+  "method": "POST",
+  "url": "https://api.example.com",
+  "sendBody": true,       // Now visible!
+  "body": {               // Required when sendBody=true
+    "contentType": "json",
+    "content": {...}
+  }
+}
+```
+
+**Mechanism**: displayOptions control field visibility
+
+### 3. Progressive Discovery
+
+**Use the right detail level**:
+
+1. **get_node({detail: "standard"})** - DEFAULT
+   - Quick overview (~1-2K tokens)
+   - Required fields + common options
+   - **Use first** - covers 95% of needs
+
+2. **get_node({mode: "search_properties", propertyQuery: "..."})** (for finding specific fields)
+   - Find properties by name
+   - Use when looking for auth, body, headers, etc.
+
+3. **get_node({detail: "full"})** (complete schema)
+   - All properties (~3-8K tokens)
+   - Use only when standard detail is insufficient
+
+---
+
+## Configuration Workflow
+
+### Standard Process
+
+```
+1. Identify node type and operation
+   ↓
+2. Use get_node (standard detail is default)
+   ↓
+3. Configure required fields
+   ↓
+4. Validate configuration
+   ↓
+5. If field unclear → get_node({mode: "search_properties"})
+   ↓
+6. Add optional fields as needed
+   ↓
+7. Validate again
+   ↓
+8. Deploy
+```
+
+### Example: Configuring HTTP Request
+
+**Step 1**: Identify what you need
+```javascript
+// Goal: POST JSON to API
+```
+
+**Step 2**: Get node info
+```javascript
+const info = get_node({
+  nodeType: "nodes-base.httpRequest"
+});
+
+// Returns: method, url, sendBody, body, authentication required/optional
+```
+
+**Step 3**: Minimal config
+```javascript
+{
+  "method": "POST",
+  "url": "https://api.example.com/create",
+  "authentication": "none"
+}
+```
+
+**Step 4**: Validate
+```javascript
+validate_node({
+  nodeType: "nodes-base.httpRequest",
+  config,
+  profile: "runtime"
+});
+// → Error: "sendBody required for POST"
+```
+
+**Step 5**: Add required field
+```javascript
+{
+  "method": "POST",
+  "url": "https://api.example.com/create",
+  "authentication": "none",
+  "sendBody": true
+}
+```
+
+**Step 6**: Validate again
+```javascript
+validate_node({...});
+// → Error: "body required when sendBody=true"
+```
+
+**Step 7**: Complete configuration
+```javascript
+{
+  "method": "POST",
+  "url": "https://api.example.com/create",
+  "authentication": "none",
+  "sendBody": true,
+  "body": {
+    "contentType": "json",
+    "content": {
+      "name": "={{$json.name}}",
+      "email": "={{$json.email}}"
+    }
+  }
+}
+```
+
+**Step 8**: Final validation
+```javascript
+validate_node({...});
+// → Valid! ✅
+```
+
+---
+
+## get_node Detail Levels
+
+### Standard Detail (DEFAULT - Use This!)
+
+**✅ Starting configuration**
+```javascript
+get_node({
+  nodeType: "nodes-base.slack"
+});
+// detail="standard" is the default
+```
+
+**Returns** (~1-2K tokens):
+- Required fields
+- Common options
+- Operation list
+- Metadata
+
+**Use**: 95% of configuration needs
+
+### Full Detail (Use Sparingly)
+
+**✅ When standard isn't enough**
+```javascript
+get_node({
+  nodeType: "nodes-base.slack",
+  detail: "full"
+});
+```
+
+**Returns** (~3-8K tokens):
+- Complete schema
+- All properties
+- All nested options
+
+**Warning**: Large response, use only when standard insufficient
+
+### Search Properties Mode
+
+**✅ Looking for specific field**
+```javascript
+get_node({
+  nodeType: "nodes-base.httpRequest",
+  mode: "search_properties",
+  propertyQuery: "auth"
+});
+```
+
+**Use**: Find authentication, headers, body fields, etc.
+
+### Decision Tree
+
+```
+┌─────────────────────────────────┐
+│ Starting new node config?       │
+├─────────────────────────────────┤
+│ YES → get_node (standard)       │
+└─────────────────────────────────┘
+         ↓
+┌─────────────────────────────────┐
+│ Standard has what you need?     │
+├─────────────────────────────────┤
+│ YES → Configure with it         │
+│ NO  → Continue                  │
+└─────────────────────────────────┘
+         ↓
+┌─────────────────────────────────┐
+│ Looking for specific field?     │
+├─────────────────────────────────┤
+│ YES → search_properties mode    │
+│ NO  → Continue                  │
+└─────────────────────────────────┘
+         ↓
+┌─────────────────────────────────┐
+│ Still need more details?        │
+├─────────────────────────────────┤
+│ YES → get_node({detail: "full"})│
+└─────────────────────────────────┘
+```
+
+---
+
+## Property Dependencies Deep Dive
+
+### displayOptions Mechanism
+
+**Fields have visibility rules**:
+
+```javascript
+{
+  "name": "body",
+  "displayOptions": {
+    "show": {
+      "sendBody": [true],
+      "method": ["POST", "PUT", "PATCH"]
+    }
+  }
+}
+```
+
+**Translation**: "body" field shows when:
+- sendBody = true AND
+- method = POST, PUT, or PATCH
+
+### Common Dependency Patterns
+
+#### Pattern 1: Boolean Toggle
+
+**Example**: HTTP Request sendBody
+```javascript
+// sendBody controls body visibility
+{
+  "sendBody": true   // → body field appears
+}
+```
+
+#### Pattern 2: Operation Switch
+
+**Example**: Slack resource/operation
+```javascript
+// Different operations → different fields
+{
+  "resource": "message",
+  "operation": "post"
+  // → Shows: channel, text, attachments, etc.
+}
+
+{
+  "resource": "message",
+  "operation": "update"
+  // → Shows: messageId, text (different fields!)
+}
+```
+
+#### Pattern 3: Type Selection
+
+**Example**: IF node conditions
+```javascript
+{
+  "type": "string",
+  "operation": "contains"
+  // → Shows: value1, value2
+}
+
+{
+  "type": "boolean",
+  "operation": "equals"
+  // → Shows: value1, value2, different operators
+}
+```
+
+### Finding Property Dependencies
+
+**Use get_node with search_properties mode**:
+```javascript
+get_node({
+  nodeType: "nodes-base.httpRequest",
+  mode: "search_properties",
+  propertyQuery: "body"
+});
+
+// Returns property paths matching "body" with descriptions
+```
+
+**Or use full detail for complete schema**:
+```javascript
+get_node({
+  nodeType: "nodes-base.httpRequest",
+  detail: "full"
+});
+
+// Returns complete schema with displayOptions rules
+```
+
+**Use this when**: Validation fails and you don't understand why field is missing/required
+
+---
+
+## Common Node Patterns
+
+### Pattern 1: Resource/Operation Nodes
+
+**Examples**: Slack, Google Sheets, Airtable
+
+**Structure**:
+```javascript
+{
+  "resource": "<entity>",      // What type of thing
+  "operation": "<action>",     // What to do with it
+  // ... operation-specific fields
+}
+```
+
+**How to configure**:
+1. Choose resource
+2. Choose operation
+3. Use get_node to see operation-specific requirements
+4. Configure required fields
+
+### Pattern 2: HTTP-Based Nodes
+
+**Examples**: HTTP Request, Webhook
+
+**Structure**:
+```javascript
+{
+  "method": "<HTTP_METHOD>",
+  "url": "<endpoint>",
+  "authentication": "<type>",
+  // ... method-specific fields
+}
+```
+
+**Dependencies**:
+- POST/PUT/PATCH → sendBody available
+- sendBody=true → body required
+- authentication != "none" → credentials required
+
+### Pattern 3: Database Nodes
+
+**Examples**: Postgres, MySQL, MongoDB
+
+**Structure**:
+```javascript
+{
+  "operation": "<query|insert|update|delete>",
+  // ... operation-specific fields
+}
+```
+
+**Dependencies**:
+- operation="executeQuery" → query required
+- operation="insert" → table + values required
+- operation="update" → table + values + where required
+
+### Pattern 4: Conditional Logic Nodes
+
+**Examples**: IF, Switch, Merge
+
+**Structure**:
+```javascript
+{
+  "conditions": {
+    "<type>": [
+      {
+        "operation": "<operator>",
+        "value1": "...",
+        "value2": "..."  // Only for binary operators
+      }
+    ]
+  }
+}
+```
+
+**Dependencies**:
+- Binary operators (equals, contains, etc.) → value1 + value2
+- Unary operators (isEmpty, isNotEmpty) → value1 only + singleValue: true
+
+---
+
+## Operation-Specific Configuration
+
+### Slack Node Examples
+
+#### Post Message
+```javascript
+{
+  "resource": "message",
+  "operation": "post",
+  "channel": "#general",      // Required
+  "text": "Hello!",           // Required
+  "attachments": [],          // Optional
+  "blocks": []                // Optional
+}
+```
+
+#### Update Message
+```javascript
+{
+  "resource": "message",
+  "operation": "update",
+  "messageId": "1234567890",  // Required (different from post!)
+  "text": "Updated!",         // Required
+  "channel": "#general"       // Optional (can be inferred)
+}
+```
+
+#### Create Channel
+```javascript
+{
+  "resource": "channel",
+  "operation": "create",
+  "name": "new-channel",      // Required
+  "isPrivate": false          // Optional
+  // Note: text NOT required for this operation
+}
+```
+
+### HTTP Request Node Examples
+
+#### GET Request
+```javascript
+{
+  "method": "GET",
+  "url": "https://api.example.com/users",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "httpHeaderAuth",
+  "sendQuery": true,                    // Optional
+  "queryParameters": {                  // Shows when sendQuery=true
+    "parameters": [
+      {
+        "name": "limit",
+        "value": "100"
+      }
+    ]
+  }
+}
+```
+
+#### POST with JSON
+```javascript
+{
+  "method": "POST",
+  "url": "https://api.example.com/users",
+  "authentication": "none",
+  "sendBody": true,                     // Required for POST
+  "body": {                             // Required when sendBody=true
+    "contentType": "json",
+    "content": {
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
+}
+```
+
+### IF Node Examples
+
+#### String Comparison (Binary)
+```javascript
+{
+  "conditions": {
+    "string": [
+      {
+        "value1": "={{$json.status}}",
+        "operation": "equals",
+        "value2": "active"              // Binary: needs value2
+      }
+    ]
+  }
+}
+```
+
+#### Empty Check (Unary)
+```javascript
+{
+  "conditions": {
+    "string": [
+      {
+        "value1": "={{$json.email}}",
+        "operation": "isEmpty",
+        // No value2 - unary operator
+        "singleValue": true             // Auto-added by sanitization
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Handling Conditional Requirements
+
+### Example: HTTP Request Body
+
+**Scenario**: body field required, but only sometimes
+
+**Rule**:
+```
+body is required when:
+  - sendBody = true AND
+  - method IN (POST, PUT, PATCH, DELETE)
+```
+
+**How to discover**:
+```javascript
+// Option 1: Read validation error
+validate_node({...});
+// Error: "body required when sendBody=true"
+
+// Option 2: Search for the property
+get_node({
+  nodeType: "nodes-base.httpRequest",
+  mode: "search_properties",
+  propertyQuery: "body"
+});
+// Shows: body property with displayOptions rules
+
+// Option 3: Try minimal config and iterate
+// Start without body, validation will tell you if needed
+```
+
+### Example: IF Node singleValue
+
+**Scenario**: singleValue property appears for unary operators
+
+**Rule**:
+```
+singleValue should be true when:
+  - operation IN (isEmpty, isNotEmpty, true, false)
+```
+
+**Good news**: Auto-sanitization fixes this!
+
+**Manual check**:
+```javascript
+get_node({
+  nodeType: "nodes-base.if",
+  detail: "full"
+});
+// Shows complete schema with operator-specific rules
+```
+
+---
+
+## Configuration Anti-Patterns
+
+### ❌ Don't: Over-configure Upfront
+
+**Bad**:
+```javascript
+// Adding every possible field
+{
+  "method": "GET",
+  "url": "...",
+  "sendQuery": false,
+  "sendHeaders": false,
+  "sendBody": false,
+  "timeout": 10000,
+  "ignoreResponseCode": false,
+  // ... 20 more optional fields
+}
+```
+
+**Good**:
+```javascript
+// Start minimal
+{
+  "method": "GET",
+  "url": "...",
+  "authentication": "none"
+}
+// Add fields only when needed
+```
+
+### ❌ Don't: Skip Validation
+
+**Bad**:
+```javascript
+// Configure and deploy without validating
+const config = {...};
+n8n_update_partial_workflow({...});  // YOLO
+```
+
+**Good**:
+```javascript
+// Validate before deploying
+const config = {...};
+const result = validate_node({...});
+if (result.valid) {
+  n8n_update_partial_workflow({...});
+}
+```
+
+### ❌ Don't: Ignore Operation Context
+
+**Bad**:
+```javascript
+// Same config for all Slack operations
+{
+  "resource": "message",
+  "operation": "post",
+  "channel": "#general",
+  "text": "..."
+}
+
+// Then switching operation without updating config
+{
+  "resource": "message",
+  "operation": "update",  // Changed
+  "channel": "#general",  // Wrong field for update!
+  "text": "..."
+}
+```
+
+**Good**:
+```javascript
+// Check requirements when changing operation
+get_node({
+  nodeType: "nodes-base.slack"
+});
+// See what update operation needs (messageId, not channel)
+```
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+1. **Start with get_node (standard detail)**
+   - ~1-2K tokens response
+   - Covers 95% of configuration needs
+   - Default detail level
+
+2. **Validate iteratively**
+   - Configure → Validate → Fix → Repeat
+   - Average 2-3 iterations is normal
+   - Read validation errors carefully
+
+3. **Use search_properties mode when stuck**
+   - If field seems missing, search for it
+   - Understand what controls field visibility
+   - `get_node({mode: "search_properties", propertyQuery: "..."})`
+
+4. **Respect operation context**
+   - Different operations = different requirements
+   - Always check get_node when changing operation
+   - Don't assume configs are transferable
+
+5. **Trust auto-sanitization**
+   - Operator structure fixed automatically
+   - Don't manually add/remove singleValue
+   - IF/Switch metadata added on save
+
+### ❌ Don't
+
+1. **Jump to detail="full" immediately**
+   - Try standard detail first
+   - Only escalate if needed
+   - Full schema is 3-8K tokens
+
+2. **Configure blindly**
+   - Always validate before deploying
+   - Understand why fields are required
+   - Use search_properties for conditional fields
+
+3. **Copy configs without understanding**
+   - Different operations need different fields
+   - Validate after copying
+   - Adjust for new context
+
+4. **Manually fix auto-sanitization issues**
+   - Let auto-sanitization handle operator structure
+   - Focus on business logic
+   - Save and let system fix structure
+
+---
+
+## Detailed References
+
+For comprehensive guides on specific topics:
+
+- **[DEPENDENCIES.md](DEPENDENCIES.md)** - Deep dive into property dependencies and displayOptions
+- **[OPERATION_PATTERNS.md](OPERATION_PATTERNS.md)** - Common configuration patterns by node type
+
+---
+
+## Summary
+
+**Configuration Strategy**:
+1. Start with `get_node` (standard detail is default)
+2. Configure required fields for operation
+3. Validate configuration
+4. Search properties if stuck
+5. Iterate until valid (avg 2-3 cycles)
+6. Deploy with confidence
+
+**Key Principles**:
+- **Operation-aware**: Different operations = different requirements
+- **Progressive disclosure**: Start minimal, add as needed
+- **Dependency-aware**: Understand field visibility rules
+- **Validation-driven**: Let validation guide configuration
+
+**Related Skills**:
+- **n8n MCP Tools Expert** - How to use discovery tools correctly
+- **n8n Validation Expert** - Interpret validation errors
+- **n8n Expression Syntax** - Configure expression fields
+- **n8n Workflow Patterns** - Apply patterns with proper configuration
+
+
+=================================================================
+SKILL: N8N-PERFORMANCE-OPTIMIZATION
+=================================================================
+
+---
+name: n8n-performance-optimization
+description: Orientações sobre como otimizar fluxos de trabalho do n8n para velocidade e eficiência de memória.
+---
+
+# n8n Performance Optimization
+
+Mantenha seu servidor n8n rápido, mesmo com fluxos complexos.
+
+## Dicas de Performance
+
+### 1. Limite a Transferência de Dados
+- Busque apenas as colunas/campos que você realmente vai usar.
+- Use filtros na fonte (ex: na query SQL ou no filtro da API) em vez de baixar tudo e filtrar no n8n.
+
+### 2. Evite Loops Desnecessários
+- O nó **Split In Batches** é útil, mas processar um por um pode ser lento. Se possível, use nós que suportam operações em massa.
+
+### 3. Gestão de Memória
+- Se estiver processando arquivos grandes (PDF, Imagens), use o nó **Read Binary File** com cautela e limpe os dados assim que terminar o processamento.
+
+## Configuração do Servidor
+- Utilize o modo "Main" ou "Queue" dependendo do volume de execuções.
+
+
+=================================================================
+SKILL: N8N-VALIDATION-EXPERT
+=================================================================
+
+---
+name: n8n-validation-expert
+description: Interpret validation errors and guide fixing them. Use when encountering validation errors, validation warnings, false positives, operator structure issues, or need help understanding validation results. Also use when asking about validation profiles, error types, or the validation loop process.
+---
+
+# n8n Validation Expert
+
+Expert guide for interpreting and fixing n8n validation errors.
+
+---
+
+## Validation Philosophy
+
+**Validate early, validate often**
+
+Validation is typically iterative:
+- Expect validation feedback loops
+- Usually 2-3 validate → fix cycles
+- Average: 23s thinking about errors, 58s fixing them
+
+**Key insight**: Validation is an iterative process, not one-shot!
+
+---
+
+## Error Severity Levels
+
+### 1. Errors (Must Fix)
+**Blocks workflow execution** - Must be resolved before activation
+
+**Types**:
+- `missing_required` - Required field not provided
+- `invalid_value` - Value doesn't match allowed options
+- `type_mismatch` - Wrong data type (string instead of number)
+- `invalid_reference` - Referenced node doesn't exist
+- `invalid_expression` - Expression syntax error
+
+**Example**:
+```json
+{
+  "type": "missing_required",
+  "property": "channel",
+  "message": "Channel name is required",
+  "fix": "Provide a channel name (lowercase, no spaces, 1-80 characters)"
+}
+```
+
+### 2. Warnings (Should Fix)
+**Doesn't block execution** - Workflow can be activated but may have issues
+
+**Types**:
+- `best_practice` - Recommended but not required
+- `deprecated` - Using old API/feature
+- `performance` - Potential performance issue
+
+**Example**:
+```json
+{
+  "type": "best_practice",
+  "property": "errorHandling",
+  "message": "Slack API can have rate limits",
+  "suggestion": "Add onError: 'continueRegularOutput' with retryOnFail"
+}
+```
+
+### 3. Suggestions (Optional)
+**Nice to have** - Improvements that could enhance workflow
+
+**Types**:
+- `optimization` - Could be more efficient
+- `alternative` - Better way to achieve same result
+
+---
+
+## The Validation Loop
+
+### Pattern from Telemetry
+**7,841 occurrences** of this pattern:
+
+```
+1. Configure node
+   ↓
+2. validate_node (23 seconds thinking about errors)
+   ↓
+3. Read error messages carefully
+   ↓
+4. Fix errors
+   ↓
+5. validate_node again (58 seconds fixing)
+   ↓
+6. Repeat until valid (usually 2-3 iterations)
+```
+
+### Example
+```javascript
+// Iteration 1
+let config = {
+  resource: "channel",
+  operation: "create"
+};
+
+const result1 = validate_node({
+  nodeType: "nodes-base.slack",
+  config,
+  profile: "runtime"
+});
+// → Error: Missing "name"
+
+// ⏱️  23 seconds thinking...
+
+// Iteration 2
+config.name = "general";
+
+const result2 = validate_node({
+  nodeType: "nodes-base.slack",
+  config,
+  profile: "runtime"
+});
+// → Error: Missing "text"
+
+// ⏱️  58 seconds fixing...
+
+// Iteration 3
+config.text = "Hello!";
+
+const result3 = validate_node({
+  nodeType: "nodes-base.slack",
+  config,
+  profile: "runtime"
+});
+// → Valid! ✅
+```
+
+**This is normal!** Don't be discouraged by multiple iterations.
+
+---
+
+## Validation Profiles
+
+Choose the right profile for your stage:
+
+### minimal
+**Use when**: Quick checks during editing
+
+**Validates**:
+- Only required fields
+- Basic structure
+
+**Pros**: Fastest, most permissive
+**Cons**: May miss issues
+
+### runtime (RECOMMENDED)
+**Use when**: Pre-deployment validation
+
+**Validates**:
+- Required fields
+- Value types
+- Allowed values
+- Basic dependencies
+
+**Pros**: Balanced, catches real errors
+**Cons**: Some edge cases missed
+
+**This is the recommended profile for most use cases**
+
+### ai-friendly
+**Use when**: AI-generated configurations
+
+**Validates**:
+- Same as runtime
+- Reduces false positives
+- More tolerant of minor issues
+
+**Pros**: Less noisy for AI workflows
+**Cons**: May allow some questionable configs
+
+### strict
+**Use when**: Production deployment, critical workflows
+
+**Validates**:
+- Everything
+- Best practices
+- Performance concerns
+- Security issues
+
+**Pros**: Maximum safety
+**Cons**: Many warnings, some false positives
+
+---
+
+## Common Error Types
+
+### 1. missing_required
+**What it means**: A required field is not provided
+
+**How to fix**:
+1. Use `get_node` to see required fields
+2. Add the missing field to your configuration
+3. Provide an appropriate value
+
+**Example**:
+```javascript
+// Error
+{
+  "type": "missing_required",
+  "property": "channel",
+  "message": "Channel name is required"
+}
+
+// Fix
+config.channel = "#general";
+```
+
+### 2. invalid_value
+**What it means**: Value doesn't match allowed options
+
+**How to fix**:
+1. Check error message for allowed values
+2. Use `get_node` to see options
+3. Update to a valid value
+
+**Example**:
+```javascript
+// Error
+{
+  "type": "invalid_value",
+  "property": "operation",
+  "message": "Operation must be one of: post, update, delete",
+  "current": "send"
+}
+
+// Fix
+config.operation = "post";  // Use valid operation
+```
+
+### 3. type_mismatch
+**What it means**: Wrong data type for field
+
+**How to fix**:
+1. Check expected type in error message
+2. Convert value to correct type
+
+**Example**:
+```javascript
+// Error
+{
+  "type": "type_mismatch",
+  "property": "limit",
+  "message": "Expected number, got string",
+  "current": "100"
+}
+
+// Fix
+config.limit = 100;  // Number, not string
+```
+
+### 4. invalid_expression
+**What it means**: Expression syntax error
+
+**How to fix**:
+1. Use n8n Expression Syntax skill
+2. Check for missing `{{}}` or typos
+3. Verify node/field references
+
+**Example**:
+```javascript
+// Error
+{
+  "type": "invalid_expression",
+  "property": "text",
+  "message": "Invalid expression: $json.name",
+  "current": "$json.name"
+}
+
+// Fix
+config.text = "={{$json.name}}";  // Add {{}}
+```
+
+### 5. invalid_reference
+**What it means**: Referenced node doesn't exist
+
+**How to fix**:
+1. Check node name spelling
+2. Verify node exists in workflow
+3. Update reference to correct name
+
+**Example**:
+```javascript
+// Error
+{
+  "type": "invalid_reference",
+  "property": "expression",
+  "message": "Node 'HTTP Requets' does not exist",
+  "current": "={{$node['HTTP Requets'].json.data}}"
+}
+
+// Fix - correct typo
+config.expression = "={{$node['HTTP Request'].json.data}}";
+```
+
+---
+
+## Auto-Sanitization System
+
+### What It Does
+**Automatically fixes common operator structure issues** on ANY workflow update
+
+**Runs when**:
+- `n8n_create_workflow`
+- `n8n_update_partial_workflow`
+- Any workflow save operation
+
+### What It Fixes
+
+#### 1. Binary Operators (Two Values)
+**Operators**: equals, notEquals, contains, notContains, greaterThan, lessThan, startsWith, endsWith
+
+**Fix**: Removes `singleValue` property (binary operators compare two values)
+
+**Before**:
+```javascript
+{
+  "type": "boolean",
+  "operation": "equals",
+  "singleValue": true  // ❌ Wrong!
+}
+```
+
+**After** (automatic):
+```javascript
+{
+  "type": "boolean",
+  "operation": "equals"
+  // singleValue removed ✅
+}
+```
+
+#### 2. Unary Operators (One Value)
+**Operators**: isEmpty, isNotEmpty, true, false
+
+**Fix**: Adds `singleValue: true` (unary operators check single value)
+
+**Before**:
+```javascript
+{
+  "type": "boolean",
+  "operation": "isEmpty"
+  // Missing singleValue ❌
+}
+```
+
+**After** (automatic):
+```javascript
+{
+  "type": "boolean",
+  "operation": "isEmpty",
+  "singleValue": true  // ✅ Added
+}
+```
+
+#### 3. IF/Switch Metadata
+**Fix**: Adds complete `conditions.options` metadata for IF v2.2+ and Switch v3.2+
+
+### What It CANNOT Fix
+
+#### 1. Broken Connections
+References to non-existent nodes
+
+**Solution**: Use `cleanStaleConnections` operation in `n8n_update_partial_workflow`
+
+#### 2. Branch Count Mismatches
+3 Switch rules but only 2 output connections
+
+**Solution**: Add missing connections or remove extra rules
+
+#### 3. Paradoxical Corrupt States
+API returns corrupt data but rejects updates
+
+**Solution**: May require manual database intervention
+
+---
+
+## False Positives
+
+### What Are They?
+Validation warnings that are technically "wrong" but acceptable in your use case
+
+### Common False Positives
+
+#### 1. "Missing error handling"
+**Warning**: No error handling configured
+
+**When acceptable**:
+- Simple workflows where failures are obvious
+- Testing/development workflows
+- Non-critical notifications
+
+**When to fix**: Production workflows handling important data
+
+#### 2. "No retry logic"
+**Warning**: Node doesn't retry on failure
+
+**When acceptable**:
+- APIs with their own retry logic
+- Idempotent operations
+- Manual trigger workflows
+
+**When to fix**: Flaky external services, production automation
+
+#### 3. "Missing rate limiting"
+**Warning**: No rate limiting for API calls
+
+**When acceptable**:
+- Internal APIs with no limits
+- Low-volume workflows
+- APIs with server-side rate limiting
+
+**When to fix**: Public APIs, high-volume workflows
+
+#### 4. "Unbounded query"
+**Warning**: SELECT without LIMIT
+
+**When acceptable**:
+- Small known datasets
+- Aggregation queries
+- Development/testing
+
+**When to fix**: Production queries on large tables
+
+### Reducing False Positives
+
+**Use `ai-friendly` profile**:
+```javascript
+validate_node({
+  nodeType: "nodes-base.slack",
+  config: {...},
+  profile: "ai-friendly"  // Fewer false positives
+})
+```
+
+---
+
+## Validation Result Structure
+
+### Complete Response
+```javascript
+{
+  "valid": false,
+  "errors": [
+    {
+      "type": "missing_required",
+      "property": "channel",
+      "message": "Channel name is required",
+      "fix": "Provide a channel name (lowercase, no spaces)"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "best_practice",
+      "property": "errorHandling",
+      "message": "Slack API can have rate limits",
+      "suggestion": "Add onError: 'continueRegularOutput'"
+    }
+  ],
+  "suggestions": [
+    {
+      "type": "optimization",
+      "message": "Consider using batch operations for multiple messages"
+    }
+  ],
+  "summary": {
+    "hasErrors": true,
+    "errorCount": 1,
+    "warningCount": 1,
+    "suggestionCount": 1
+  }
+}
+```
+
+### How to Read It
+
+#### 1. Check `valid` field
+```javascript
+if (result.valid) {
+  // ✅ Configuration is valid
+} else {
+  // ❌ Has errors - must fix before deployment
+}
+```
+
+#### 2. Fix errors first
+```javascript
+result.errors.forEach(error => {
+  console.log(`Error in ${error.property}: ${error.message}`);
+  console.log(`Fix: ${error.fix}`);
+});
+```
+
+#### 3. Review warnings
+```javascript
+result.warnings.forEach(warning => {
+  console.log(`Warning: ${warning.message}`);
+  console.log(`Suggestion: ${warning.suggestion}`);
+  // Decide if you need to address this
+});
+```
+
+#### 4. Consider suggestions
+```javascript
+// Optional improvements
+// Not required but may enhance workflow
+```
+
+---
+
+## Workflow Validation
+
+### validate_workflow (Structure)
+**Validates entire workflow**, not just individual nodes
+
+**Checks**:
+1. **Node configurations** - Each node valid
+2. **Connections** - No broken references
+3. **Expressions** - Syntax and references valid
+4. **Flow** - Logical workflow structure
+
+**Example**:
+```javascript
+validate_workflow({
+  workflow: {
+    nodes: [...],
+    connections: {...}
+  },
+  options: {
+    validateNodes: true,
+    validateConnections: true,
+    validateExpressions: true,
+    profile: "runtime"
+  }
+})
+```
+
+### Common Workflow Errors
+
+#### 1. Broken Connections
+```json
+{
+  "error": "Connection from 'Transform' to 'NonExistent' - target node not found"
+}
+```
+
+**Fix**: Remove stale connection or create missing node
+
+#### 2. Circular Dependencies
+```json
+{
+  "error": "Circular dependency detected: Node A → Node B → Node A"
+}
+```
+
+**Fix**: Restructure workflow to remove loop
+
+#### 3. Multiple Start Nodes
+```json
+{
+  "warning": "Multiple trigger nodes found - only one will execute"
+}
+```
+
+**Fix**: Remove extra triggers or split into separate workflows
+
+#### 4. Disconnected Nodes
+```json
+{
+  "warning": "Node 'Transform' is not connected to workflow flow"
+}
+```
+
+**Fix**: Connect node or remove if unused
+
+---
+
+## Recovery Strategies
+
+### Strategy 1: Start Fresh
+**When**: Configuration is severely broken
+
+**Steps**:
+1. Note required fields from `get_node`
+2. Create minimal valid configuration
+3. Add features incrementally
+4. Validate after each addition
+
+### Strategy 2: Binary Search
+**When**: Workflow validates but executes incorrectly
+
+**Steps**:
+1. Remove half the nodes
+2. Validate and test
+3. If works: problem is in removed nodes
+4. If fails: problem is in remaining nodes
+5. Repeat until problem isolated
+
+### Strategy 3: Clean Stale Connections
+**When**: "Node not found" errors
+
+**Steps**:
+```javascript
+n8n_update_partial_workflow({
+  id: "workflow-id",
+  operations: [{
+    type: "cleanStaleConnections"
+  }]
+})
+```
+
+### Strategy 4: Use Auto-fix
+**When**: Operator structure errors
+
+**Steps**:
+```javascript
+n8n_autofix_workflow({
+  id: "workflow-id",
+  applyFixes: false  // Preview first
+})
+
+// Review fixes, then apply
+n8n_autofix_workflow({
+  id: "workflow-id",
+  applyFixes: true
+})
+```
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- Validate after every significant change
+- Read error messages completely
+- Fix errors iteratively (one at a time)
+- Use `runtime` profile for pre-deployment
+- Check `valid` field before assuming success
+- Trust auto-sanitization for operator issues
+- Use `get_node` when unclear about requirements
+- Document false positives you accept
+
+### ❌ Don't
+
+- Skip validation before activation
+- Try to fix all errors at once
+- Ignore error messages
+- Use `strict` profile during development (too noisy)
+- Assume validation passed (always check result)
+- Manually fix auto-sanitization issues
+- Deploy with unresolved errors
+- Ignore all warnings (some are important!)
+
+---
+
+## Detailed Guides
+
+For comprehensive error catalogs and false positive examples:
+
+- **[ERROR_CATALOG.md](ERROR_CATALOG.md)** - Complete list of error types with examples
+- **[FALSE_POSITIVES.md](FALSE_POSITIVES.md)** - When warnings are acceptable
+
+---
+
+## Summary
+
+**Key Points**:
+1. **Validation is iterative** (avg 2-3 cycles, 23s + 58s)
+2. **Errors must be fixed**, warnings are optional
+3. **Auto-sanitization** fixes operator structures automatically
+4. **Use runtime profile** for balanced validation
+5. **False positives exist** - learn to recognize them
+6. **Read error messages** - they contain fix guidance
+
+**Validation Process**:
+1. Validate → Read errors → Fix → Validate again
+2. Repeat until valid (usually 2-3 iterations)
+3. Review warnings and decide if acceptable
+4. Deploy with confidence
+
+**Related Skills**:
+- n8n MCP Tools Expert - Use validation tools correctly
+- n8n Expression Syntax - Fix expression errors
+- n8n Node Configuration - Understand required fields
+
+
+=================================================================
+SKILL: N8N-WORKFLOW-PATTERNS
+=================================================================
+
+---
+name: n8n-workflow-patterns
+description: Proven workflow architectural patterns from real n8n workflows. Use when building new workflows, designing workflow structure, choosing workflow patterns, planning workflow architecture, or asking about webhook processing, HTTP API integration, database operations, AI agent workflows, or scheduled tasks.
+---
+
+# n8n Workflow Patterns
+
+Proven architectural patterns for building n8n workflows.
+
+---
+
+## The 5 Core Patterns
+
+Based on analysis of real workflow usage:
+
+1. **[Webhook Processing](webhook_processing.md)** (Most Common)
+   - Receive HTTP requests → Process → Output
+   - Pattern: Webhook → Validate → Transform → Respond/Notify
+
+2. **[HTTP API Integration](http_api_integration.md)**
+   - Fetch from REST APIs → Transform → Store/Use
+   - Pattern: Trigger → HTTP Request → Transform → Action → Error Handler
+
+3. **[Database Operations](database_operations.md)**
+   - Read/Write/Sync database data
+   - Pattern: Schedule → Query → Transform → Write → Verify
+
+4. **[AI Agent Workflow](ai_agent_workflow.md)**
+   - AI agents with tools and memory
+   - Pattern: Trigger → AI Agent (Model + Tools + Memory) → Output
+
+5. **[Scheduled Tasks](scheduled_tasks.md)**
+   - Recurring automation workflows
+   - Pattern: Schedule → Fetch → Process → Deliver → Log
+
+---
+
+## Pattern Selection Guide
+
+### When to use each pattern:
+
+**Webhook Processing** - Use when:
+- Receiving data from external systems
+- Building integrations (Slack commands, form submissions, GitHub webhooks)
+- Need instant response to events
+- Example: "Receive Stripe payment webhook → Update database → Send confirmation"
+
+**HTTP API Integration** - Use when:
+- Fetching data from external APIs
+- Synchronizing with third-party services
+- Building data pipelines
+- Example: "Fetch GitHub issues → Transform → Create Jira tickets"
+
+**Database Operations** - Use when:
+- Syncing between databases
+- Running database queries on schedule
+- ETL workflows
+- Example: "Read Postgres records → Transform → Write to MySQL"
+
+**AI Agent Workflow** - Use when:
+- Building conversational AI
+- Need AI with tool access
+- Multi-step reasoning tasks
+- Example: "Chat with AI that can search docs, query database, send emails"
+
+**Scheduled Tasks** - Use when:
+- Recurring reports or summaries
+- Periodic data fetching
+- Maintenance tasks
+- Example: "Daily: Fetch analytics → Generate report → Email team"
+
+---
+
+## Common Workflow Components
+
+All patterns share these building blocks:
+
+### 1. Triggers
+- **Webhook** - HTTP endpoint (instant)
+- **Schedule** - Cron-based timing (periodic)
+- **Manual** - Click to execute (testing)
+- **Polling** - Check for changes (intervals)
+
+### 2. Data Sources
+- **HTTP Request** - REST APIs
+- **Database nodes** - Postgres, MySQL, MongoDB
+- **Service nodes** - Slack, Google Sheets, etc.
+- **Code** - Custom JavaScript/Python
+
+### 3. Transformation
+- **Set** - Map/transform fields
+- **Code** - Complex logic
+- **IF/Switch** - Conditional routing
+- **Merge** - Combine data streams
+
+### 4. Outputs
+- **HTTP Request** - Call APIs
+- **Database** - Write data
+- **Communication** - Email, Slack, Discord
+- **Storage** - Files, cloud storage
+
+### 5. Error Handling
+- **Error Trigger** - Catch workflow errors
+- **IF** - Check for error conditions
+- **Stop and Error** - Explicit failure
+- **Continue On Fail** - Per-node setting
+
+---
+
+## Workflow Creation Checklist
+
+When building ANY workflow, follow this checklist:
+
+### Planning Phase
+- [ ] Identify the pattern (webhook, API, database, AI, scheduled)
+- [ ] List required nodes (use search_nodes)
+- [ ] Understand data flow (input → transform → output)
+- [ ] Plan error handling strategy
+
+### Implementation Phase
+- [ ] Create workflow with appropriate trigger
+- [ ] Add data source nodes
+- [ ] Configure authentication/credentials
+- [ ] Add transformation nodes (Set, Code, IF)
+- [ ] Add output/action nodes
+- [ ] Configure error handling
+
+### Validation Phase
+- [ ] Validate each node configuration (validate_node)
+- [ ] Validate complete workflow (validate_workflow)
+- [ ] Test with sample data
+- [ ] Handle edge cases (empty data, errors)
+
+### Deployment Phase
+- [ ] Review workflow settings (execution order, timeout, error handling)
+- [ ] Activate workflow using `activateWorkflow` operation
+- [ ] Monitor first executions
+- [ ] Document workflow purpose and data flow
+
+---
+
+## Data Flow Patterns
+
+### Linear Flow
+```
+Trigger → Transform → Action → End
+```
+**Use when**: Simple workflows with single path
+
+### Branching Flow
+```
+Trigger → IF → [True Path]
+             └→ [False Path]
+```
+**Use when**: Different actions based on conditions
+
+### Parallel Processing
+```
+Trigger → [Branch 1] → Merge
+       └→ [Branch 2] ↗
+```
+**Use when**: Independent operations that can run simultaneously
+
+### Loop Pattern
+```
+Trigger → Split in Batches → Process → Loop (until done)
+```
+**Use when**: Processing large datasets in chunks
+
+### Error Handler Pattern
+```
+Main Flow → [Success Path]
+         └→ [Error Trigger → Error Handler]
+```
+**Use when**: Need separate error handling workflow
+
+---
+
+## Common Gotchas
+
+### 1. Webhook Data Structure
+**Problem**: Can't access webhook payload data
+
+**Solution**: Data is nested under `$json.body`
+```javascript
+❌ {{$json.email}}
+✅ {{$json.body.email}}
+```
+See: n8n Expression Syntax skill
+
+### 2. Multiple Input Items
+**Problem**: Node processes all input items, but I only want one
+
+**Solution**: Use "Execute Once" mode or process first item only
+```javascript
+{{$json[0].field}}  // First item only
+```
+
+### 3. Authentication Issues
+**Problem**: API calls failing with 401/403
+
+**Solution**:
+- Configure credentials properly
+- Use the "Credentials" section, not parameters
+- Test credentials before workflow activation
+
+### 4. Node Execution Order
+**Problem**: Nodes executing in unexpected order
+
+**Solution**: Check workflow settings → Execution Order
+- v0: Top-to-bottom (legacy)
+- v1: Connection-based (recommended)
+
+### 5. Expression Errors
+**Problem**: Expressions showing as literal text
+
+**Solution**: Use {{}} around expressions
+- See n8n Expression Syntax skill for details
+
+---
+
+## Integration with Other Skills
+
+These skills work together with Workflow Patterns:
+
+**n8n MCP Tools Expert** - Use to:
+- Find nodes for your pattern (search_nodes)
+- Understand node operations (get_node)
+- Create workflows (n8n_create_workflow)
+- Deploy templates (n8n_deploy_template)
+- Use ai_agents_guide for AI pattern guidance
+
+**n8n Expression Syntax** - Use to:
+- Write expressions in transformation nodes
+- Access webhook data correctly ({{$json.body.field}})
+- Reference previous nodes ({{$node["Node Name"].json.field}})
+
+**n8n Node Configuration** - Use to:
+- Configure specific operations for pattern nodes
+- Understand node-specific requirements
+
+**n8n Validation Expert** - Use to:
+- Validate workflow structure
+- Fix validation errors
+- Ensure workflow correctness before deployment
+
+---
+
+## Pattern Statistics
+
+Common workflow patterns:
+
+**Most Common Triggers**:
+1. Webhook - 35%
+2. Schedule (periodic tasks) - 28%
+3. Manual (testing/admin) - 22%
+4. Service triggers (Slack, email, etc.) - 15%
+
+**Most Common Transformations**:
+1. Set (field mapping) - 68%
+2. Code (custom logic) - 42%
+3. IF (conditional routing) - 38%
+4. Switch (multi-condition) - 18%
+
+**Most Common Outputs**:
+1. HTTP Request (APIs) - 45%
+2. Slack - 32%
+3. Database writes - 28%
+4. Email - 24%
+
+**Average Workflow Complexity**:
+- Simple (3-5 nodes): 42%
+- Medium (6-10 nodes): 38%
+- Complex (11+ nodes): 20%
+
+---
+
+## Quick Start Examples
+
+### Example 1: Simple Webhook → Slack
+```
+1. Webhook (path: "form-submit", POST)
+2. Set (map form fields)
+3. Slack (post message to #notifications)
+```
+
+### Example 2: Scheduled Report
+```
+1. Schedule (daily at 9 AM)
+2. HTTP Request (fetch analytics)
+3. Code (aggregate data)
+4. Email (send formatted report)
+5. Error Trigger → Slack (notify on failure)
+```
+
+### Example 3: Database Sync
+```
+1. Schedule (every 15 minutes)
+2. Postgres (query new records)
+3. IF (check if records exist)
+4. MySQL (insert records)
+5. Postgres (update sync timestamp)
+```
+
+### Example 4: AI Assistant
+```
+1. Webhook (receive chat message)
+2. AI Agent
+   ├─ OpenAI Chat Model (ai_languageModel)
+   ├─ HTTP Request Tool (ai_tool)
+   ├─ Database Tool (ai_tool)
+   └─ Window Buffer Memory (ai_memory)
+3. Webhook Response (send AI reply)
+```
+
+### Example 5: API Integration
+```
+1. Manual Trigger (for testing)
+2. HTTP Request (GET /api/users)
+3. Split In Batches (process 100 at a time)
+4. Set (transform user data)
+5. Postgres (upsert users)
+6. Loop (back to step 3 until done)
+```
+
+---
+
+## Detailed Pattern Files
+
+For comprehensive guidance on each pattern:
+
+- **[webhook_processing.md](webhook_processing.md)** - Webhook patterns, data structure, response handling
+- **[http_api_integration.md](http_api_integration.md)** - REST APIs, authentication, pagination, retries
+- **[database_operations.md](database_operations.md)** - Queries, sync, transactions, batch processing
+- **[ai_agent_workflow.md](ai_agent_workflow.md)** - AI agents, tools, memory, langchain nodes
+- **[scheduled_tasks.md](scheduled_tasks.md)** - Cron schedules, reports, maintenance tasks
+
+---
+
+## Real Template Examples
+
+From n8n template library:
+
+**Template #2947**: Weather to Slack
+- Pattern: Scheduled Task
+- Nodes: Schedule → HTTP Request (weather API) → Set → Slack
+- Complexity: Simple (4 nodes)
+
+**Webhook Processing**: Most common pattern
+- Most common: Form submissions, payment webhooks, chat integrations
+
+**HTTP API**: Common pattern
+- Most common: Data fetching, third-party integrations
+
+**Database Operations**: Common pattern
+- Most common: ETL, data sync, backup workflows
+
+**AI Agents**: Growing in usage
+- Most common: Chatbots, content generation, data analysis
+
+Use `search_templates` and `get_template` from n8n-mcp tools to find examples!
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- Start with the simplest pattern that solves your problem
+- Plan your workflow structure before building
+- Use error handling on all workflows
+- Test with sample data before activation
+- Follow the workflow creation checklist
+- Use descriptive node names
+- Document complex workflows (notes field)
+- Monitor workflow executions after deployment
+
+### ❌ Don't
+
+- Build workflows in one shot (iterate! avg 56s between edits)
+- Skip validation before activation
+- Ignore error scenarios
+- Use complex patterns when simple ones suffice
+- Hardcode credentials in parameters
+- Forget to handle empty data cases
+- Mix multiple patterns without clear boundaries
+- Deploy without testing
+
+---
+
+## Summary
+
+**Key Points**:
+1. **5 core patterns** cover 90%+ of workflow use cases
+2. **Webhook processing** is the most common pattern
+3. Use the **workflow creation checklist** for every workflow
+4. **Plan pattern** → **Select nodes** → **Build** → **Validate** → **Deploy**
+5. Integrate with other skills for complete workflow development
+
+**Next Steps**:
+1. Identify your use case pattern
+2. Read the detailed pattern file
+3. Use n8n MCP Tools Expert to find nodes
+4. Follow the workflow creation checklist
+5. Use n8n Validation Expert to validate
+
+**Related Skills**:
+- n8n MCP Tools Expert - Find and configure nodes
+- n8n Expression Syntax - Write expressions correctly
+- n8n Validation Expert - Validate and fix errors
+- n8n Node Configuration - Configure specific operations
+
+
+=================================================================
+SKILL: NEXTJS-REACT-EXPERT
+=================================================================
+
+---
+name: nextjs-react-expert
+description: Guia especializado em desenvolvimento frontend moderno com Next.js, React e otimização de performance.
+---
+
+# Next.js & React Expert
+
+Guia para construção de aplicações web de alto desempenho e escaláveis.
+
+## Melhores Práticas de Desenvolvimento
+
+### 1. Renderização e Performance
+- **Server Components (RSC)**: Use-os por padrão em Next.js para reduzir o bundle de JS enviado ao cliente.
+- **SSG & ISR**: Pré-renderize páginas que mudam pouco para garantir carregamentos instantâneos.
+
+### 2. Gerenciamento de Estado
+- Use **Context API** para estados globais simples.
+- Use **Zustand** ou **Redux Toolkit** para estados complexos e persistentes.
+
+### 3. Estruturação de Componentes
+- Siga o padrão **Atomic Design** ou pastas por funcionalidade.
+- Mantenha componentes pequenos e focados em uma única responsabilidade.
+
+## Otimização
+- Use o componente `next/image` para otimização automática de imagens.
+- Implemente `Dynamic Imports` para adiar o carregamento de componentes pesados.
+
+
+=================================================================
+SKILL: QA-AUTO-TESTER
+=================================================================
+
+---
+name: qa-auto-tester
+description: QA avançado, criação de testes End-to-End, unitários, e estratégias de debug proativo.
+---
+
+# 🧪 QA Auto-Tester
+
+## 📋 Visão Geral
+Este skill dota a IA da disciplina pragmática de Testes de Qualidade (Quality Assurance) Automáticos. Ele enxerga o software através de fluxos de exceção, edge cases (casos limite) e rupturas lógicas, objetivando garantir código inquebrável antes da produção.
+
+## 🎯 Direcionamentos Principais
+1. **Automação de Testes E2E e Integração**: Utilizar Playwright, Cypress, Selenium para simular interações reais de usuário nos fluxos mais críticos, validando se a orquestração backend-frontend funciona perfeitamente.
+2. **TDD (Test-Driven Development)**: Escrever os testes unitários (Jest, Vitest, PyTest) antes ou de forma rigorosa as implementações das regras de negócio.
+3. **Análise Proativa e Debugging Avançado**: Inspecionar logs, straces, Memory/CPU Profiling, e usar engenharia reversa para encontrar a raiz (Root Cause Analysis) de bugs sutis.
+4. **Testes de Carga e Contratos**: Planejar testes contínuos envolvendo sobrecarga (JMeter, K6) e garantir que a tipagem dos dados / APIs nunca quebre (Pact, OpenAPI Validation).
+
+## 💡 Aplicações Práticas
+- Refatoração de código envolto em malha de testes, garantindo retrocompatibilidade plena.
+- Criação de scripts de testes de estresse para mensurar quantos requests simultâneos a infraestrutura aguenta.
+- Análise de tickets de bugs para encontrar a agulha no palheiro no código.
+
+## 🛠️ Como Utilizar
+Em projetos que requeiram estabilidade máxima. Peça para "agir como QA Auto-Tester", e a IA irá revisar o fluxo criticamente e entregar scripts de testes massivos para provar que a funcionalidade aguenta a interação do mundo real.
+
+
+=================================================================
+SKILL: SALES-GROWTH-AGENT
+=================================================================
+
+---
+name: sales-growth-agent
+description: Especialista em Copywriting conversivo, qualificação de leads, funis de vendas e Growth Hacking.
+---
+
+# 🤖 Agente de Vendas & Growth
+
+## 📋 Visão Geral
+Este skill capacita a IA a atuar como um estrategista implacável de Vendas, Growth Hacking e Copywriting. Focado em maximizar a conversão, qualificar leads, criar ofertas irresistíveis e projetar funis que aceleram a aquisição e retenção de usuários.
+
+## 🎯 Direcionamentos Principais
+1. **Copywriting Persuasivo**: Criar textos baseados em gatilhos mentais (Escassez, Autoridade, Prova Social) para Landing Pages, E-mails e Ads.
+2. **Qualificação de Leads (SDR Automático)**: Desenhar fluxos conversacionais ou scripts para identificar BANT (Budget, Authority, Need, Timeline) e classificar leads (Frios, Mornos, Quentes).
+3. **Estratégias de Growth**: Hackear o crescimento por meio de loops virais, programas de referral, SEO tático e otimização de taxa de conversão (CRO).
+4. **Arquitetura de Funis**: Criar o mapeamento de jornada do cliente (Topo, Meio e Fundo de Funil), maximizando o LTV.
+
+## 💡 Aplicações Práticas
+- Criação de scripts para bots do WhatsApp de alta conversão.
+- Estruturação de campanhas de e-mail marketing agressivas e persuasivas.
+- Testes A/B para propostas de valor (CVD).
+
+## 🛠️ Como Utilizar
+Use este skill para auditar landing pages, reescrever textos para máxima persuasão, ou desenhar arquiteturas lógicas para agentes autônomos de vendas (ex: no n8n) visando agendamento de reuniões ou vendas diretas.
+
+
+=================================================================
+SKILL: SEO-MARKETING-EXPERT
+=================================================================
+
+---
+name: seo-marketing-expert
+description: Melhores práticas de SEO técnico, Core Web Vitals e integração com marketing digital.
+---
+
+# SEO Técnico & Marketing
+
+Garanta que seu site seja encontrado e converta visitantes em usuários.
+
+## Pilares do SEO Técnico
+
+### 1. Meta Dados e Schema.org
+- Configure `title` e `meta description` únicos para cada página.
+- Use JSON-LD (Structured Data) para ajudar o Google a entender o conteúdo (ex: Product, Article, FAQ).
+
+### 2. Core Web Vitals (LCP, FID, CLS)
+- Mantenha o **LCP (Largest Contentful Paint)** abaixo de 2.5 segundos.
+- Evite mudanças bruscas de layout (**CLS**) reservando espaço para imagens e anúncios.
+
+### 3. Acessibilidade (a11y)
+- Use tags semânticas (`<main>`, `<article>`, `<header>`).
+- Garanta que todas as imagens tenham `alt text` descritivo.
+
+## Integração com Marketing
+- Configure o **Google Analytics 4** e **Facebook Pixel** via GTM (Google Tag Manager).
+- Implemente eventos de conversão (clique em botões, preenchimento de formulários).
+
+
+=================================================================
+SKILL: WEB-SCRAPING-EXPERT
+=================================================================
+
+---
+name: web-scraping-expert
+description: Mineração e extração massiva de dados, engenharia reversa de APIs e bypass de bloqueios antibot.
+---
+
+# 🔍 Web Scraping
+
+## 📋 Visão Geral
+Este skill treina a IA em técnicas furtivas e robustas para coleta automatizada de dados na web. Lida com extração em tempo real de informações distribuídas, superando desafios como conteúdo dinâmico (SPA), CAPTCHAs e restrições antibot.
+
+## 🎯 Direcionamentos Principais
+1. **Extração Inteligente**: Usar bibliotecas Python (BeautifulSoup, Scrapy, Playwright, Selenium) e JS (Puppeteer) para mapear e raspar dados estruturados de HTML/JSON.
+2. **Engenharia Reversa de Redes**: Inspecionar requests no XHR/Fetch para consumir APIs não documentadas diretamente, em vez de parsear HTML (o que otimiza performance).
+3. **Bypass e Resiliência**: Implementar rotação de proxies, randomização de User-Agents, delays comportamentais humanos, e resolvedores de CAPTCHA/Cloudflare.
+4. **Limpeza e Estruturação**: Normalizar dados brutamentes raspados, limpando lixo e exportando para formatos de consumo (JSON, CSV, BD).
+
+## 💡 Aplicações Práticas
+- Mineração de leads do LinkedIn, Google Maps ou diretórios B2B.
+- Raspagem de catálogos de e-commerce e monitoramento de preços da concorrência (Price Tracking).
+- Coleta de dados volumosos para treinar modelos de Inteligência Artificial.
+
+## 🛠️ Como Utilizar
+Quando o objetivo for coletar dados da web não acessíveis via APIs oficiais, peça código, arquiteturas ou estratégias de scrapers de alta performance para buscar a informação com máxima eficiência e mínimo risco de banimento.
+
+

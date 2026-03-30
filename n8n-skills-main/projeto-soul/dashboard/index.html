@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trader Master - Dashboard Comunidade</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">TRADER MASTER</div>
+            <nav class="nav-menu">
+                <li class="nav-item active">📊 Dashboard</li>
+                <li class="nav-item">📡 Sinais Live</li>
+                <li class="nav-item">🏆 Ranking</li>
+                <li class="nav-item">🤖 Minhas IAs</li>
+                <li class="nav-item">⚙️ Configurações</li>
+            </nav>
+            <div class="profile-min" style="margin-top: auto; display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-secondary);"></div>
+                <div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">Logan Alonso</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim);">Trader Pro</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <h1>Visão Geral do Mercado</h1>
+                <div class="date-now" id="dateTimer">MAR 26, 2026</div>
+            </header>
+
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Taxa de Acerto (IA)</div>
+                    <div class="stat-value" style="color: var(--success);">84.2%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Sinais Hoje</div>
+                    <div class="stat-value">127</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Saldo Virtual</div>
+                    <div class="stat-value" id="userBalance">$10,000.00</div>
+                </div>
+            </section>
+
+            <section class="simulation-panel">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                    <span style="font-size: 1.5rem;">🎮</span>
+                    <h3>Simulador de Entrada Rápida</h3>
+                </div>
+                
+                <div class="sim-controls">
+                    <div class="input-group">
+                        <label>Ativo</label>
+                        <select class="sim-input" id="simAsset">
+                            <option>EURUSD</option>
+                            <option>BTCUSD</option>
+                            <option>GBPUSD</option>
+                            <option>XAUUSD</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Capital (%)</label>
+                        <input type="number" class="sim-input" id="simCapital" value="5" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Alavancagem</label>
+                        <select class="sim-input" id="simLev">
+                            <option value="1">1x</option>
+                            <option value="10">10x</option>
+                            <option value="20">20x</option>
+                            <option value="50">50x</option>
+                            <option value="100">100x</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sim-actions">
+                    <button class="btn-sim btn-buy" onclick="runSimulation('BUY')">ENTRADA COMPRA (LONG)</button>
+                    <button class="btn-sim btn-sell" onclick="runSimulation('SELL')">ENTRADA VENDA (SHORT)</button>
+                </div>
+            </section>
+
+            <section class="signal-feed">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3>📡 Feed de Sinais MT5 (Tempo Real)</h3>
+                    <span style="font-size: 0.8rem; color: var(--success);">● LIVE</span>
+                </div>
+                <div id="signalList">
+                    <!-- Sinais aparecerão aqui via JS -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Community Panel -->
+        <aside class="community-panel">
+            <h3>💬 Comunidade VIP</h3>
+            <div class="chat-box" id="chatBox">
+                <!-- Chat aparecerá aqui -->
+            </div>
+            <div style="margin-top: auto; padding-top: 1rem;">
+                <input type="text" placeholder="Diga algo aos traders..." style="width: 100%; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; outline: none;">
+            </div>
+        </aside>
+    </div>
+
+    <!-- Result Overlay -->
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-card" id="resultCard">
+            <div class="result-title" id="resultTitle">WIN!</div>
+            <div class="result-pnl" id="resultPnL">+$500.00</div>
+            <button class="btn-sim" style="background: var(--accent-primary); color: #000;" onclick="closeResult()">FECHAR</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
