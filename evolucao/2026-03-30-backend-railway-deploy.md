@@ -148,6 +148,15 @@ APP_TRUSTED_HOSTS         # *
 - Comando final do container alterado para usar porta dinâmica `${PORT:-8000}`.
 - Documentação atualizada para `railway.toml` (substitui referência antiga a `railway.yaml`).
 
+### Atualização 2026-03-30 (Healthcheck: ajuste de porta)
+
+- Sintoma persistente: `Network > Healthcheck failure` mesmo com build/deploy concluídos.
+- Causa provável: mismatch entre porta pública configurada no domínio Railway (`8000`) e processo subindo em porta dinâmica (`$PORT`).
+- Correção aplicada:
+	- `backend/railway.toml`: `startCommand` fixado em porta `8000`
+	- `backend/Dockerfile`: `HEALTHCHECK` fixado em `localhost:8000/api/health`
+	- `backend/Dockerfile`: `CMD` fixado em `--port 8000`
+
 ### Arquivos impactados
 
 - `backend/Dockerfile`
