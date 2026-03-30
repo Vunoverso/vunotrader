@@ -236,3 +236,19 @@ Fluxo:
 **Resultado validado:**
 - Usuário `vunodecor@gmail.com` voltou a exibir `Status: active`, `Plano: Scale` e `Ciclo: monthly` em Configurações, em linha com a tela Admin.
 - Nome no campo de perfil exibido corretamente (`Vuno Decor`).
+
+## Atualização 2026-03-30 (Vercel Build: Favicon + Tipagem Operações)
+
+**Objetivo:** resolver falhas de build em produção após ajuste de deploy na Vercel.
+
+**Arquivos impactados:**
+- `web/src/app/favicon.ico` (removido)
+- `web/src/app/icon.svg` (novo)
+- `web/src/app/app/operacoes/page.tsx`
+
+**Decisões aplicadas:**
+- Substituído favicon `.ico` inválido por ícone vetorial em `icon.svg` no App Router para evitar erro de decoder de imagem no build.
+- Normalizada a estrutura de `trades` em Operações para converter relacionamentos do Supabase (`trade_decisions` e `trade_outcomes`) de arrays para objeto único esperado pela tabela cliente.
+
+**Observações:**
+- O build local apresentou lock de cache em `.next/dev` por arquivos em uso, mas esse lock não afeta o build limpo da Vercel.
