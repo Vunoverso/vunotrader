@@ -157,6 +157,16 @@ APP_TRUSTED_HOSTS         # *
 	- `backend/Dockerfile`: `HEALTHCHECK` fixado em `localhost:8000/api/health`
 	- `backend/Dockerfile`: `CMD` fixado em `--port 8000`
 
+### Atualização 2026-03-30 (Causa raiz confirmada em logs)
+
+- Logs do Railway confirmaram erro recorrente de boot:
+	- `Error: Invalid value for '--port': '$PORT' is not a valid integer.`
+- Causa real: algumas rotas de startup ainda usavam `$PORT` literal (sem expansão), apesar do `railway.toml` já corrigido.
+- Correção final aplicada:
+	- `backend/Procfile`: `--port 8000`
+	- `backend/nixpacks.toml`: `--port 8000`
+- Decisão: padronizar temporariamente porta fixa `8000` no serviço Railway para eliminar inconsistência entre builders (Railpack/Nixpacks/Docker).
+
 ### Arquivos impactados
 
 - `backend/Dockerfile`
