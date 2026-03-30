@@ -20,13 +20,44 @@ type PlanRow = {
 };
 
 type SubscriptionRow = {
-  id: string;
-  organization_id: string;
   status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   billing_cycle: "monthly" | "yearly";
   trial_ends_at: string | null;
   current_period_end: string | null;
   saas_plans: { code: string; name: string } | { code: string; name: string }[] | null;
+};
+
+type ProfileRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+type ProfileSettingsRow = {
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
+  document_type: string | null;
+  document_value: string | null;
+  document_verified: boolean | null;
+};
+
+type MemberRow = {
+  profile_id: string;
+  organizations: {
+    id: string;
+    name: string;
+    saas_subscriptions: SubscriptionRow[];
+  } | {
+    id: string;
+    name: string;
+    saas_subscriptions: SubscriptionRow[];
+  }[] | null;
 };
 
 export default async function ConfiguracoesPage() {
@@ -40,31 +71,73 @@ export default async function ConfiguracoesPage() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await admin
+  const { data: profileByAuth } = await admin
     .from("user_profiles")
-    .select("id, email, full_name, avatar_url, phone, address_line1, address_line2, city, state, postal_code, country, document_type, document_value, document_verified")
+    .select("id, email, full_name, avatar_url")
     .eq("auth_user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  const { data: memberships } = profile?.id
+  const { data: profilesByEmail } = user.email
     ? await admin
-        .from("organization_members")
-        .select("organization_id")
-        .eq("profile_id", profile.id)
-        .limit(20)
-    : { data: null };
-
-  const organizationIds = Array.from(new Set((memberships ?? []).map((row) => row.organization_id).filter(Boolean)));
-
-  const { data: subscriptions } = organizationIds.length > 0
-    ? await admin
-        .from("saas_subscriptions")
-        .select("id, organization_id, status, billing_cycle, trial_ends_at, current_period_end, saas_plans(code, name)")
-        .in("organization_id", organizationIds)
+        .from("user_profiles")
+      .select("id, email, full_name, avatar_url")
+        .eq("email", user.email)
         .order("created_at", { ascending: false })
         .limit(20)
     : { data: null };
+
+  const profileCandidates = [profileByAuth, ...(profilesByEmail ?? [])]
+    .filter((profile): profile is ProfileRow => Boolean(profile))
+    .reduce<ProfileRow[]>((acc, profile) => {
+      if (!acc.some((item) => item.id === profile.id)) {
+        acc.push(profile);
+      }
+      return acc;
+    }, []);
+
+  const { data: memberships } = profileCandidates.length > 0
+    ? await admin
+        .from("organization_members")
+        .select("profile_id, organizations ( id, name, saas_subscriptions ( status, billing_cycle, trial_ends_at, current_period_end, saas_plans ( code, name ) ) )")
+        .in("profile_id", profileCandidates.map((profile) => profile.id))
+        .limit(100)
+    : { data: null };
+
+  const memberRows = (memberships ?? []) as MemberRow[];
+  const pickSubscription = (member: MemberRow) => {
+    const organization = member.organizations
+      ? (Array.isArray(member.organizations) ? member.organizations[0] : member.organizations)
+      : null;
+
+    const subscriptions = organization?.saas_subscriptions ?? [];
+    return (
+      subscriptions.find((row) => row.status === "active") ??
+      subscriptions.find((row) => row.status === "trialing") ??
+      subscriptions[0] ??
+      null
+    );
+  };
+
+  const preferredMember =
+    memberRows.find((row) => row.profile_id === profileByAuth?.id && pickSubscription(row)) ??
+    memberRows.find((row) => Boolean(pickSubscription(row))) ??
+    memberRows[0] ??
+    null;
+
+  const profileIdWithOrg = preferredMember?.profile_id ?? profileCandidates[0]?.id ?? null;
+
+  const profile = profileCandidates.find((row) => row.id === profileIdWithOrg) ?? profileCandidates[0] ?? null;
+  const { data: profileSettingsData } = profile?.id
+    ? await admin
+        .from("user_profiles")
+        .select("phone, address_line1, address_line2, city, state, postal_code, country, document_type, document_value, document_verified")
+        .eq("id", profile.id)
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+  const profileSettings = (profileSettingsData ?? null) as ProfileSettingsRow | null;
+  const subscription = preferredMember ? pickSubscription(preferredMember) : null;
 
   const { data: plans } = await admin
     .from("saas_plans")
@@ -73,13 +146,6 @@ export default async function ConfiguracoesPage() {
     .order("monthly_price", { ascending: true });
 
   const planRows = (plans ?? []) as PlanRow[];
-  const subscriptionRows = (subscriptions ?? []) as SubscriptionRow[];
-  const subscription =
-    subscriptionRows.find((row) => row.status === "active") ??
-    subscriptionRows.find((row) => row.status === "trialing") ??
-    subscriptionRows[0] ??
-    null;
-  const organizationId = subscription?.organization_id ?? organizationIds[0] ?? null;
   const currentPlan = Array.isArray(subscription?.saas_plans) ? subscription?.saas_plans[0] : subscription?.saas_plans;
   const displayName =
     profile?.full_name ??
@@ -110,40 +176,40 @@ export default async function ConfiguracoesPage() {
 
           <label className="block space-y-1 text-sm">
             <span className="text-slate-500">Telefone</span>
-            <input name="phone" defaultValue={profile?.phone ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+            <input name="phone" defaultValue={profileSettings?.phone ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1 text-sm sm:col-span-2">
               <span className="text-slate-500">Endereço</span>
-              <input name="address_line1" defaultValue={profile?.address_line1 ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="address_line1" defaultValue={profileSettings?.address_line1 ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
             <label className="block space-y-1 text-sm sm:col-span-2">
               <span className="text-slate-500">Complemento</span>
-              <input name="address_line2" defaultValue={profile?.address_line2 ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="address_line2" defaultValue={profileSettings?.address_line2 ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
             <label className="block space-y-1 text-sm">
               <span className="text-slate-500">Cidade</span>
-              <input name="city" defaultValue={profile?.city ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="city" defaultValue={profileSettings?.city ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
             <label className="block space-y-1 text-sm">
               <span className="text-slate-500">Estado</span>
-              <input name="state" defaultValue={profile?.state ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="state" defaultValue={profileSettings?.state ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
             <label className="block space-y-1 text-sm">
               <span className="text-slate-500">CEP</span>
-              <input name="postal_code" defaultValue={profile?.postal_code ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="postal_code" defaultValue={profileSettings?.postal_code ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
             <label className="block space-y-1 text-sm">
               <span className="text-slate-500">País</span>
-              <input name="country" defaultValue={profile?.country ?? "BR"} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="country" defaultValue={profileSettings?.country ?? "BR"} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="block space-y-1 text-sm">
               <span className="text-slate-500">Tipo de documento</span>
-              <select name="document_type" defaultValue={profile?.document_type ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
+              <select name="document_type" defaultValue={profileSettings?.document_type ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500">
                 <option value="">Não informado</option>
                 <option value="cpf">CPF</option>
                 <option value="rg">RG</option>
@@ -151,12 +217,12 @@ export default async function ConfiguracoesPage() {
             </label>
             <label className="block space-y-1 text-sm sm:col-span-2">
               <span className="text-slate-500">Documento</span>
-              <input name="document_value" defaultValue={profile?.document_value ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
+              <input name="document_value" defaultValue={profileSettings?.document_value ?? ""} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-200 outline-none focus:border-sky-500" />
             </label>
           </div>
 
-          <p className={`text-xs ${profile?.document_verified ? "text-emerald-300" : "text-slate-500"}`}>
-            {profile?.document_verified ? "Documento validado automaticamente." : "Documento ainda não validado."}
+          <p className={`text-xs ${profileSettings?.document_verified ? "text-emerald-300" : "text-slate-500"}`}>
+            {profileSettings?.document_verified ? "Documento validado automaticamente." : "Documento ainda não validado."}
           </p>
 
           <button className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 transition-colors hover:bg-sky-500/20">
@@ -250,4 +316,10 @@ export default async function ConfiguracoesPage() {
         <h2 className="text-sm font-semibold uppercase tracking-widest text-red-300">Excluir conta</h2>
         <p className="text-xs text-red-200/90">Ação permanente. Digite EXCLUIR para confirmar.</p>
         <input name="confirmation" placeholder="EXCLUIR" className="w-full max-w-xs rounded-lg border border-red-500/40 bg-slate-950 px-3 py-2 text-red-100 outline-none focus:border-red-400" />
-        <button className="rounded-lg border border-red-500/40 bg-red-
+        <button className="rounded-lg border border-red-500/40 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/30">
+          Excluir minha conta
+        </button>
+      </form>
+    </div>
+  );
+}

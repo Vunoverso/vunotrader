@@ -218,3 +218,21 @@ Fluxo:
 
 **Próximos passos:**
 - Validar no ambiente alvo: upload de avatar, persistência em `avatar_url` e renderização do preview após refresh.
+
+## Atualização 2026-03-30 (Correção Configurações: Nome e Plano)
+
+**Objetivo:** corrigir divergência em que a tela do usuário mostrava `sem assinatura` enquanto o Admin mostrava plano ativo, e garantir preenchimento consistente do nome.
+
+**Arquivos impactados:**
+- `web/src/app/app/configuracoes/page.tsx`
+- `web/src/app/app/configuracoes/actions.ts`
+
+**Decisões aplicadas:**
+- Leitura de perfil/assinatura na tela de Configurações passou a usar estratégia resiliente alinhada ao Admin (`organization_members -> organizations -> saas_subscriptions`).
+- Seleção de assinatura prioriza `active`, depois `trialing`, depois fallback para primeira encontrada.
+- Fallback de perfil por email quando o vínculo `auth_user_id` não resolve diretamente.
+- Separação entre leitura de campos base do perfil e campos estendidos de configurações para evitar quebra da tela quando migrations de colunas extras ainda não estiverem aplicadas.
+
+**Resultado validado:**
+- Usuário `vunodecor@gmail.com` voltou a exibir `Status: active`, `Plano: Scale` e `Ciclo: monthly` em Configurações, em linha com a tela Admin.
+- Nome no campo de perfil exibido corretamente (`Vuno Decor`).

@@ -37,6 +37,7 @@ function isValidCpf(value: string) {
 
 async function getUserAndProfile() {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -45,12 +46,24 @@ async function getUserAndProfile() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
+  const { data: profileByAuth } = await supabase
     .from("user_profiles")
     .select("id")
     .eq("auth_user_id", user.id)
     .limit(1)
     .maybeSingle();
+
+  const { data: profileByEmail } = !profileByAuth && user.email
+    ? await admin
+        .from("user_profiles")
+        .select("id")
+        .eq("email", user.email)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const profile = profileByAuth ?? profileByEmail;
 
   if (!profile?.id) {
     throw new Error("Perfil do usuário não encontrado.");
@@ -266,4 +279,22 @@ export async function cancelMyPlanAction() {
   await admin
     .from("saas_subscriptions")
     .update({
-      status: "
+      status: "canceled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", currentSub.id);
+
+  revalidatePath("/app/configuracoes");
+  revalidatePath("/app/dashboard");
+}
+
+export async function deleteMyAccountAction(formData: FormData) {
+  const { user, supabase } = await getUserAndProfile();
+  const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
+  if (confirmation !== "EXCLUIR") return;
+
+  await supabase.auth.signOut();
+  const admin = createAdminClient();
+  await admin.auth.admin.deleteUser(user.id);
+  redirect("/auth/cadastro");
+}
