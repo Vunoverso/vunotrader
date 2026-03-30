@@ -104,7 +104,7 @@ Executar as migracoes do Supabase nesta ordem:
 Railway lê automaticamente:
 - **Procfile** - define processos (web, worker)
 - **Dockerfile** - container multi-stage otimizado
-- **railway.yaml** - config avançada (opcional)
+- **railway.toml** - config avançada (opcional)
 
 ### Variáveis de Ambiente (Railway Dashboard)
 

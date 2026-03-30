@@ -129,6 +129,34 @@ APP_TRUSTED_HOSTS         # *
 **Fase**: Preparação
 **Próximo**: Criar projeto Railway e fazer primeiro deploy
 
+## Atualização 2026-03-30 (Correção Build Railway)
+
+### Sintoma
+
+- Build falhando no Railway durante Docker build com erro de pacote Debian:
+- `E: Unable to locate package libpoppler-cpp-0.87`
+
+### Causa raiz
+
+- O pacote `libpoppler-cpp-0.87` não existe na base atual da imagem `python:3.11-slim` usada no Railway.
+- Essa dependência não é obrigatória para a stack atual, pois o parsing de PDF está via `pypdf` (sem binário poppler).
+
+### Correções aplicadas
+
+- Removida instalação de `libpoppler-cpp-0.87` do runtime no `backend/Dockerfile`.
+- Healthcheck ajustado para usar `urllib` da stdlib (remove dependência implícita de `requests`).
+- Comando final do container alterado para usar porta dinâmica `${PORT:-8000}`.
+- Documentação atualizada para `railway.toml` (substitui referência antiga a `railway.yaml`).
+
+### Arquivos impactados
+
+- `backend/Dockerfile`
+- `backend/README.md`
+
+### Risco residual
+
+- Baixo: worker e API continuam no mesmo serviço; se precisar isolamento de carga, separar em serviço dedicado do Railway no próximo passo.
+
 ---
 
 **Data**: 2026-03-30

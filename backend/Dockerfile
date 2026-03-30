@@ -19,11 +19,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpoppler-cpp-0.87 \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy Python dependencies from builder
 COPY --from=builder /root/.local /root/.local
 
@@ -37,10 +32,10 @@ ENV PATH=/root/.local/bin:$PATH \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:$PORT/api/health')"
+    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.getenv(\"PORT\", \"8000\")}/api/health')"
 
 # Expose port
 EXPOSE 8000
 
 # Run app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
