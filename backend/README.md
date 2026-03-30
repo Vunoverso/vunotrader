@@ -91,9 +91,54 @@ Executar as migracoes do Supabase nesta ordem:
 1. [supabase/migrations/20260329_000001_initial_trader_schema.sql](../supabase/migrations/20260329_000001_initial_trader_schema.sql)
 2. [supabase/migrations/20260329_000002_auth_security.sql](../supabase/migrations/20260329_000002_auth_security.sql)
 
+## Deploy em Railway
+
+### Pre-requisitos
+
+1. Conta Railway: https://railway.app
+2. Projeto conectado ao GitHub (push automático dispara deploy)
+3. Variáveis de ambiente settings (Railway Dashboard)
+
+### Configuração
+
+Railway lê automaticamente:
+- **Procfile** - define processos (web, worker)
+- **Dockerfile** - container multi-stage otimizado
+- **railway.yaml** - config avançada (opcional)
+
+### Variáveis de Ambiente (Railway Dashboard)
+
+Adicionar no Railway:
+
+```
+SUPABASE_URL=https://mztrtovhjododrkzkehk.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
+SUPABASE_JWT_SECRET=your_jwt_secret
+
+APP_ENV=production
+APP_DEBUG=false
+APP_ALLOWED_ORIGINS=https://vunotrader.vercel.app,https://vunotrader-*.vercel.app
+APP_TRUSTED_HOSTS=*
+```
+
+### Deploy
+
+1. Conectar GitHub repo ao Railway
+2. Apontar para pasta `backend/` como root
+3. Deixar Railway detectar Node.js e Python automaticamente
+4. Railway fará auto-deploy em cada push em `main`
+
+### Monitorar
+
+- Railway Dashboard: logs em tempo real
+- `/api/health` deve retornar 200 OK
+- Logs indicam status do worker de estudos
+
 ## Observacoes de seguranca
 
 - service role key somente no backend
 - publishable key somente no frontend
 - usar RLS obrigatoriamente nas tabelas multi-tenant
 - nunca expor credenciais em codigo versionado
+- Railway suporta secrets (não expor em arquivo .env)
