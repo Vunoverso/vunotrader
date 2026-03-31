@@ -9,9 +9,12 @@
 #include <Trade\PositionInfo.mqh>
 
 input group "=== CONEXÃO PYTHON ==="
-input string   PythonHost       = "127.0.0.1";  // IP do Python Brain
-input int      PythonPort       = 9999;          // Porta socket
+input string   PythonHost       = "127.0.0.1";  // IP do Python Brain (legado)
+input int      PythonPort       = 9999;          // Porta socket (legado)
 input int      DataBars         = 200;           // Candles enviados ao Python
+
+input group "=== CONEXÃO CLOUD ==="
+input string   BackendURL       = "https://vunotrader-api.onrender.com"; // URL do backend Render
 
 input group "=== GESTÃO ==="
 input double   MaxDailyLoss     = 5.0;    // Perda máxima diária (%)
@@ -22,10 +25,10 @@ input string   TradingStart     = "08:00";
 input string   TradingEnd       = "20:00";
 
 input group "=== IDENTIFICAÇÃO VUNO (Supabase) ==="
-input string   UserID           = "96fd6e0d-ae81-4eeb-b6fd-37279373a7db";        // UUID do usuário (copiar do painel)
+input string   UserID           = "0e3d7cd9-7e39-4714-a52f-f7eb793a4640";        // UUID do usuário (copiar do painel)
 input string   OrganizationID   = "24affdc3-dc7b-4672-b20d-65033949bb76";        // UUID da organização (copiar do painel)
-input string   RobotID          = "";        // UUID da instância do robô
-input string   RobotToken       = "";        // token da instância do robô
+input string   RobotID          = "8e048faa-937c-4a3e-8760-9d59c3f64d77";        // UUID da instância do robô
+input string   RobotToken       = "dBiAqxGYo2S6nxFtdNH7oufKa_MYGms0";        // token da instância do robô
 input string   TradingMode      = "demo";    // Modo: observer | demo | real
 
 CTrade         Trade;
@@ -56,8 +59,15 @@ int OnInit()
    g_initialBal = AccountInfoDouble(ACCOUNT_BALANCE);
    g_peakBal    = g_initialBal;
 
-   Print("VunoTrader v2 iniciado | Python Brain: ",
-         PythonHost, ":", PythonPort);
+   EventSetTimer(30); // Heartbeat a cada 30 segundos
+
+   Print("VunoTrader v2 iniciado | Backend: ", BackendURL);
+         
+   // Envia primeiro heartbeat imediato ao iniciar
+   if(IdentityReady()) {
+      SendHeartbeat();
+   }         
+         
    return INIT_SUCCEEDED;
 }
 
@@ -514,6 +524,55 @@ double ExtractDouble(string json, string key)
 
 void OnDeinit(const int reason)
 {
+   EventKillTimer();
    IndicatorRelease(hATR);
    Print("VunoTrader v2 encerrado");
+}
+
+//+------------------------------------------------------------------+
+// Envia heartbeat HTTPS direto ao backend Render (sem Python local)
+//+------------------------------------------------------------------+
+void SendHeartbeat()
+{
+   string url     = BackendURL + "/api/mt5/heartbeat";
+   string headers = "Content-Type: application/json\r\n";
+   string body    = StringFormat(
+      "{\"robot_id\":\"%s\","
+      "\"robot_token\":\"%s\","
+      "\"user_id\":\"%s\","
+      "\"organization_id\":\"%s\","
+      "\"mode\":\"%s\"}",
+      RobotID, RobotToken, UserID, OrganizationID, TradingMode
+   );
+
+   uchar  bodyArr[], resArr[];
+   string resHeaders;
+   StringToCharArray(body, bodyArr, 0, StringLen(body));
+
+   int code = WebRequest("POST", url, headers, 5000, bodyArr, resArr, resHeaders);
+   if(code == 200) {
+      Print("[HB] Heartbeat enviado com sucesso → Render");
+   } else if(code == -1) {
+      // Fallback: tenta Python local se ainda estiver rodando
+      string req = StringFormat(
+         "{\"type\":\"HEARTBEAT\",\"user_id\":\"%s\","
+         "\"organization_id\":\"%s\",\"robot_id\":\"%s\","
+         "\"robot_token\":\"%s\"}",
+         UserID, OrganizationID, RobotID, RobotToken
+      );
+      string r = SendToPython(req);
+      if(r != "") Print("[HB] Fallback Python local OK");
+      else Print("[HB] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+   } else {
+      Print("[HB] Erro HTTP ", code, " ao contactar Render");
+   }
+}
+
+//+------------------------------------------------------------------+
+// Timer: dispara heartbeat a cada 30 segundos
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   if(!IdentityReady()) return;
+   SendHeartbeat();
 }
