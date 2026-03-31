@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "E:\robotrademeta5\scripts\phase1_full_cycle_smoke.py", line 9, in <module>
+    from scripts.mt5_cmd_bot import (
+ModuleNotFoundError: No module named 'scripts.mt5_cmd_bot'

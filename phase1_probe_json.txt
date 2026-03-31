@@ -1,0 +1,1 @@
+{"user_id": "0e3d7cd9-7e39-4714-a52f-f7eb793a4640", "organization_id": "24affdc3-dc7b-4672-b20d-65033949bb76", "robot_instance_id": "b7002da7-4dcd-4bca-8d76-9ebdf72b137a", "decisions_count": 0, "decisions": [], "executed_count": 0, "executed": [], "outcomes_count": 0, "outcomes": []}

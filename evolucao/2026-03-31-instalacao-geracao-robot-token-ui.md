@@ -71,3 +71,28 @@ Motivo: aumentaria complexidade de navegacao sem necessidade imediata.
 ### Observacoes
 - O fluxo EA segue como recomendado por ser integrado a heartbeat, instancias e auditoria.
 - O fluxo CMD fica como opcao avancada para usuarios tecnicos.
+
+## Atualizacao 2026-03-31 - Correcao de handshake EA -> Brain (UserID)
+
+### Problema identificado
+O onboarding entrega `UserID` com `auth_user_id` (id de autenticacao), mas a validacao do brain consultava `robot_instances.profile_id` diretamente com esse valor.
+
+Na pratica, isso causava falso negativo de autorizacao (`Robo nao encontrado`) e impedia heartbeat (`last_seen_at`) mesmo com RobotID/RobotToken corretos no EA.
+
+### Arquivo impactado
+- `vunotrader_brain.py`
+
+### Correcao aplicada
+Na funcao `validate_robot_identity`:
+
+1. o brain agora tenta resolver `profile_id` a partir de `user_profiles.auth_user_id`;
+2. quando encontra, usa esse `profile_id` resolvido na validacao de `robot_instances`;
+3. mantem fallback para compatibilidade quando `UserID` ja vier como `profile_id`.
+
+### Impacto esperado
+- conexao MT5 passa a validar corretamente com credenciais geradas na UI;
+- heartbeat volta a atualizar `robot_instances.last_seen_at`;
+- dashboard e instalacao conseguem sair de OFF quando EA e brain estao ativos.
+
+### Observacao
+O warning de lock do Supabase no navegador foi mitigado em ajuste separado via singleton do client browser; essa parte nao interfere no handshake MT5 -> brain.

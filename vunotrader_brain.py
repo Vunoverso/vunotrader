@@ -17,8 +17,10 @@ import socket
 import json
 import time
 import logging
+import csv
 import urllib.request
 import urllib.error
+import urllib.parse
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -39,6 +41,8 @@ from vuno_core import (
     FeatureBuilder,
     TradingModel,
     generate_bootstrap_market_data,
+    load_model_weights,
+    save_model_weights,
 )
 
 try:
@@ -99,7 +103,308 @@ CONFIG = {
     "skill_engine_api_key": os.environ.get("SKILL_ENGINE_API_KEY", "").strip(),
     "enable_global_memory_shadow": os.environ.get("ENABLE_GLOBAL_MEMORY_SHADOW", "1") == "1",
     "global_memory_min_samples": int(os.environ.get("GLOBAL_MEMORY_MIN_SAMPLES", "20")),
+    "enable_fin_news": os.environ.get("ENABLE_FIN_NEWS", "1") == "1",
+    "fin_news_api_key": os.environ.get("FIN_NEWS_API_KEY", "").strip(),
+    "fin_news_api_url_template": os.environ.get(
+        "FIN_NEWS_API_URL_TEMPLATE",
+        "https://api.apitube.io/v1/news/everything?query={query}&language={language}&limit={limit}",
+    ).strip(),
+    "fin_news_api_url_templates": os.environ.get("FIN_NEWS_API_URL_TEMPLATES", "").strip(),
+    "fin_news_timeout_sec": float(os.environ.get("FIN_NEWS_TIMEOUT_SEC", "3.0")),
+    "fin_news_cache_sec": int(os.environ.get("FIN_NEWS_CACHE_SEC", "120")),
+    "fin_news_language": os.environ.get("FIN_NEWS_LANGUAGE", "pt").strip() or "pt",
+    "fin_news_min_articles": int(os.environ.get("FIN_NEWS_MIN_ARTICLES", "3")),
+    "fin_news_mode": os.environ.get("FIN_NEWS_MODE", "shadow").strip().lower() or "shadow",
+    "fin_news_min_confidence_to_influence": float(os.environ.get("FIN_NEWS_MIN_CONFIDENCE_TO_INFLUENCE", "0.80")),
+    "fin_news_conflict_risk_reduction": float(os.environ.get("FIN_NEWS_CONFLICT_RISK_REDUCTION", "0.30")),
+    "fin_news_alignment_risk_boost": float(os.environ.get("FIN_NEWS_ALIGNMENT_RISK_BOOST", "0.10")),
+    "fin_news_block_on_conflict": os.environ.get("FIN_NEWS_BLOCK_ON_CONFLICT", "0") == "1",
+    "fin_news_block_confidence": float(os.environ.get("FIN_NEWS_BLOCK_CONFIDENCE", "0.92")),
 }
+
+
+class FinancialNewsAnalyzer:
+    """
+    Camada opcional de noticias para modular risco/sinal do motor.
+    Nao substitui o modelo tecnico; apenas adiciona contexto macro em tempo real.
+    """
+
+    _POSITIVE_TERMS = {
+        "alta", "bull", "bullish", "otimismo", "otimista", "subida", "valorizacao",
+        "crescimento", "acordo", "aprova", "estavel", "recovery", "recuperacao",
+    }
+    _NEGATIVE_TERMS = {
+        "queda", "bear", "bearish", "pessimismo", "pessimista", "crise", "guerra",
+        "recessao", "recessão", "inflacao", "inflação", "hawkish", "aperto", "risco",
+        "selloff", "desaceleracao", "desaceleração", "stress", "estresse",
+    }
+
+    def __init__(self):
+        self.enabled = bool(CONFIG.get("enable_fin_news")) and bool(CONFIG.get("fin_news_api_key"))
+        self.mode = str(CONFIG.get("fin_news_mode") or "shadow").strip().lower()
+        self.api_key = str(CONFIG.get("fin_news_api_key") or "")
+        self.url_template = str(CONFIG.get("fin_news_api_url_template") or "")
+        raw_templates = str(CONFIG.get("fin_news_api_url_templates") or "")
+        self.timeout_sec = float(CONFIG.get("fin_news_timeout_sec") or 3.0)
+        self.cache_sec = int(CONFIG.get("fin_news_cache_sec") or 120)
+        self.language = str(CONFIG.get("fin_news_language") or "pt")
+        self.min_articles = int(CONFIG.get("fin_news_min_articles") or 3)
+        self.min_confidence_to_influence = float(CONFIG.get("fin_news_min_confidence_to_influence") or 0.80)
+        self.conflict_risk_reduction = max(0.0, min(1.0, float(CONFIG.get("fin_news_conflict_risk_reduction") or 0.30)))
+        self.alignment_risk_boost = max(0.0, min(1.0, float(CONFIG.get("fin_news_alignment_risk_boost") or 0.10)))
+        self.block_on_conflict = bool(CONFIG.get("fin_news_block_on_conflict", False))
+        self.block_confidence = float(CONFIG.get("fin_news_block_confidence") or 0.92)
+        self._cache: dict[tuple[str, str], tuple[float, dict]] = {}
+
+        if self.mode not in {"off", "shadow", "assist"}:
+            self.mode = "shadow"
+
+        if raw_templates:
+            self.url_templates = [u.strip() for u in raw_templates.split(",") if u.strip()]
+        else:
+            self.url_templates = [
+                self.url_template,
+                "https://api.apitube.io/v1/news/everything?query={query}&language={language}&limit={limit}",
+                "https://api.apitube.io/v1/news/everything?q={query}&language={language}&limit={limit}",
+                "https://api.apitube.io/v1/news?query={query}&language={language}&limit={limit}",
+                "https://api.apitube.io/v1/news?q={query}&language={language}&limit={limit}",
+            ]
+
+        if self.enabled:
+            log.info("Leitor de noticias financeiras habilitado | mode=%s", self.mode)
+        else:
+            log.info("Leitor de noticias financeiras desabilitado (sem chave ou flag).")
+
+    @staticmethod
+    def _normalize_text(value: str) -> str:
+        return re.sub(r"\s+", " ", (value or "").strip().lower())
+
+    def _build_url(self, template: str, symbol: str, timeframe: str, limit: int = 20) -> str:
+        query = f"{symbol} forex OR economia OR juros OR inflacao OR inflação OR fed OR ecb"
+        encoded_query = urllib.parse.quote(query)
+        return (
+            template
+            .replace("{symbol}", urllib.parse.quote(symbol))
+            .replace("{timeframe}", urllib.parse.quote(timeframe))
+            .replace("{query}", encoded_query)
+            .replace("{language}", urllib.parse.quote(self.language))
+            .replace("{limit}", str(limit))
+        )
+
+    @staticmethod
+    def _extract_articles(payload: dict) -> list[dict]:
+        for key in ("articles", "news", "results", "items", "data"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [x for x in value if isinstance(x, dict)]
+            if isinstance(value, dict):
+                for sub_key in ("articles", "news", "results", "items"):
+                    sub_val = value.get(sub_key)
+                    if isinstance(sub_val, list):
+                        return [x for x in sub_val if isinstance(x, dict)]
+        return []
+
+    def _score_article(self, article: dict) -> float:
+        text = self._normalize_text(
+            " ".join([
+                str(article.get("title") or ""),
+                str(article.get("description") or ""),
+                str(article.get("summary") or ""),
+            ])
+        )
+        if not text:
+            return 0.0
+
+        pos_hits = sum(1 for term in self._POSITIVE_TERMS if term in text)
+        neg_hits = sum(1 for term in self._NEGATIVE_TERMS if term in text)
+        raw = float(pos_hits - neg_hits)
+        # Clampeia para reduzir impacto de manchetes extremas isoladas.
+        return max(-3.0, min(3.0, raw)) / 3.0
+
+    def _fetch(self, symbol: str, timeframe: str) -> dict:
+        if not self.enabled:
+            return {
+                "enabled": False,
+                "bias": "neutral",
+                "score": 0.0,
+                "confidence": 0.0,
+                "sample_size": 0,
+                "reason": "news_disabled",
+            }
+
+        cache_key = (symbol.upper(), timeframe.upper())
+        now = time.time()
+        cached = self._cache.get(cache_key)
+        if cached and (now - cached[0]) <= self.cache_sec:
+            return cached[1]
+
+        headers = {
+            "Accept": "application/json",
+            "x-api-key": self.api_key,
+            "Authorization": f"Bearer {self.api_key}",
+            "User-Agent": "VunoTrader-Brain/2.0",
+        }
+        raw = ""
+        last_error_reason = "fetch_error"
+        for template in self.url_templates:
+            req = urllib.request.Request(self._build_url(template, symbol, timeframe), headers=headers, method="GET")
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout_sec) as resp:
+                    raw = resp.read().decode("utf-8", errors="ignore").strip()
+                    last_error_reason = "ok"
+                    break
+            except urllib.error.HTTPError as e:
+                # 404 pode significar rota diferente; tenta proxima alternativa.
+                last_error_reason = f"http_{e.code}"
+                if e.code != 404:
+                    log.warning("[News] HTTP %s ao buscar noticias para %s", e.code, symbol)
+            except Exception as e:
+                last_error_reason = "fetch_error"
+                log.debug("[News] Falha ao buscar noticias para %s: %s", symbol, e)
+
+        if not raw:
+            result = {
+                "enabled": True,
+                "bias": "neutral",
+                "score": 0.0,
+                "confidence": 0.0,
+                "sample_size": 0,
+                "reason": last_error_reason,
+            }
+            self._cache[cache_key] = (now, result)
+            return result
+
+        try:
+            payload = json.loads(raw) if raw else {}
+        except Exception:
+            payload = {}
+
+        articles = self._extract_articles(payload)
+        if len(articles) < self.min_articles:
+            result = {
+                "enabled": True,
+                "bias": "neutral",
+                "score": 0.0,
+                "confidence": 0.0,
+                "sample_size": len(articles),
+                "reason": "low_sample",
+            }
+            self._cache[cache_key] = (now, result)
+            return result
+
+        scores = [self._score_article(a) for a in articles[:30]]
+        mean_score = float(np.mean(scores)) if scores else 0.0
+        score_abs = abs(mean_score)
+
+        if mean_score >= 0.25:
+            bias = "buy"
+        elif mean_score <= -0.25:
+            bias = "sell"
+        else:
+            bias = "neutral"
+
+        confidence = min(1.0, score_abs * 1.35)
+        result = {
+            "enabled": True,
+            "bias": bias,
+            "score": round(mean_score, 4),
+            "confidence": round(confidence, 4),
+            "sample_size": len(scores),
+            "reason": "ok",
+        }
+        self._cache[cache_key] = (now, result)
+        return result
+
+    def _build_candidate_prediction(self, baseline: dict, news: dict) -> tuple[dict, str, dict]:
+        """
+        Constrói uma decisao candidata com noticias sem alterar baseline.
+        A aplicacao real depende de mode=assist e threshold de confianca.
+        """
+        candidate = dict(baseline)
+        signal = str(candidate.get("signal") or "HOLD").upper()
+        risk = float(candidate.get("risk", 0) or 0)
+        bias = str(news.get("bias") or "neutral")
+        strength = float(news.get("confidence", 0) or 0)
+
+        meta = {
+            "base_signal": signal,
+            "base_risk": risk,
+            "candidate_signal": signal,
+            "candidate_risk": risk,
+            "changed": False,
+            "can_influence": False,
+            "alignment": "neutral",
+        }
+
+        if signal not in {"BUY", "SELL"} or not news.get("enabled"):
+            return candidate, "NEWS:inactive", meta
+
+        aligns = (signal == "BUY" and bias == "buy") or (signal == "SELL" and bias == "sell")
+        opposes = (signal == "BUY" and bias == "sell") or (signal == "SELL" and bias == "buy")
+
+        if strength < self.min_confidence_to_influence or bias == "neutral":
+            return candidate, f"NEWS:low_conf;bias={bias};c={strength:.2f}", meta
+
+        meta["can_influence"] = True
+        if aligns:
+            new_risk = min(float(CONFIG.get("risk_max", 4.0)), risk * (1.0 + self.alignment_risk_boost))
+            candidate["risk"] = round(new_risk, 3)
+            meta["alignment"] = "align"
+            note = f"NEWS:align;bias={bias};c={strength:.2f}"
+        elif opposes:
+            if self.block_on_conflict and strength >= self.block_confidence:
+                candidate["signal"] = "HOLD"
+                candidate["risk"] = 0.0
+                note = f"NEWS:block;bias={bias};c={strength:.2f}"
+            else:
+                factor = max(0.0, 1.0 - self.conflict_risk_reduction)
+                candidate["risk"] = round(max(0.0, risk * factor), 3)
+                note = f"NEWS:oppose;bias={bias};c={strength:.2f}"
+            meta["alignment"] = "oppose"
+        else:
+            note = f"NEWS:neutral;bias={bias};c={strength:.2f}"
+
+        meta["candidate_signal"] = str(candidate.get("signal") or signal).upper()
+        meta["candidate_risk"] = float(candidate.get("risk", risk) or 0)
+        meta["changed"] = (
+            meta["candidate_signal"] != meta["base_signal"]
+            or abs(meta["candidate_risk"] - float(meta["base_risk"])) > 1e-9
+        )
+        return candidate, note, meta
+
+    def apply_to_prediction(self, prediction: dict, symbol: str, timeframe: str) -> tuple[dict, str, dict, dict]:
+        news = self._fetch(symbol, timeframe)
+        baseline = dict(prediction)
+        candidate, candidate_note, candidate_meta = self._build_candidate_prediction(baseline, news)
+
+        mode = self.mode
+        applied = False
+        effective = dict(baseline)
+
+        if mode == "assist" and candidate_meta.get("can_influence"):
+            effective = dict(candidate)
+            applied = bool(candidate_meta.get("changed"))
+
+        note = (
+            f"NEWS:mode={mode};applied={1 if applied else 0};"
+            f"base={candidate_meta.get('base_signal','HOLD')}/{float(candidate_meta.get('base_risk',0.0)):.2f};"
+            f"cand={candidate_meta.get('candidate_signal','HOLD')}/{float(candidate_meta.get('candidate_risk',0.0)):.2f};"
+            f"reason={candidate_note}"
+        )
+
+        shadow = {
+            "mode": mode,
+            "execution_changed": bool(applied and candidate_meta.get("changed")),
+            "baseline_signal": str(candidate_meta.get("base_signal", "HOLD")),
+            "baseline_risk": float(candidate_meta.get("base_risk", 0.0) or 0.0),
+            "candidate_signal": str(candidate_meta.get("candidate_signal", "HOLD")),
+            "candidate_risk": float(candidate_meta.get("candidate_risk", 0.0) or 0.0),
+            "candidate_changed": bool(candidate_meta.get("changed", False)),
+            "can_influence": bool(candidate_meta.get("can_influence", False)),
+            "alignment": str(candidate_meta.get("alignment", "neutral")),
+        }
+
+        return effective, note, news, shadow
 
 
 # ─── Gerenciador de Aprendizado ──────────────────────────────────
@@ -211,6 +516,24 @@ class SupabaseLogger:
         if not organization_id or not user_profile_id or not robot_instance_id or not robot_token:
             return False, None, "Identificacao incompleta"
 
+        # Compatibilidade: a UI de instalação entrega auth_user_id no campo UserID,
+        # mas robot_instances referencia profile_id. Resolvemos profile_id aqui.
+        resolved_profile_id = user_profile_id
+        try:
+            prof = (
+                self._client.table("user_profiles")
+                .select("id")
+                .eq("auth_user_id", user_profile_id)
+                .limit(1)
+                .maybe_single()
+                .execute()
+            )
+            prof_row = prof.data or None
+            if prof_row and prof_row.get("id"):
+                resolved_profile_id = str(prof_row.get("id"))
+        except Exception as e:
+            log.debug("[Supabase] Falha ao resolver profile_id por auth_user_id: %s", e)
+
         token_hash = hashlib.sha256(robot_token.encode("utf-8")).hexdigest()
 
         try:
@@ -219,7 +542,7 @@ class SupabaseLogger:
                 .select("id, status, profile_id, organization_id, robot_token_hash, allowed_modes, real_trading_enabled, max_risk_real")
                 .eq("id", robot_instance_id)
                 .eq("organization_id", organization_id)
-                .eq("profile_id", user_profile_id)
+                .eq("profile_id", resolved_profile_id)
                 .limit(1)
                 .maybe_single()
                 .execute()
@@ -678,14 +1001,16 @@ class MT5Bridge:
     """
 
     def __init__(self, host: str, port: int, model: TradingModel,
-                 learner: LearningManager, db: SupabaseLogger,
-                 skill_engine: SkillEngineBridge):
+                 engine: DecisionEngine, learner: LearningManager, db: SupabaseLogger,
+                 skill_engine: SkillEngineBridge, news_analyzer: FinancialNewsAnalyzer):
         self.host    = host
         self.port    = port
         self.model   = model
+        self.engine  = engine
         self.learner = learner
         self.db      = db
         self.skill_engine = skill_engine
+        self.news_analyzer = news_analyzer
         self.server  = None
         self.running = False
         self.last_df = None
@@ -693,6 +1018,29 @@ class MT5Bridge:
         self._open_trades: dict[str, tuple[str | None, str | None]] = {}
         # Contador de perdas consecutivas por robot_id (reset ao vencer)
         self._consec_losses: dict[str, int] = {}
+        # Avaliação de impacto de notícias por decision_id para fechar no TRADE_RESULT.
+        self._news_shadow_by_decision: dict[str, dict] = {}
+
+    def _append_news_shadow_log(self, row: dict) -> None:
+        """Persistência leve local para comparar baseline vs news após resultado real."""
+        try:
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "news_shadow_eval.csv")
+            file_exists = os.path.exists(path)
+            with open(path, "a", newline="", encoding="utf-8") as f:
+                fields = [
+                    "timestamp", "decision_id", "symbol", "timeframe", "mode",
+                    "baseline_signal", "candidate_signal", "effective_signal",
+                    "baseline_risk", "candidate_risk", "effective_risk",
+                    "news_bias", "news_confidence", "news_sample_size",
+                    "alignment", "can_influence", "execution_changed",
+                    "outcome", "pnl_money", "pnl_points",
+                ]
+                writer = csv.DictWriter(f, fieldnames=fields)
+                if not file_exists:
+                    writer.writeheader()
+                writer.writerow({k: row.get(k) for k in fields})
+        except Exception as e:
+            log.debug("Falha ao gravar news_shadow_eval.csv: %s", e)
 
     def start(self):
         self.running = True
@@ -839,34 +1187,34 @@ class MT5Bridge:
             df['high']  = pd.to_numeric(df['high'])
             df['low']   = pd.to_numeric(df['low'])
 
-            features = FeatureBuilder.build(df)
-            if len(features) == 0:
-                return {"type": "SIGNAL", "signal": "HOLD",
-                        "confidence": 0.0, "risk": 0.0}
-
-            last_row = features.iloc[-1:]
-            regime = FeatureBuilder.detect_regime(last_row.iloc[0])
-
-            prediction = self.model.predict(last_row)
-
             win_rate = self.learner.get_win_rate()
-            if win_rate < 0.45:
-                prediction['signal'] = 'HOLD'
-                prediction['reason'] = f'Win rate baixo: {win_rate:.1%}'
-            elif win_rate > 0.65:
-                prediction['risk'] = min(prediction['risk'] * 1.2, CONFIG['risk_max'])
+            analysis = self.engine.analyze_market(
+                df,
+                win_rate=win_rate,
+                mode=mode,
+                max_risk_real=max_risk_real,
+            )
+            prediction = {
+                "signal": analysis["signal"],
+                "confidence": analysis["confidence"],
+                "risk": analysis["risk"],
+                "prob_buy": analysis.get("prob_buy", 0.0),
+                "prob_sell": analysis.get("prob_sell", 0.0),
+                "rationale": analysis.get("rationale", ""),
+            }
+            regime = analysis.get("regime", "lateral")
+            rationale = analysis.get("rationale", "")
+            atr_pct = float(analysis.get("atr_pct", 0) or 0)
+            feature_snapshot = analysis.get("feature_snapshot") or {}
 
-            # Em modo real, limitar risco ao teto da policy do robo.
-            if mode == "real" and max_risk_real is not None:
-                prediction['risk'] = min(float(prediction['risk']), float(max_risk_real))
-
-            # Rationale final: inclui regime e win_rate
-            rationale = prediction.get('rationale') or prediction.get('reason', '')
-            atr_pct   = float(last_row.iloc[0].get('atr_pct', 0))
-            if rationale:
-                rationale = f"[{regime.upper()}] {rationale} | WR={win_rate:.0%}"
-            else:
-                rationale = f"[{regime.upper()}] Ensemble RF+GB | WR={win_rate:.0%}"
+            # Camada de contexto macro: noticias financeiras (best effort).
+            prediction, news_note, news_context, news_shadow = self.news_analyzer.apply_to_prediction(
+                prediction,
+                symbol=symbol,
+                timeframe=timeframe,
+            )
+            if news_note:
+                rationale = f"{rationale} | {news_note}"
 
             # Integracao opcional: Skill Engine valida/ajusta a proposta do ML
             governance = self.skill_engine.evaluate_pre_trade({
@@ -881,7 +1229,8 @@ class MT5Bridge:
                 "ml_risk_pct": float(prediction.get("risk", 0) or 0),
                 "regime": regime,
                 "win_rate": float(win_rate),
-                "features": {k: float(last_row.iloc[0].get(k, 0) or 0) for k in FeatureBuilder.get_feature_cols()},
+                "features": feature_snapshot,
+                "news": news_context,
             })
 
             gov_decision = str(governance.get("decision", "allow") or "allow").lower()
@@ -971,8 +1320,42 @@ class MT5Bridge:
                 },
             }
 
+            if decision_id and news_shadow:
+                self._news_shadow_by_decision[decision_id] = {
+                    "timestamp": datetime.now().isoformat(),
+                    "decision_id": decision_id,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "mode": mode,
+                    "baseline_signal": str(news_shadow.get("baseline_signal", "HOLD")),
+                    "candidate_signal": str(news_shadow.get("candidate_signal", "HOLD")),
+                    "effective_signal": str(prediction.get("signal", "HOLD")),
+                    "baseline_risk": float(news_shadow.get("baseline_risk", 0.0) or 0.0),
+                    "candidate_risk": float(news_shadow.get("candidate_risk", 0.0) or 0.0),
+                    "effective_risk": float(prediction.get("risk", 0.0) or 0.0),
+                    "news_bias": str(news_context.get("bias", "neutral")) if news_context else "neutral",
+                    "news_confidence": float(news_context.get("confidence", 0.0) or 0.0) if news_context else 0.0,
+                    "news_sample_size": int(news_context.get("sample_size", 0) or 0) if news_context else 0,
+                    "alignment": str(news_shadow.get("alignment", "neutral")),
+                    "can_influence": int(bool(news_shadow.get("can_influence", False))),
+                    "execution_changed": int(bool(news_shadow.get("execution_changed", False))),
+                }
+
             if shadow_data:
                 response["shadow_global"] = shadow_data
+
+            if news_context:
+                response["news_context"] = {
+                    "enabled": bool(news_context.get("enabled", False)),
+                    "mode": str(news_shadow.get("mode", "shadow")) if news_shadow else "shadow",
+                    "bias": str(news_context.get("bias", "neutral")),
+                    "score": float(news_context.get("score", 0.0) or 0.0),
+                    "confidence": float(news_context.get("confidence", 0.0) or 0.0),
+                    "sample_size": int(news_context.get("sample_size", 0) or 0),
+                }
+
+            if news_shadow:
+                response["news_shadow"] = news_shadow
 
             if prediction.get("governance_hold"):
                 response["paused"] = True
@@ -1006,6 +1389,14 @@ class MT5Bridge:
         robot_id    = _normalize_uuid(msg.get('robot_id', None))
         robot_token = str(msg.get('robot_token', '') or '').strip()
         result      = 'WIN' if profit > 0 else ('LOSS' if profit < 0 else 'breakeven')
+
+        if decision_id:
+            shadow_row = self._news_shadow_by_decision.pop(decision_id, None)
+            if shadow_row:
+                shadow_row["outcome"] = result.lower()
+                shadow_row["pnl_money"] = float(profit)
+                shadow_row["pnl_points"] = float(points)
+                self._append_news_shadow_log(shadow_row)
 
         if not decision_id:
             log.warning("TRADE_RESULT ignorado para persistencia: decision_id ausente/invalido | ticket=%s", ticket)
@@ -1221,34 +1612,14 @@ class RetrainScheduler:
         self.learner = learner
 
     def generate_sample_data(self, n: int = 600) -> pd.DataFrame:
-        """
-        Gera dados simulados para demonstração.
-        Em produção: substituir por dados reais via MT5 API ou arquivo.
-        """
-        np.random.seed(42)
-        dates  = pd.date_range('2025-01-01', periods=n, freq='1H')
-        price  = 1.1000
-        prices = []
-        for _ in range(n):
-            price *= (1 + np.random.normal(0, 0.001))
-            prices.append(price)
-
-        close = np.array(prices)
-        df = pd.DataFrame({
-            'time':   dates,
-            'open':   close * (1 + np.random.normal(0, 0.0002, n)),
-            'high':   close * (1 + np.abs(np.random.normal(0, 0.0005, n))),
-            'low':    close * (1 - np.abs(np.random.normal(0, 0.0005, n))),
-            'close':  close,
-            'volume': np.random.randint(100, 1000, n).astype(float),
-        })
-        return df
+        return generate_bootstrap_market_data(n)
 
     def run(self, interval: int):
         while True:
             log.info("Iniciando retreino do modelo...")
             df = self.generate_sample_data(CONFIG['lookback_candles'])
-            self.model.train(df)
+            if self.model.train(df):
+                save_model_weights(self.model)
             log.info(f"Próximo retreino em {interval // 60} minutos")
             time.sleep(interval)
 
@@ -1271,16 +1642,29 @@ def main():
         log.info("brain-py desabilitado (ENABLE_BRAINPY=0). Usando engine local RF+GB.")
 
     # Inicializar componentes
-    model   = TradingModel()
+    runtime = DecisionRuntimeConfig(
+        min_confidence=float(CONFIG["min_confidence"]),
+        risk_base=float(CONFIG["risk_base"]),
+        risk_max=float(CONFIG["risk_max"]),
+        risk_min=float(CONFIG["risk_min"]),
+    )
+    model   = TradingModel(runtime)
+    engine  = DecisionEngine(model, runtime)
     learner = LearningManager(CONFIG['history_file'])
     learner.load()
     db      = SupabaseLogger()
     skill_engine = SkillEngineBridge()
+    news_analyzer = FinancialNewsAnalyzer()
 
-    # Treino inicial
+    # Carregar pesos existentes; se não houver, faz bootstrap e salva
     scheduler = RetrainScheduler(model, learner)
-    df_inicial = scheduler.generate_sample_data(CONFIG['lookback_candles'])
-    model.train(df_inicial)
+    loaded = load_model_weights(model)
+    if loaded:
+        log.info("Pesos do modelo carregados de disco (brain_model_rf.pkl / brain_model_gb.pkl)")
+    else:
+        df_inicial = scheduler.generate_sample_data(CONFIG['lookback_candles'])
+        model.train(df_inicial)
+        save_model_weights(model)
 
     # Iniciar retreino em background
     retrain_thread = threading.Thread(
@@ -1295,9 +1679,11 @@ def main():
         CONFIG['socket_host'],
         CONFIG['socket_port'],
         model,
+        engine,
         learner,
         db,
         skill_engine,
+        news_analyzer,
     )
 
     log.info(f"Sistema pronto | Accuracy inicial: {model.accuracy:.3f}")

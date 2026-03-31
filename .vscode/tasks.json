@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "phase1-smoke-run",
+			"type": "shell",
+			"command": "C:/Users/hause/AppData/Local/Programs/Python/Python312/python.exe scripts/phase1_full_cycle_smoke.py",
+			"isBackground": false
+		},
+		{
+			"label": "run-brain-now",
+			"type": "shell",
+			"command": "C:/Users/hause/AppData/Local/Programs/Python/Python312/python.exe",
+			"args": [
+				"vunotrader_brain.py"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "run-brain-now-fg",
+			"type": "shell",
+			"command": "C:/Users/hause/AppData/Local/Programs/Python/Python312/python.exe",
+			"args": [
+				"vunotrader_brain.py"
+			],
+			"isBackground": false
+		}
+	]
+}

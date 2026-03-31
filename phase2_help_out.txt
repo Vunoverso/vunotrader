@@ -1,0 +1,63 @@
+usage: mt5_cmd_bot.py run-engine-dynamic [-h] [--env-file ENV_FILE]
+                                         [--login LOGIN] [--password PASSWORD]
+                                         [--server SERVER] [--path PATH]
+                                         [--timeout-ms TIMEOUT_MS]
+                                         [--portable] --symbols SYMBOLS
+                                         [--timeframe TIMEFRAME] [--bars BARS]
+                                         [--interval-sec INTERVAL_SEC]
+                                         --volume VOLUME
+                                         [--sl-points SL_POINTS]
+                                         [--tp-points TP_POINTS]
+                                         [--deviation DEVIATION]
+                                         [--magic MAGIC] [--comment COMMENT]
+                                         [--dry-run] [--close-opposite]
+                                         [--allow-multiple]
+                                         [--mode {observer,demo,real}]
+                                         [--win-rate WIN_RATE]
+                                         [--max-spread-points MAX_SPREAD_POINTS]
+                                         [--min-atr-pct MIN_ATR_PCT]
+                                         [--max-global-positions MAX_GLOBAL_POSITIONS]
+                                         [--max-positions-per-symbol MAX_POSITIONS_PER_SYMBOL]
+                                         [--max-correlated-positions MAX_CORRELATED_POSITIONS]
+
+options:
+  -h, --help            show this help message and exit
+  --env-file ENV_FILE   Arquivo .env opcional para carregar credenciais
+  --login LOGIN         Login da conta MT5
+  --password PASSWORD   Senha da conta MT5
+  --server SERVER       Servidor da conta MT5
+  --path PATH           Caminho do terminal terminal64.exe
+  --timeout-ms TIMEOUT_MS
+                        Timeout da conexao com MT5
+  --portable            Inicializa o terminal em modo portable
+  --symbols SYMBOLS     Lista de simbolos separados por virgula
+  --timeframe TIMEFRAME
+                        Timeframe, ex: M5
+  --bars BARS           Quantidade de candles por simbolo
+  --interval-sec INTERVAL_SEC
+                        Intervalo entre ciclos
+  --volume VOLUME       Volume/lote da ordem
+  --sl-points SL_POINTS
+                        Stop loss em pontos
+  --tp-points TP_POINTS
+                        Take profit em pontos
+  --deviation DEVIATION
+                        Desvio maximo
+  --magic MAGIC         Magic number
+  --comment COMMENT     Comentario da ordem
+  --dry-run             Nao envia ordens; apenas mostra selecao
+  --close-opposite      Fecha posicoes opostas antes de inverter
+  --allow-multiple      Permite multiplas posicoes no simbolo
+  --mode {observer,demo,real}
+                        Modo logico do motor
+  --win-rate WIN_RATE   Win rate informado ao motor
+  --max-spread-points MAX_SPREAD_POINTS
+                        Spread maximo permitido
+  --min-atr-pct MIN_ATR_PCT
+                        ATR percentual minimo
+  --max-global-positions MAX_GLOBAL_POSITIONS
+                        Limite global de posicoes
+  --max-positions-per-symbol MAX_POSITIONS_PER_SYMBOL
+                        Limite por simbolo
+  --max-correlated-positions MAX_CORRELATED_POSITIONS
+                        Limite de posicoes correlacionadas
