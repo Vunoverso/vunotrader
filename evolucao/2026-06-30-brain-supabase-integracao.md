@@ -148,6 +148,48 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 ### Observacao
 - A recompilacao do EA no MetaTrader nao foi executada neste host porque `metaeditor64.exe` nao esta instalado/disponivel no ambiente atual.
 
+## Atualizacao 2026-03-30 - Isolamento por instancia de robo (robot_instances)
+
+### Objetivo
+- Separar operacoes por robo (e nao apenas por usuario/organizacao), com autenticacao por `robot_id + robot_token` no canal MT5 -> Brain.
+
+### Arquivos impactados
+- `supabase/migrations/20260330_000005_robot_instances_isolation.sql`
+- `projeto/supabase_schema.sql`
+- `vunotrader_brain.py`
+- `VunoTrader_v2.mq5`
+- `web/public/downloads/VunoTrader_v2.mq5`
+- `backend/scripts/create_robot_instance.py`
+- `backend/scripts/simulate_mt5_cycle.py`
+
+### Implementacao
+- Criada tabela `robot_instances` com:
+  - `organization_id`, `profile_id`, `name`
+  - `robot_token_hash` (sha256)
+  - `status` (`active|paused|revoked`)
+  - `last_seen_at`, `created_at`, `updated_at`
+- Adicionado `robot_instance_id` em:
+  - `trade_decisions`
+  - `executed_trades`
+  - `trade_outcomes`
+  - `ai_usage_logs`
+- RLS habilitado para `robot_instances` com policy baseada em `is_org_member(...)`.
+
+### Protocolo MT5
+- `MARKET_DATA` e `TRADE_RESULT` passaram a exigir:
+  - `robot_id`
+  - `robot_token`
+- EA valida localmente `UserID`, `OrganizationID`, `RobotID` (UUID) e comprimento minimo do token.
+
+### Validacao no Brain
+- Brain valida `robot_id + robot_token` contra `robot_instances` antes de aceitar MARKET_DATA/TRADE_RESULT.
+- Sem identidade valida, retorno controlado (`HOLD` ou `ACK` com motivo), sem persistir trilha inconsistente.
+
+### Observacoes operacionais
+- A migration `20260330_000005_robot_instances_isolation.sql` precisa ser aplicada no Supabase remoto para ativar a camada.
+- Foi criado utilitario para provisionar credenciais de robo:
+  - `python backend/scripts/create_robot_instance.py --profile-id <uuid> --organization-id <uuid> --name EA-Demo-1`
+
 ## Atualizacao 2026-03-30 - Robustez de imports opcionais no Brain
 
 ### Objetivo da mudanca

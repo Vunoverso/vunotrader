@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import Mt5ConnectionChecker from "@/components/app/mt5-connection-checker";
 
 const steps = [
   {
@@ -55,7 +57,10 @@ const faqItems = [
   },
 ];
 
-export default function InstalacaoPage() {
+export default async function InstalacaoPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <header className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -90,6 +95,9 @@ export default function InstalacaoPage() {
           </span>
         </div>
       </section>
+
+      {/* Validação de conexão em tempo real */}
+      {user && <Mt5ConnectionChecker userId={user.id} />}
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">

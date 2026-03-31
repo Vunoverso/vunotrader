@@ -41,6 +41,25 @@ Habilitar automacao de browser via MCP para ampliar capacidade de teste e inspec
 - usar o browser integrado para smoke tests guiados por rota
 - incluir roteiro de teste exploratorio com severidade no fluxo do agente
 
+## Atualizacao 2026-03-30 - Remocao do MCP Supabase auto-start no workspace
+
+### Objetivo
+
+- Evitar mensagem recorrente de "Iniciando servidores MCP supabase" no inicio de cada conversa no VS Code.
+
+### Arquivo impactado
+
+- [.vscode/mcp.json](../.vscode/mcp.json)
+
+### Decisao tomada
+
+- Removida a entrada `supabase` da configuracao de servidores MCP do workspace.
+- Mantidos os servidores MCP de browser (Playwright/Chrome CDP).
+
+### Observacao
+
+- Se o MCP Supabase estiver configurado no escopo global do usuario, a mensagem ainda pode aparecer em outros workspaces ate remover tambem no config global.
+
 ## Atualizacao 2026-03-30 - Correcao de lint PowerShell no launcher Chrome
 
 ### Objetivo

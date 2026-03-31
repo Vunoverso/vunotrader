@@ -19,6 +19,9 @@ export interface ParametrosData {
   trading_start_time: string;
   trading_end_time: string;
   allowed_symbols: string;
+  max_consecutive_losses: string;
+  drawdown_pause_pct: string;
+  auto_reduce_risk: boolean;
 }
 
 const DEFAULT: ParametrosData = {
@@ -33,6 +36,9 @@ const DEFAULT: ParametrosData = {
   trading_start_time: "09:00",
   trading_end_time: "17:30",
   allowed_symbols: "",
+  max_consecutive_losses: "3",
+  drawdown_pause_pct: "5",
+  auto_reduce_risk: true,
 };
 
 // ── Helpers de UI ────────────────────────────────────────────
@@ -145,6 +151,9 @@ export default function ParametrosForm({
       allowed_symbols: form.allowed_symbols
         ? form.allowed_symbols.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
         : null,
+      max_consecutive_losses: form.max_consecutive_losses ? parseInt(form.max_consecutive_losses) : 3,
+      drawdown_pause_pct: form.drawdown_pause_pct ? parseFloat(form.drawdown_pause_pct) : 5.0,
+      auto_reduce_risk: form.auto_reduce_risk,
       updated_at: new Date().toISOString(),
     };
 
@@ -324,7 +333,63 @@ export default function ParametrosForm({
         </div>
       </section>
 
-      {/* ── Bloco 4: Horários e ativos ── */}
+      {/* ── Bloco 4B: Proteção automática ── */}
+      <section className="rounded-xl border border-orange-500/20 bg-slate-900 p-6 space-y-5">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+            Proteção automática
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            O motor bloqueia novos sinais automaticamente quando os limites abaixo são atingidos.
+            Funciona no servidor — independente do EA ou do MT5.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FieldGroup label="Máx. perdas consecutivas" hint="Motor pausa ao atingir N perdas seguidas (padrão: 3)">
+            <Input
+              value={form.max_consecutive_losses}
+              onChange={(v) => set("max_consecutive_losses", v)}
+              type="number"
+              placeholder="3"
+              suffix="perdas"
+              min="1"
+              step="1"
+            />
+          </FieldGroup>
+          <FieldGroup label="Pause por drawdown" hint="Pausa automática se o drawdown diário ultrapassar este percentual">
+            <Input
+              value={form.drawdown_pause_pct}
+              onChange={(v) => set("drawdown_pause_pct", v)}
+              type="number"
+              placeholder="5"
+              suffix="%"
+              min="0.5"
+              step="0.5"
+            />
+          </FieldGroup>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.auto_reduce_risk}
+            onClick={() => set("auto_reduce_risk", !form.auto_reduce_risk)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              form.auto_reduce_risk ? "bg-sky-600" : "bg-slate-700"
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              form.auto_reduce_risk ? "translate-x-6" : "translate-x-1"
+            }`} />
+          </button>
+          <div>
+            <p className="text-sm text-slate-300 font-medium">Reduzir risco automaticamente</p>
+            <p className="text-xs text-slate-500">Ao perder consistência, o motor usa risco menor até recuperar o padrão.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bloco 5: Horários e ativos ── */}
       <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
         <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
           Horários e ativos

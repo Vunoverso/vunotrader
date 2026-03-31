@@ -499,4 +499,21 @@ bool IdentityReady()
 double ExtractDouble(string json, string key)
 {
    string search = "\"" + key + "\":";
-   
+   int start = StringFind(json, search);
+   if(start < 0) return 0;
+   start += StringLen(search);
+   int end = start;
+   while(end < StringLen(json))
+   {
+      ushort c = StringGetCharacter(json, end);
+      if(c == ',' || c == '}') break;
+      end++;
+   }
+   return StringToDouble(StringSubstr(json, start, end - start));
+}
+
+void OnDeinit(const int reason)
+{
+   IndicatorRelease(hATR);
+   Print("VunoTrader v2 encerrado");
+}

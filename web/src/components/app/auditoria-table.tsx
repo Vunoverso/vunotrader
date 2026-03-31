@@ -31,11 +31,19 @@ export type AuditRow = {
   executed_trades: AuditTrade[];
 };
 
-type ResultFilter = "all" | "win" | "loss" | "breakeven" | "pending";
+type ResultFilter = "all" | "win" | "loss" | "breakeven" | "pending" | "alta_conv_loss";
 type ModeFilter = "all" | "observer" | "demo" | "real";
 type PeriodFilter = "all" | "today" | "7d" | "30d";
-type SortField = "created_at" | "pnl_money";
+type SortField = "created_at" | "pnl_money" | "confidence";
 type SortDirection = "desc" | "asc";
+
+function convictionBadge(confidence: number | null) {
+  if (confidence == null) return null;
+  const pct = confidence * 100;
+  if (pct >= 75) return { label: `Alta ${pct.toFixed(0)}%`, cls: "bg-emerald-500/20 text-emerald-300" };
+  if (pct >= 55) return { label: `Média ${pct.toFixed(0)}%`, cls: "bg-amber-500/20 text-amber-300" };
+  return { label: `Baixa ${pct.toFixed(0)}%`, cls: "bg-slate-700 text-slate-400" };
+}
 
 function sideBadge(side: string) {
   if (side === "buy") return "bg-emerald-500/20 text-emerald-300";
@@ -103,6 +111,10 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
     if (resultFilter === "loss" && outcome?.result !== "loss") return false;
     if (resultFilter === "breakeven" && outcome?.result !== "breakeven") return false;
     if (resultFilter === "pending" && outcome) return false;
+    if (resultFilter === "alta_conv_loss") {
+      if (outcome?.result !== "loss") return false;
+      if (row.confidence == null || row.confidence < 0.65) return false;
+    }
 
     if (periodFilter !== "all") {
       const createdAt = new Date(row.created_at).getTime();
@@ -128,6 +140,12 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
       const leftValue = new Date(left.created_at).getTime();
       const rightValue = new Date(right.created_at).getTime();
       return sortDirection === "desc" ? rightValue - leftValue : leftValue - rightValue;
+    }
+
+    if (sortField === "confidence") {
+      const lc = left.confidence ?? -1;
+      const rc = right.confidence ?? -1;
+      return sortDirection === "desc" ? rc - lc : lc - rc;
     }
 
     const leftPnl = getSortablePnl(left);
@@ -232,7 +250,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-100">Auditoria</h1>
-          <p className="text-sm text-slate-500">Trilha de decisões, resultados e motivos do robô</p>
+          <p className="text-sm text-slate-500">Motor de decisão — trilha auditável de cada sinal gerado</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -298,6 +316,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
             <option value="loss">LOSS</option>
             <option value="breakeven">Breakeven</option>
             <option value="pending">Sem resultado</option>
+            <option value="alta_conv_loss">⚠ Alta convicção + Loss</option>
           </select>
         </div>
 
@@ -347,6 +366,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
           >
             <option value="created_at">Data</option>
             <option value="pnl_money">PnL</option>
+            <option value="confidence">Convicção</option>
           </select>
         </div>
 
@@ -417,11 +437,17 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                         {row.side.toUpperCase()}
                       </span>
                       <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400">{row.timeframe}</span>
+                      {(() => { const c = convictionBadge(row.confidence); return c ? <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${c.cls}`}>{c.label}</span> : null; })()}
                       <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${resultBadge(outcome?.result)}`}>
                         {outcome?.result?.toUpperCase() ?? "SEM RESULTADO"}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">{fmtDt(row.created_at)} • modo {row.mode}</p>
+                    {row.rationale && (
+                      <p className="mt-1 text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
+                        {row.rationale.replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "").slice(0, 80)}
+                      </p>
+                    )}
+                    <p className="mt-0.5 text-[10px] text-slate-600">{fmtDt(row.created_at)} • modo {row.mode}</p>
                   </div>
                   <span className={`text-xs text-slate-500 transition-transform ${expanded === row.id ? "rotate-180" : ""}`}>▼</span>
                 </button>

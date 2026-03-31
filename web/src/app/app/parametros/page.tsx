@@ -57,6 +57,9 @@ export default async function ParametrosPage() {
         allowed_symbols: Array.isArray(params.allowed_symbols)
           ? params.allowed_symbols.join(", ")
           : "",
+        max_consecutive_losses: params.max_consecutive_losses?.toString() ?? "3",
+        drawdown_pause_pct: params.drawdown_pause_pct?.toString() ?? "5",
+        auto_reduce_risk: params.auto_reduce_risk ?? true,
       }
     : null;
 

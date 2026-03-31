@@ -12,9 +12,9 @@ Start-Process $chromePath "--remote-debugging-port=9222 --user-data-dir=\"$profi
 Start-Sleep -Seconds 2
 
 try {
-  $version = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:9222/json/version"
+  $cdpResponse = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:9222/json/version"
   Write-Output "CDP_ATIVO_CHROME"
-  Write-Output $version.Content
+  Write-Output $cdpResponse.Content
 } catch {
   Write-Error "Falha ao validar endpoint CDP em 9222."
   exit 1

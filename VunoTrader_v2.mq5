@@ -24,6 +24,8 @@ input string   TradingEnd       = "20:00";
 input group "=== IDENTIFICAÇÃO VUNO (Supabase) ==="
 input string   UserID           = "96fd6e0d-ae81-4eeb-b6fd-37279373a7db";        // UUID do usuário (copiar do painel)
 input string   OrganizationID   = "24affdc3-dc7b-4672-b20d-65033949bb76";        // UUID da organização (copiar do painel)
+input string   RobotID          = "";        // UUID da instância do robô
+input string   RobotToken       = "";        // token da instância do robô
 input string   TradingMode      = "demo";    // Modo: observer | demo | real
 
 CTrade         Trade;
@@ -82,12 +84,16 @@ void OnTick()
       "\"mode\":\"%s\","
       "\"user_id\":\"%s\","
       "\"organization_id\":\"%s\","
+      "\"robot_id\":\"%s\","
+      "\"robot_token\":\"%s\","
       "\"candles\":%s}",
       _Symbol,
       TFToString(PERIOD_CURRENT),
       TradingMode,
       UserID,
       OrganizationID,
+      RobotID,
+      RobotToken,
       candles
    );
 
@@ -206,6 +212,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          "\"mode\":\"%s\","
          "\"user_id\":\"%s\","
          "\"organization_id\":\"%s\","
+         "\"robot_id\":\"%s\","
+         "\"robot_token\":\"%s\","
          "\"entry_price\":%.5f,"
          "\"stop_loss\":%.5f,"
          "\"take_profit\":%.5f,"
@@ -218,6 +226,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          TradingMode,
          UserID,
          OrganizationID,
+         RobotID,
+         RobotToken,
          entryPrice,
          sl,
          tp,
@@ -474,12 +484,12 @@ bool IsUuidLike(string value)
 
 bool IdentityReady()
 {
-   bool ok = IsUuidLike(UserID) && IsUuidLike(OrganizationID);
+   bool ok = IsUuidLike(UserID) && IsUuidLike(OrganizationID) && IsUuidLike(RobotID) && StringLen(RobotToken) >= 16;
    if(ok) return true;
 
    if(!g_identityWarned)
    {
-      Print("VUNO IDENTIDADE: configure UserID e OrganizationID com UUID valido para integrar MT5 -> brain -> Supabase.");
+      Print("VUNO IDENTIDADE: configure UserID, OrganizationID, RobotID (UUID) e RobotToken valido para integrar MT5 -> brain -> Supabase.");
       g_identityWarned = true;
    }
 

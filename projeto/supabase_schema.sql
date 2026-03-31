@@ -119,6 +119,9 @@ create table if not exists robot_instances (
   name text not null,
   robot_token_hash text not null,
   status text not null default 'active' check (status in ('active', 'paused', 'revoked')),
+  allowed_modes text[] not null default array['demo'],
+  real_trading_enabled boolean not null default false,
+  max_risk_real numeric(7,3) not null default 1.500,
   last_seen_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -304,4 +307,26 @@ create index if not exists idx_trade_decisions_symbol_timeframe
 create index if not exists idx_trade_outcomes_result_created
   on trade_outcomes(result, created_at desc);
 
-create index if not 
+create index if not exists idx_ai_usage_logs_user_created
+  on ai_usage_logs(user_id, created_at desc);
+
+create index if not exists idx_ai_usage_logs_org_created
+  on ai_usage_logs(organization_id, created_at desc);
+
+create index if not exists idx_study_materials_user_created
+  on study_materials(user_id, created_at desc);
+
+create index if not exists idx_study_materials_processing_status
+  on study_materials(processing_status, created_at desc);
+
+create index if not exists idx_study_material_chunks_material
+  on study_material_chunks(material_id, chunk_index);
+
+create index if not exists idx_organization_members_profile
+  on organization_members(profile_id);
+
+create index if not exists idx_saas_subscriptions_org_status
+  on saas_subscriptions(organization_id, status);
+
+create index if not exists idx_anonymized_trade_events_created
+  on anonymized_trade_events(created_at desc);

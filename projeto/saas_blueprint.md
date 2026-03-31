@@ -2,7 +2,16 @@
 
 ## Visao de produto
 
-Plataforma SaaS de robo trader com IA, com area institucional publica e area privada autenticada para operacao, estudo e controle do robo.
+Plataforma de controle e inteligencia de operacao para traders que usam MT5.
+
+O Vuno nao e "IA que opera por voce". E um sistema que:
+- automatiza a execucao com criterio
+- registra o motivo de CADA decisao
+- explica por que entrou, por que saiu
+- protege o usuario de si mesmo (politica demo-first)
+- usa dados reais anonimizados para melhorar continuamente
+
+Diferencial central: rastreabilidade de decisao ponta a ponta com custo de IA por operacao e flywheel de dados anonimizados.
 
 ## Areas do sistema
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 // ── Tipos ────────────────────────────────────────────────────────
 type TradeResult = "win" | "loss" | "breakeven";
@@ -230,7 +231,16 @@ export default function OperacoesTable({ trades }: { trades: TradeRow[] }) {
                         <PnlCell value={t.trade_outcomes?.pnl_money} />
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-xs">
-                        {expanded === t.id ? "▲" : "▼"}
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/app/operacoes/${t.id}`}
+                            className="rounded px-2 py-1 text-[10px] font-medium bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Ver
+                          </Link>
+                          <span>{expanded === t.id ? "▲" : "▼"}</span>
+                        </div>
                       </td>
                     </tr>
                     {expanded === t.id && <ExpandedRow key={`e-${t.id}`} trade={t} />}

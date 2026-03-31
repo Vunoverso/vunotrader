@@ -5,6 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 // ── Tipos internos ────────────────────────────────────────────
 type PlanDist = { name: string; count: number; color: string; price: number };
 type RecentUser = { id: string; name: string; email: string; plan: string; createdAt: string; status: string };
+type RobotInstanceRow = {
+  id: string;
+  name: string;
+  status: string;
+  allowed_modes: string[];
+  real_trading_enabled: boolean;
+  last_seen_at: string | null;
+  organization_id: string;
+  orgName: string;
+};
 
 // ── Componentes internos ──────────────────────────────────────
 
@@ -155,6 +165,43 @@ export default async function AdminPage() {
     .from("ai_usage_logs")
     .select("total_tokens, estimated_cost")
     .gte("created_at", today);
+
+  // Robot instances: todas as instâncias, cruzando nome da org
+  const { data: robotsRaw } = await supabase
+    .from("robot_instances")
+    .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, organization_id")
+    .order("last_seen_at", { ascending: false })
+    .limit(50);
+
+  const { data: orgsForRobots } = await supabase
+    .from("organizations")
+    .select("id, name");
+
+  const orgNameById: Record<string, string> = {};
+  (orgsForRobots ?? []).forEach((o: { id: string; name: string }) => {
+    orgNameById[o.id] = o.name;
+  });
+
+  const nowMs = new Date().getTime();
+  const robotInstances: RobotInstanceRow[] = (robotsRaw ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    status: r.status,
+    allowed_modes: r.allowed_modes ?? ["demo"],
+    real_trading_enabled: r.real_trading_enabled ?? false,
+    last_seen_at: r.last_seen_at,
+    organization_id: r.organization_id,
+    orgName: orgNameById[r.organization_id] ?? "—",
+  }));
+
+  // Classificar status de atividade
+  function robotActivityStatus(lastSeen: string | null): "active" | "sleeping" | "offline" {
+    if (!lastSeen) return "offline";
+    const diffMin = (nowMs - new Date(lastSeen).getTime()) / 60000;
+    if (diffMin < 5) return "active";
+    if (diffMin < 60) return "sleeping";
+    return "offline";
+  }
 
   const totalTokensToday = aiToday?.reduce((acc, r) => acc + (r.total_tokens ?? 0), 0) ?? 0;
   const totalAiCostToday = aiToday?.reduce((acc, r) => acc + Number(r.estimated_cost ?? 0), 0) ?? 0;
@@ -422,20 +469,136 @@ export default async function AdminPage() {
         </div>
       </div>
 
+      {/* ── Instâncias de Robô ────────────────────────── */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <SectionTitle>Instâncias de Robô</SectionTitle>
+          <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400">
+            {robotInstances.length} instância{robotInstances.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        {robotInstances.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900 py-12 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-600">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6">
+                <rect x="3" y="11" width="18" height="10" rx="2"/>
+                <circle cx="12" cy="5" r="2"/>
+                <path strokeLinecap="round" d="M12 7v4"/>
+              </svg>
+            </div>
+            <p className="text-sm text-slate-500">Nenhuma instância registrada ainda</p>
+            <p className="mt-1 text-xs text-slate-600">Instâncias aparecem quando o brain conecta pela primeira vez</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-slate-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-900/60">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">Robô</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">Org</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">Modo</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">Atividade</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600">Último sinal</th>
+                </tr>
+              </thead>
+              <tbody className="bg-slate-900">
+                {robotInstances.map((robot, i) => {
+                  const activity = robotActivityStatus(robot.last_seen_at);
+                  const activityConfig = {
+                    active:   { label: "Ativo",    cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+                    sleeping: { label: "Dormindo", cls: "bg-amber-500/10   text-amber-400   border-amber-500/20"   },
+                    offline:  { label: "Offline",  cls: "bg-slate-700      text-slate-400   border-slate-600"      },
+                  }[activity];
+                  const lastSeenLabel = robot.last_seen_at
+                    ? (() => {
+                        const diffMin = Math.round((nowMs - new Date(robot.last_seen_at).getTime()) / 60000);
+                        if (diffMin < 1) return "agora";
+                        if (diffMin < 60) return `há ${diffMin} min`;
+                        const diffH = Math.floor(diffMin / 60);
+                        return diffH < 24 ? `há ${diffH}h` : `há ${Math.floor(diffH / 24)}d`;
+                      })()
+                    : "nunca";
+                  return (
+                    <tr
+                      key={robot.id}
+                      className={`${i !== robotInstances.length - 1 ? "border-b border-slate-800/60" : ""} transition-colors hover:bg-slate-800/30`}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                              <rect x="3" y="11" width="18" height="10" rx="2"/>
+                              <circle cx="12" cy="5" r="2"/>
+                              <path strokeLinecap="round" d="M12 7v4"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-200">{robot.name}</p>
+                            <p className="font-mono text-[10px] text-slate-600">{robot.id.slice(0, 8)}…</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-slate-400">{robot.orgName}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-wrap gap-1">
+                          {(robot.allowed_modes ?? ["demo"]).map((m) => (
+                            <span
+                              key={m}
+                              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                                m === "real"
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                  : "border-slate-700 bg-slate-800 text-slate-400"
+                              }`}
+                            >
+                              {m === "real" ? "Real" : "Demo"}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${activityConfig.cls}`}>
+                          <StatusDot active={activity === "active"} />
+                          {activityConfig.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{lastSeenLabel}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="flex items-center justify-between border-t border-slate-800 bg-slate-900/40 px-5 py-2.5">
+              <p className="text-[11px] text-slate-600">
+                Ativo = &lt;5 min · Dormindo = &lt;60 min · Offline = &gt;60 min
+              </p>
+              {robotInstances.filter((r) => robotActivityStatus(r.last_seen_at) === "active" && r.real_trading_enabled).length > 0 && (
+                <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                  {robotInstances.filter((r) => robotActivityStatus(r.last_seen_at) === "active" && r.real_trading_enabled).length} real ativo
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Ações rápidas ─────────────────────────────────── */}
       <div>
         <SectionTitle>Ações rápidas</SectionTitle>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Ver todos os usuários",     href: "/app/admin/usuarios", icon: "👥" },
-            { label: "Gerenciar planos",           href: "/app/admin/planos",   icon: "📋" },
-            { label: "Logs de IA",                 href: "/app/admin/logs-ia",  icon: "🤖" },
-            { label: "Configurar Brain",           href: "#brain",       icon: "⚙️" },
+            { label: "Ver todos os usuários",     href: "/app/admin/usuarios",  icon: "👥" },
+            { label: "Gerenciar planos",           href: "/app/admin/planos",    icon: "📋" },
+            { label: "Logs de IA",                 href: "/app/admin/logs-ia",   icon: "🤖" },
+            { label: "Modelo ML",                  href: "/app/admin/modelo",    icon: "🔄" },
           ].map((a) => (
             <Link
               key={a.label}
               href={a.href}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition ${a.href === "#brain" ? "cursor-not-allowed border-dashed border-slate-700 bg-slate-900 text-slate-500" : "border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600 hover:text-white"}`}
+              className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-left text-sm text-slate-300 transition hover:border-slate-600 hover:text-white"
             >
               <span className="text-xl">{a.icon}</span>
               <span className="leading-snug">{a.label}</span>
@@ -443,7 +606,7 @@ export default async function AdminPage() {
           ))}
         </div>
         <p className="mt-3 text-xs text-slate-700">
-          Ações de gestão avançada serão habilitadas nas próximas versões.
+          Usuários, planos e modelo ML disponíveis. Logs de IA em breve.
         </p>
       </div>
 

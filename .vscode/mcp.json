@@ -1,9 +1,5 @@
 {
   "servers": {
-    "supabase": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=mztrtovhjododrkzkehk"
-    },
     "browser-automation-mcp": {
       "type": "stdio",
       "command": "npx",

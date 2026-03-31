@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -107,6 +108,22 @@ export default function EstudosManager({
   const [status, setStatus] = useState<{ kind: "idle" | "ok" | "error"; text: string }>({ kind: "idle", text: "" });
   const [refreshing, setRefreshing] = useState(false);
 
+  /** Dispara o processamento assíncrono do material via Python worker. */
+  async function triggerIngest(materialId: string) {
+    try {
+      await fetch("/api/study/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ materialId }),
+      });
+      // Após o worker concluir, atualiza o status na UI
+      void refreshItems(true);
+    } catch {
+      // Falha silenciosa — o worker pode rodar no background;
+      // o polling de 15s vai pegar o status atualizado.
+    }
+  }
+
   const hasOrg = useMemo(() => Boolean(organizationId), [organizationId]);
 
   const refreshItems = useCallback(async (silent = false) => {
@@ -188,7 +205,8 @@ export default function EstudosManager({
     setItems((prev) => [data as EstudoItem, ...prev]);
     setVideoTitle("");
     setVideoUrl("");
-    setStatus({ kind: "ok", text: "Vídeo salvo com sucesso." });
+    setStatus({ kind: "ok", text: "Vídeo salvo — iniciando processamento…" });
+    void triggerIngest((data as EstudoItem).id);
   }
 
   async function addPdf() {
@@ -261,7 +279,8 @@ export default function EstudosManager({
     setItems((prev) => [updated as EstudoItem, ...prev]);
     setPdfTitle("");
     setPdfFile(null);
-    setStatus({ kind: "ok", text: "PDF enviado com sucesso." });
+    setStatus({ kind: "ok", text: "PDF enviado — iniciando processamento…" });
+    void triggerIngest((updated as EstudoItem).id);
   }
 
   return (
@@ -373,7 +392,12 @@ export default function EstudosManager({
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${processingClasses(item.processing_status)}`}>
                       {processingLabel(item.processing_status)}
                     </span>
-                    <p className="text-sm font-medium text-slate-100">{item.title}</p>
+                    <Link
+                      href={`/app/estudos/${item.id}`}
+                      className="text-sm font-medium text-slate-100 hover:text-sky-400 transition-colors"
+                    >
+                      {item.title}
+                    </Link>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{formatDate(item.created_at)}</p>
                   {item.processed_at && (

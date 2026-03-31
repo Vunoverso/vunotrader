@@ -54,13 +54,13 @@ export default function Home() {
         <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-12 px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
           <AnimateOnView direction="up" delay={0.05}>
             <div className="inline-flex rounded-full border border-sky-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-sky-800 shadow-sm">
-              SaaS de robo trader com IA controlada
+              Motor de decisão e controle de operação
             </div>
             <h1 className="mt-8 max-w-4xl text-5xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
               O ecossistema para operar, estudar e evoluir seu robô com mais critério.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-              Reúna MT5, cérebro Python, memória inteligente, painel SaaS e trilha auditável para levar o robô do demo ao real com governança.
+              Automatize a execução no MT5, registre o motivo de cada decisão, controle o risco por instância e evolua do demo ao real com trilha auditável e governança de dados.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <a
