@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8000, alias="APP_PORT")
     app_debug: bool = Field(default=False, alias="APP_DEBUG")
     app_allowed_origins: str = Field(default="http://localhost:3000", alias="APP_ALLOWED_ORIGINS")
-    app_trusted_hosts: str = Field(default="localhost,127.0.0.1", alias="APP_TRUSTED_HOSTS")
+    app_trusted_hosts: str = Field(
+        default="localhost,127.0.0.1,vunotrader-api.onrender.com,.onrender.com",
+        alias="APP_TRUSTED_HOSTS"
+    )
 
     supabase_url: str = Field(alias="SUPABASE_URL")
     supabase_anon_key: str = Field(alias="SUPABASE_ANON_KEY")
