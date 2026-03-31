@@ -118,7 +118,22 @@ export default async function AdminUsuariosPage({
     query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
   }
 
-  const { data: profiles, count: totalCount } = await query;
+  const { data: profiles, count: totalCount, error } = await query;
+  if (error) {
+    console.error("Admin query error:", error);
+    return (
+      <div className="mx-auto max-w-6xl p-6">
+        <div className="rounded-xl border border-red-500/30 bg-red-900/20 p-6">
+          <h2 className="text-lg font-bold text-red-500">Erro na leitura do Banco de Dados</h2>
+          <p className="mt-2 text-red-400 font-mono text-sm">{error.message}</p>
+          <p className="mt-4 text-sm text-slate-300">
+            A Chave `SUPABASE_SERVICE_ROLE_KEY` configurada no Vercel está rejeitando a conexão ou o nome da coluna está incorreto.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const total = totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
