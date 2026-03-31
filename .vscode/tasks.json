@@ -24,6 +24,30 @@
 				"vunotrader_brain.py"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "git-unstage-temp",
+			"type": "shell",
+			"command": "git restore --staged .agents/ls_files.txt brain_model_gb.pkl brain_model_rf.pkl brain_model_scaler.pkl phase1_cycle_code.txt phase1_cycle_err.txt phase1_cycle_out.txt phase1_probe_code.txt phase1_probe_err.txt phase1_probe_json.txt phase1_probe_out.txt phase2_compile_code.txt phase2_compile_err.txt phase2_compile_out.txt phase2_help_code.txt phase2_help_err.txt phase2_help_out.txt py_ok.txt testout.txt 2>&1; echo 'DONE_UNSTAGE'",
+			"isBackground": false
+		},
+		{
+			"label": "git-commit-push",
+			"type": "shell",
+			"command": "git restore --staged .agents/ls_files.txt brain_model_gb.pkl brain_model_rf.pkl brain_model_scaler.pkl phase1_cycle_code.txt phase1_cycle_err.txt phase1_cycle_out.txt phase1_probe_code.txt phase1_probe_err.txt phase1_probe_json.txt phase1_probe_out.txt phase2_compile_code.txt phase2_compile_err.txt phase2_compile_out.txt phase2_help_code.txt phase2_help_err.txt phase2_help_out.txt py_ok.txt testout.txt 2>$null; git commit -m 'feat: scanner multiativos, autonomia adaptativa, news shadow mode e motor compartilhado'; git push; echo 'GIT_DONE'",
+			"isBackground": false
+		},
+		{
+			"label": "check-git-tracked",
+			"type": "shell",
+			"command": "git ls-files scripts/mt5_cmd_bot.py vuno_core/ vunotrader_brain.py && echo 'FILES_TRACKED' || echo 'FILES_NOT_TRACKED'",
+			"isBackground": false
+		},
+		{
+			"label": "verify-tracked",
+			"type": "shell",
+			"command": "git ls-files --error-unmatch scripts/mt5_cmd_bot.py vuno_core/__init__.py vunotrader_brain.py 2>&1 && echo 'ALL_TRACKED' ; git log --oneline -3 2>&1",
+			"isBackground": false
 		}
 	]
 }
