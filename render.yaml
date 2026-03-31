@@ -1,0 +1,67 @@
+version: "1"
+
+services:
+  # ==========================================
+  # 1. API do Backend (FastAPI)
+  # ==========================================
+  - type: web
+    name: vunotrader-api
+    env: python
+    region: ohio
+    plan: free # Usa o plano gratuito para começar. Remova ou mude para 'starter' se quiser.
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: APP_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # ==========================================
+  # 2. Worker de Ingestão de Estudos
+  # ==========================================
+  - type: worker
+    name: vunotrader-worker
+    env: python
+    region: ohio
+    plan: starter # Workers no Render não têm plano gratuito
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python -m app.workers.study_ingestion_worker"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # ==========================================
+  # 3. Frontend Web (Next.js)
+  # ==========================================
+  - type: web
+    name: vunotrader-web
+    env: node
+    region: ohio
+    plan: free
+    rootDir: web
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+        sync: false
