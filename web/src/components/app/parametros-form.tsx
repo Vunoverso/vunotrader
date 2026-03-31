@@ -2,19 +2,25 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import RecommendationAdvisor from "@/components/app/recommendation-advisor";
 
 type RobotMode = "observer" | "demo" | "real";
+type StopLossMode = "atr" | "fixed_points";
 
 export interface ParametrosData {
   id?: string;
   organization_id?: string;
   mode: RobotMode;
+  capital_usd: string;
   daily_profit_target: string;
   weekly_profit_target: string;
   monthly_profit_target: string;
   daily_loss_limit: string;
   max_drawdown_pct: string;
   risk_per_trade_pct: string;
+  per_trade_stop_loss_mode: StopLossMode;
+  per_trade_stop_loss_value: string;
+  per_trade_take_profit_rr: string;
   max_trades_per_day: string;
   trading_start_time: string;
   trading_end_time: string;
@@ -26,12 +32,16 @@ export interface ParametrosData {
 
 const DEFAULT: ParametrosData = {
   mode: "demo",
+  capital_usd: "10000",
   daily_profit_target: "",
   weekly_profit_target: "",
   monthly_profit_target: "",
   daily_loss_limit: "",
   max_drawdown_pct: "",
   risk_per_trade_pct: "",
+  per_trade_stop_loss_mode: "atr",
+  per_trade_stop_loss_value: "2",
+  per_trade_take_profit_rr: "2",
   max_trades_per_day: "",
   trading_start_time: "09:00",
   trading_end_time: "17:30",
@@ -110,6 +120,19 @@ const MODE_OPTIONS: { value: RobotMode; label: string; desc: string; color: stri
   },
 ];
 
+const STOP_LOSS_OPTIONS: { value: StopLossMode; label: string; desc: string }[] = [
+  {
+    value: "atr",
+    label: "ATR",
+    desc: "Usa volatilidade do ativo para definir a distancia do stop.",
+  },
+  {
+    value: "fixed_points",
+    label: "Pontos fixos",
+    desc: "Mantem uma distancia fixa por operacao.",
+  },
+];
+
 // ── Componente principal ─────────────────────────────────────
 export default function ParametrosForm({
   initial,
@@ -129,6 +152,31 @@ export default function ParametrosForm({
     setStatus("idle");
   }
 
+  function applyRecommendationPatch(patch: Record<string, string | boolean>) {
+    setForm((prev) => ({
+      ...prev,
+      risk_per_trade_pct: typeof patch.risk_per_trade_pct === "string" ? patch.risk_per_trade_pct : prev.risk_per_trade_pct,
+      max_drawdown_pct: typeof patch.max_drawdown_pct === "string" ? patch.max_drawdown_pct : prev.max_drawdown_pct,
+      drawdown_pause_pct: typeof patch.drawdown_pause_pct === "string" ? patch.drawdown_pause_pct : prev.drawdown_pause_pct,
+      max_consecutive_losses: typeof patch.max_consecutive_losses === "string" ? patch.max_consecutive_losses : prev.max_consecutive_losses,
+      max_trades_per_day: typeof patch.max_trades_per_day === "string" ? patch.max_trades_per_day : prev.max_trades_per_day,
+      auto_reduce_risk: typeof patch.auto_reduce_risk === "boolean" ? patch.auto_reduce_risk : prev.auto_reduce_risk,
+      per_trade_stop_loss_mode:
+        patch.per_trade_stop_loss_mode === "atr" || patch.per_trade_stop_loss_mode === "fixed_points"
+          ? patch.per_trade_stop_loss_mode
+          : prev.per_trade_stop_loss_mode,
+      per_trade_stop_loss_value:
+        typeof patch.per_trade_stop_loss_value === "string"
+          ? patch.per_trade_stop_loss_value
+          : prev.per_trade_stop_loss_value,
+      per_trade_take_profit_rr:
+        typeof patch.per_trade_take_profit_rr === "string"
+          ? patch.per_trade_take_profit_rr
+          : prev.per_trade_take_profit_rr,
+    }));
+    setStatus("idle");
+  }
+
   async function handleSave() {
     setSaving(true);
     setStatus("idle");
@@ -139,12 +187,16 @@ export default function ParametrosForm({
       user_id: userId,
       organization_id: organizationId,
       mode: form.mode,
+      capital_usd: form.capital_usd ? parseFloat(form.capital_usd) : 10000,
       daily_profit_target: form.daily_profit_target ? parseFloat(form.daily_profit_target) : null,
       weekly_profit_target: form.weekly_profit_target ? parseFloat(form.weekly_profit_target) : null,
       monthly_profit_target: form.monthly_profit_target ? parseFloat(form.monthly_profit_target) : null,
       daily_loss_limit: form.daily_loss_limit ? parseFloat(form.daily_loss_limit) : null,
       max_drawdown_pct: form.max_drawdown_pct ? parseFloat(form.max_drawdown_pct) : null,
       risk_per_trade_pct: form.risk_per_trade_pct ? parseFloat(form.risk_per_trade_pct) : null,
+      per_trade_stop_loss_mode: form.per_trade_stop_loss_mode,
+      per_trade_stop_loss_value: form.per_trade_stop_loss_value ? parseFloat(form.per_trade_stop_loss_value) : null,
+      per_trade_take_profit_rr: form.per_trade_take_profit_rr ? parseFloat(form.per_trade_take_profit_rr) : null,
       max_trades_per_day: form.max_trades_per_day ? parseInt(form.max_trades_per_day) : null,
       trading_start_time: form.trading_start_time || null,
       trading_end_time: form.trading_end_time || null,
@@ -180,6 +232,8 @@ export default function ParametrosForm({
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
+      <RecommendationAdvisor form={form} onApply={applyRecommendationPatch} />
+
       {/* Cabeçalho */}
       <div className="flex items-center justify-between">
         <div>
@@ -287,6 +341,17 @@ export default function ParametrosForm({
           Limites de risco
         </h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FieldGroup label="Capital de referência" hint="Base usada pelo motor para calcular drawdown percentual e risco">
+            <Input
+              value={form.capital_usd}
+              onChange={(v) => set("capital_usd", v)}
+              type="number"
+              placeholder="Ex: 10000"
+              prefix="R$"
+              min="0"
+              step="0.01"
+            />
+          </FieldGroup>
           <FieldGroup label="Limite de perda diária" hint="Robô para ao atingir este valor">
             <Input
               value={form.daily_loss_limit}
@@ -328,6 +393,63 @@ export default function ParametrosForm({
               placeholder="Ex: 5"
               min="1"
               step="1"
+            />
+          </FieldGroup>
+        </div>
+      </section>
+
+      {/* ── Bloco 4: Saida por operacao ── */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+            Saida por operacao
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            O MetaTrader continua enviando ao Vuno os valores executados de entrada, stop e take profit.
+            Aqui voce define a politica operacional que orienta esses niveis.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {STOP_LOSS_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => set("per_trade_stop_loss_mode", opt.value)}
+              className={`rounded-lg border px-4 py-3 text-left transition ${
+                form.per_trade_stop_loss_mode === opt.value
+                  ? "border-sky-500 bg-sky-500/10 text-sky-300"
+                  : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+              }`}
+            >
+              <p className="text-sm font-semibold">{opt.label}</p>
+              <p className="text-xs opacity-75 mt-1 leading-snug">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <FieldGroup
+            label={form.per_trade_stop_loss_mode === "atr" ? "Multiplicador de stop" : "Stop loss em pontos"}
+            hint={form.per_trade_stop_loss_mode === "atr" ? "Ex.: 2 significa stop a 2x o ATR atual." : "Distancia fixa de perda por operacao."}
+          >
+            <Input
+              value={form.per_trade_stop_loss_value}
+              onChange={(v) => set("per_trade_stop_loss_value", v)}
+              type="number"
+              placeholder={form.per_trade_stop_loss_mode === "atr" ? "Ex: 2" : "Ex: 250"}
+              suffix={form.per_trade_stop_loss_mode === "atr" ? "x ATR" : "pts"}
+              min="0"
+              step="0.1"
+            />
+          </FieldGroup>
+          <FieldGroup label="Take profit por risco" hint="Relacao alvo de ganho sobre o risco. Ex.: 2 = alvo de 2R.">
+            <Input
+              value={form.per_trade_take_profit_rr}
+              onChange={(v) => set("per_trade_take_profit_rr", v)}
+              type="number"
+              placeholder="Ex: 2"
+              suffix="R"
+              min="0.5"
+              step="0.1"
             />
           </FieldGroup>
         </div>

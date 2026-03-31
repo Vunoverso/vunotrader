@@ -86,6 +86,24 @@ function getSortablePnl(row: AuditRow) {
   return pnl == null ? null : pnl;
 }
 
+function parseShadowFromRationale(rationale: string | null) {
+  if (!rationale) return null;
+  const m = rationale.match(/\|\s*SHADOW:(agree|diverge);global=(BUY|SELL);wr=([0-9]+(?:\.[0-9]+)?)%;n=(\d+)/i);
+  if (!m) return null;
+  return {
+    agreement: m[1].toLowerCase() === "agree",
+    globalSide: m[2].toUpperCase(),
+    winRatePct: Number(m[3]),
+    sampleSize: Number(m[4]),
+  };
+}
+
+function stripTechSuffix(rationale: string) {
+  return rationale
+    .replace(/\s*\|\s*SHADOW:(agree|diverge);global=(BUY|SELL);wr=[0-9]+(?:\.[0-9]+)?%;n=\d+/i, "")
+    .replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "");
+}
+
 export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRow[]; currentDateIso: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
@@ -423,6 +441,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
           {paginatedRows.map((row) => {
             const trade = getTrade(row);
             const outcome = getOutcome(row);
+            const shadow = parseShadowFromRationale(row.rationale);
             return (
               <div key={row.id} className="rounded-xl border border-slate-800 bg-slate-900">
                 <button
@@ -438,13 +457,24 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                       </span>
                       <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400">{row.timeframe}</span>
                       {(() => { const c = convictionBadge(row.confidence); return c ? <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${c.cls}`}>{c.label}</span> : null; })()}
+                      {shadow && (
+                        <span
+                          className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                            shadow.agreement
+                              ? "bg-cyan-500/20 text-cyan-300"
+                              : "bg-orange-500/20 text-orange-300"
+                          }`}
+                        >
+                          {shadow.agreement ? "Global alinhado" : "Global divergente"}
+                        </span>
+                      )}
                       <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${resultBadge(outcome?.result)}`}>
                         {outcome?.result?.toUpperCase() ?? "SEM RESULTADO"}
                       </span>
                     </div>
                     {row.rationale && (
                       <p className="mt-1 text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
-                        {row.rationale.replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "").slice(0, 80)}
+                        {stripTechSuffix(row.rationale).slice(0, 80)}
                       </p>
                     )}
                     <p className="mt-0.5 text-[10px] text-slate-600">{fmtDt(row.created_at)} • modo {row.mode}</p>
@@ -471,11 +501,18 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                             : `${outcome.pnl_money > 0 ? "+" : ""}R$ ${outcome.pnl_money.toFixed(2)}`}
                         </p>
                         <p className="leading-relaxed"><span className="text-slate-500">Motivo saída:</span> {outcome?.win_loss_reason ?? "—"}</p>
+                        {shadow && (
+                          <p className="leading-relaxed">
+                            <span className="text-slate-500">Shadow global:</span>{" "}
+                            {shadow.agreement ? "Alinhado" : "Divergente"}
+                            {` | Global ${shadow.globalSide} | WR ${shadow.winRatePct.toFixed(1)}% | n=${shadow.sampleSize}`}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-1 text-slate-400">
                         <p className="text-slate-500">Motivo da entrada</p>
-                        <p className="leading-relaxed">{row.rationale || "Sem motivo textual registrado."}</p>
+                        <p className="leading-relaxed">{row.rationale ? stripTechSuffix(row.rationale) : "Sem motivo textual registrado."}</p>
                         {outcome?.post_analysis && (
                           <>
                             <p className="pt-2 text-slate-500">Pós-análise</p>

@@ -17,6 +17,8 @@ import socket
 import json
 import time
 import logging
+import urllib.request
+import urllib.error
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -83,6 +85,12 @@ CONFIG = {
     "model_file":        "vunotrader_model.pkl",
     "lookback_candles":  500,       # Candles para treino
     "enable_brainpy":    os.environ.get("ENABLE_BRAINPY", "0") == "1",  # uso opcional
+    "enable_skill_engine": os.environ.get("ENABLE_SKILL_ENGINE", "0") == "1",
+    "skill_engine_url": os.environ.get("SKILL_ENGINE_URL", "").strip(),
+    "skill_engine_timeout_sec": float(os.environ.get("SKILL_ENGINE_TIMEOUT_SEC", "1.8")),
+    "skill_engine_api_key": os.environ.get("SKILL_ENGINE_API_KEY", "").strip(),
+    "enable_global_memory_shadow": os.environ.get("ENABLE_GLOBAL_MEMORY_SHADOW", "1") == "1",
+    "global_memory_min_samples": int(os.environ.get("GLOBAL_MEMORY_MIN_SAMPLES", "20")),
 }
 
 
@@ -806,12 +814,20 @@ class SupabaseLogger:
         if cached and cached[1] > now:
             return cached[0]
 
-        defaults = {"max_consecutive_losses": 3, "drawdown_pause_pct": 5.0, "auto_reduce_risk": True, "capital_usd": 10000.0}
+        defaults = {
+            "max_consecutive_losses": 3,
+            "drawdown_pause_pct": 5.0,
+            "auto_reduce_risk": True,
+            "capital_usd": 10000.0,
+            "per_trade_stop_loss_mode": "atr",
+            "per_trade_stop_loss_value": 2.0,
+            "per_trade_take_profit_rr": 2.0,
+        }
         if not self.active:
             return defaults
         try:
             res = self._client.table("user_parameters").select(
-                "max_consecutive_losses, drawdown_pause_pct, auto_reduce_risk, capital_usd"
+                "max_consecutive_losses, drawdown_pause_pct, auto_reduce_risk, capital_usd, per_trade_stop_loss_mode, per_trade_stop_loss_value, per_trade_take_profit_rr"
             ).eq("user_id", user_id).limit(1).maybe_single().execute()
             if res.data:
                 merged = {**defaults, **{k: v for k, v in res.data.items() if v is not None}}
@@ -821,6 +837,57 @@ class SupabaseLogger:
             log.debug(f"[Supabase] get_risk_params falhou: {e}")
         self._risk_params_cache[user_id] = (defaults, now + 60)
         return defaults
+
+    def get_global_memory_best(
+        self,
+        symbol: str,
+        timeframe: str,
+        regime: str,
+        mode: str,
+        min_samples: int = 20,
+    ) -> dict | None:
+        """
+        Busca a melhor recomendacao global agregada para o contexto atual.
+        Usado apenas em shadow mode (nao altera execucao).
+        """
+        if not self.active:
+            return None
+        try:
+            res = (
+                self._client.table("global_memory_signals")
+                .select("side, sample_size, win_rate, avg_pnl_points, avg_confidence, avg_risk_pct, computed_at")
+                .eq("symbol", str(symbol or "").upper())
+                .eq("timeframe", str(timeframe or "").upper())
+                .eq("regime", str(regime or "").lower())
+                .eq("mode", str(mode or "demo").lower())
+                .in_("side", ["buy", "sell"])
+                .gte("sample_size", int(min_samples))
+                .limit(100)
+                .execute()
+            )
+            rows = list(res.data or [])
+            if not rows:
+                return None
+
+            def _score(row: dict) -> float:
+                wr = float(row.get("win_rate") or 0)
+                n = int(row.get("sample_size") or 0)
+                # Prioriza win_rate sem ignorar robustez amostral.
+                return wr * min(1.0, (n / 100.0) ** 0.5)
+
+            best = sorted(rows, key=_score, reverse=True)[0]
+            return {
+                "side": str(best.get("side") or "").upper(),
+                "sample_size": int(best.get("sample_size") or 0),
+                "win_rate": float(best.get("win_rate") or 0),
+                "avg_pnl_points": float(best.get("avg_pnl_points") or 0),
+                "avg_confidence": float(best.get("avg_confidence") or 0),
+                "avg_risk_pct": float(best.get("avg_risk_pct") or 0),
+                "computed_at": str(best.get("computed_at") or ""),
+            }
+        except Exception as e:
+            log.debug(f"[Supabase] get_global_memory_best falhou: {e}")
+            return None
 
 
 def _normalize_uuid(value: str | None) -> str | None:
@@ -835,6 +902,91 @@ def _normalize_uuid(value: str | None) -> str | None:
     return None
 
 
+class SkillEngineBridge:
+    """
+    Camada opcional para integrar um Skill Engine externo no ciclo do brain.
+    Fluxo:
+    1) pre_trade: valida/governa a sugestao do ML antes de executar
+    2) post_trade: recebe feedback do resultado para aprendizado cruzado
+    """
+
+    def __init__(self):
+        self.enabled = bool(CONFIG.get("enable_skill_engine")) and bool(CONFIG.get("skill_engine_url"))
+        self.url = str(CONFIG.get("skill_engine_url") or "")
+        self.timeout = float(CONFIG.get("skill_engine_timeout_sec") or 1.8)
+        self.api_key = str(CONFIG.get("skill_engine_api_key") or "")
+
+        if self.enabled:
+            log.info("Skill Engine bridge habilitada: %s", self.url)
+        else:
+            log.info("Skill Engine bridge desabilitada. Usando apenas governanca local.")
+
+    def _post(self, endpoint: str, payload: dict) -> dict | None:
+        if not self.enabled or not self.url:
+            return None
+
+        body = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        base_url = self.url.rstrip("/")
+        path = endpoint if endpoint.startswith("/") else f"/{endpoint}"
+        req = urllib.request.Request(
+            f"{base_url}{path}",
+            data=body,
+            headers=headers,
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                raw = resp.read().decode("utf-8", errors="ignore").strip()
+                if not raw:
+                    return None
+                return json.loads(raw)
+        except urllib.error.HTTPError as e:
+            log.warning("[SkillEngine] HTTP %s em %s", e.code, endpoint)
+            return None
+        except Exception as e:
+            log.debug("[SkillEngine] Falha em %s: %s", endpoint, e)
+            return None
+
+    def evaluate_pre_trade(self, payload: dict) -> dict:
+        """
+        Retorna decisao de governanca:
+        - allow: segue com o sinal do ML
+        - block: bloqueia e converte para HOLD
+        - review: exige revisao humana antes de entrar
+        - override: ajusta sinal/risco com base no Skill Engine
+        """
+        default = {"decision": "allow", "reason": "Governanca local apenas"}
+        data = self._post("/pre-trade", payload)
+        if not isinstance(data, dict):
+            return default
+
+        decision = str(data.get("decision", "allow") or "allow").strip().lower()
+        if decision not in {"allow", "block", "review", "override"}:
+            decision = "allow"
+
+        response = {
+            "decision": decision,
+            "reason": str(data.get("reason") or ""),
+            "override_signal": str(data.get("override_signal") or "").upper() or None,
+            "override_risk_pct": data.get("override_risk_pct"),
+            "requires_human": bool(data.get("requires_human", False)),
+            "meta": data.get("meta") if isinstance(data.get("meta"), dict) else {},
+        }
+        return response
+
+    def report_trade_result(self, payload: dict) -> None:
+        """Entrega feedback de execucao ao Skill Engine (best effort)."""
+        _ = self._post("/post-trade", payload)
+
+
 # ─── Servidor Socket (comunicação com MT5) ───────────────────────
 class MT5Bridge:
     """
@@ -843,12 +995,14 @@ class MT5Bridge:
     """
 
     def __init__(self, host: str, port: int, model: TradingModel,
-                 learner: LearningManager, db: SupabaseLogger):
+                 learner: LearningManager, db: SupabaseLogger,
+                 skill_engine: SkillEngineBridge):
         self.host    = host
         self.port    = port
         self.model   = model
         self.learner = learner
         self.db      = db
+        self.skill_engine = skill_engine
         self.server  = None
         self.running = False
         self.last_df = None
@@ -1031,6 +1185,74 @@ class MT5Bridge:
             else:
                 rationale = f"[{regime.upper()}] Ensemble RF+GB | WR={win_rate:.0%}"
 
+            # Integracao opcional: Skill Engine valida/ajusta a proposta do ML
+            governance = self.skill_engine.evaluate_pre_trade({
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "mode": mode,
+                "user_id": user_id,
+                "organization_id": org_id,
+                "robot_id": robot_id,
+                "ml_signal": prediction.get("signal"),
+                "ml_confidence": float(prediction.get("confidence", 0) or 0),
+                "ml_risk_pct": float(prediction.get("risk", 0) or 0),
+                "regime": regime,
+                "win_rate": float(win_rate),
+                "features": {k: float(last_row.iloc[0].get(k, 0) or 0) for k in FeatureBuilder.get_feature_cols()},
+            })
+
+            gov_decision = str(governance.get("decision", "allow") or "allow").lower()
+            gov_reason = str(governance.get("reason", "") or "").strip()
+            override_signal = str(governance.get("override_signal") or "").upper().strip()
+            override_risk = governance.get("override_risk_pct")
+
+            if gov_decision in {"block", "review"}:
+                prediction["signal"] = "HOLD"
+                prediction["risk"] = 0.0
+                prediction["governance_hold"] = True
+            elif gov_decision == "override":
+                if override_signal in {"BUY", "SELL", "HOLD"}:
+                    prediction["signal"] = override_signal
+                if override_risk is not None:
+                    try:
+                        prediction["risk"] = max(0.0, float(override_risk))
+                    except (TypeError, ValueError):
+                        pass
+
+            if gov_reason:
+                rationale = f"{rationale} | GOV: {gov_reason}"
+
+            # Shadow mode: compara decisao local com memoria global sem alterar execucao.
+            shadow_data = None
+            if CONFIG.get("enable_global_memory_shadow"):
+                local_signal = str(prediction.get("signal") or "HOLD").upper()
+                global_best = self.db.get_global_memory_best(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    regime=regime,
+                    mode=mode,
+                    min_samples=int(CONFIG.get("global_memory_min_samples") or 20),
+                )
+                if global_best:
+                    local_side = local_signal if local_signal in {"BUY", "SELL"} else None
+                    global_side = str(global_best.get("side") or "").upper()
+                    agreement = bool(local_side and local_side == global_side)
+                    shadow_data = {
+                        "enabled": True,
+                        "local_signal": local_signal,
+                        "global_recommendation": global_best,
+                        "agreement": agreement,
+                        "execution_changed": False,
+                    }
+                    # Marcador compacto para auditoria web sem mudar schema.
+                    rationale = (
+                        f"{rationale} | SHADOW:"
+                        f"{('agree' if agreement else 'diverge')}"
+                        f";global={global_side}"
+                        f";wr={float(global_best.get('win_rate', 0))*100:.1f}%"
+                        f";n={int(global_best.get('sample_size', 0))}"
+                    )
+
             # Heartbeat: atualiza last_seen_at para o dashboard ler estado real
             self.db.heartbeat(robot_id)
 
@@ -1053,11 +1275,25 @@ class MT5Bridge:
                 "signal":      prediction['signal'],
                 "confidence":  prediction['confidence'],
                 "risk":        prediction['risk'],
+                "action":      prediction['signal'].lower(),
                 "win_rate":    round(win_rate, 4),
                 "regime":      regime,
+                "rationale":   rationale,
                 "timestamp":   datetime.now().isoformat(),
                 "decision_id": decision_id,
+                "governance": {
+                    "decision": gov_decision,
+                    "reason": gov_reason,
+                    "requires_human": bool(governance.get("requires_human", False) or gov_decision == "review"),
+                },
             }
+
+            if shadow_data:
+                response["shadow_global"] = shadow_data
+
+            if prediction.get("governance_hold"):
+                response["paused"] = True
+                response["paused_reason"] = "governance"
 
             if prediction['signal'] != 'HOLD':
                 log.info(f"SINAL: {prediction['signal']} | "
@@ -1156,6 +1392,25 @@ class MT5Bridge:
             feature_snapshot=_build_feature_snapshot(msg),
             model_version=str(msg.get("model_version", "") or "") or None,
         )
+
+        # Integração cruzada: devolve outcome para o Skill Engine (best effort)
+        self.skill_engine.report_trade_result({
+            "decision_id": decision_id,
+            "ticket": ticket,
+            "user_id": user_id,
+            "organization_id": org_id,
+            "robot_id": robot_id,
+            "mode": mode_trade,
+            "symbol": symbol_trade,
+            "timeframe": str(msg.get("timeframe", "") or ""),
+            "result": result.lower(),
+            "pnl_money": float(profit),
+            "pnl_points": float(points),
+            "confidence": float(msg.get("confidence", 0) or 0),
+            "risk_pct": float(msg.get("risk_pct", 0) or 0),
+            "regime": str(msg.get("regime", "") or ""),
+            "features": _build_feature_snapshot(msg),
+        })
 
         # Retroalimentar o aprendizado local
         self.learner.history.append({
@@ -1337,6 +1592,7 @@ def main():
     learner = LearningManager(CONFIG['history_file'])
     learner.load()
     db      = SupabaseLogger()
+    skill_engine = SkillEngineBridge()
 
     # Treino inicial
     scheduler = RetrainScheduler(model, learner)
@@ -1358,6 +1614,7 @@ def main():
         model,
         learner,
         db,
+        skill_engine,
     )
 
     log.info(f"Sistema pronto | Accuracy inicial: {model.accuracy:.3f}")

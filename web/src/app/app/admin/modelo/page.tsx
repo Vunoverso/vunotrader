@@ -12,6 +12,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import RetrainButton from "@/components/app/admin-retrain-button";
+import AdminGlobalMemoryButton from "@/components/app/admin-global-memory-button";
 
 // ── Tipos ─────────────────────────────────────────────────────
 type ModelMetric = {
@@ -23,6 +24,13 @@ type ModelMetric = {
   win_rate: number | null;
   trained_at: string;
   notes: string | null;
+};
+
+type GlobalMemoryMetric = {
+  id: string;
+  sample_size: number | null;
+  win_rate: number | null;
+  computed_at: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -119,10 +127,21 @@ export default async function ModeloAdminPage() {
 
   const readyToRetrain = (sampleCount ?? 0) >= 50;
 
+  const { data: globalRaw } = await admin
+    .from("global_memory_signals")
+    .select("id, sample_size, win_rate, computed_at")
+    .order("computed_at", { ascending: false })
+    .limit(20);
+
+  const globalMetrics = (globalRaw ?? []) as GlobalMemoryMetric[];
+  const globalLatest = globalMetrics[0] ?? null;
+  const globalGroups = globalMetrics.length;
+  const readyToRebuildGlobal = (sampleCount ?? 0) >= 100;
+
   return (
     <div className="mx-auto max-w-4xl space-y-10 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <Link href="/app/admin" className="hover:text-slate-300">
@@ -136,7 +155,13 @@ export default async function ModeloAdminPage() {
             Métricas do ensemble (RandomForest + GradientBoosting) e controle de retreino.
           </p>
         </div>
-        <RetrainButton disabled={!readyToRetrain} sampleCount={sampleCount ?? 0} />
+        <div className="flex flex-col items-end gap-3">
+          <RetrainButton disabled={!readyToRetrain} sampleCount={sampleCount ?? 0} />
+          <AdminGlobalMemoryButton
+            disabled={!readyToRebuildGlobal}
+            sampleCount={sampleCount ?? 0}
+          />
+        </div>
       </div>
 
       {/* Aviso de amostras */}
@@ -144,6 +169,13 @@ export default async function ModeloAdminPage() {
         <div className="rounded-xl border border-amber-800/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
           <strong>Amostras insuficientes:</strong> {sampleCount ?? 0} de 50 mínimas registradas.
           O motor precisa executar mais operações antes de retreinar.
+        </div>
+      )}
+
+      {!readyToRebuildGlobal && (
+        <div className="rounded-xl border border-cyan-900/40 bg-cyan-950/20 px-4 py-3 text-sm text-cyan-300">
+          <strong>Memória global:</strong> mínimo recomendado de 100 eventos anonimizados para
+          rebuild confiável (atual: {sampleCount ?? 0}).
         </div>
       )}
 
@@ -174,6 +206,34 @@ export default async function ModeloAdminPage() {
                 label="Registros disponíveis"
                 value={fmt(sampleCount)}
                 sub="base anonymized_trade_events"
+              />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">
+              Memória global agregada
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <MetricCard
+                label="Grupos globais"
+                value={fmt(globalGroups)}
+                sub="global_memory_signals"
+              />
+              <MetricCard
+                label="Último rebuild"
+                value={globalLatest ? fmtDt(globalLatest.computed_at) : "–"}
+                sub="admin-only"
+              />
+              <MetricCard
+                label="Amostra topo"
+                value={globalLatest ? fmt(globalLatest.sample_size) : "–"}
+                sub="sample_size"
+              />
+              <MetricCard
+                label="Win rate topo"
+                value={globalLatest ? pct(globalLatest.win_rate) : "–"}
+                sub="agregado"
               />
             </div>
           </div>

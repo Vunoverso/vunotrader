@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import Mt5ConnectionChecker from "@/components/app/mt5-connection-checker";
+import Mt5CredentialsGenerator from "@/components/app/mt5-credentials-generator";
+import Mt5RobotInstancesPanel from "@/components/app/mt5-robot-instances-panel";
 
 const steps = [
   {
@@ -16,7 +18,7 @@ const steps = [
   {
     title: "3) Gerar token de conexão",
     description:
-      "No painel da Vuno Trader, gere sua chave de conexão e salve com segurança. Esse token vincula o MT5 à sua conta.",
+      "Na seção abaixo, gere RobotID e RobotToken e salve com segurança. Essas credenciais vinculam o MT5 à sua conta.",
   },
   {
     title: "4) Configurar o EA no gráfico",
@@ -95,6 +97,10 @@ export default async function InstalacaoPage() {
           </span>
         </div>
       </section>
+
+      <Mt5CredentialsGenerator />
+
+      <Mt5RobotInstancesPanel />
 
       {/* Validação de conexão em tempo real */}
       {user && <Mt5ConnectionChecker userId={user.id} />}
