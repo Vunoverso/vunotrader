@@ -99,16 +99,23 @@ create table if not exists user_parameters (
   organization_id uuid references organizations(id) on delete cascade,
   user_id text not null,
   mode text not null check (mode in ('observer', 'demo', 'real')),
+  capital_usd numeric(12,2) default 10000.00,
   daily_profit_target numeric(14,2),
   weekly_profit_target numeric(14,2),
   monthly_profit_target numeric(14,2),
   daily_loss_limit numeric(14,2),
   max_drawdown_pct numeric(7,3),
   risk_per_trade_pct numeric(7,3),
+  per_trade_stop_loss_mode text check (per_trade_stop_loss_mode in ('atr', 'fixed_points')) default 'atr',
+  per_trade_stop_loss_value numeric(12,3),
+  per_trade_take_profit_rr numeric(7,3),
   max_trades_per_day int,
   trading_start_time time,
   trading_end_time time,
   allowed_symbols text[],
+  max_consecutive_losses int default 3,
+  drawdown_pause_pct numeric(7,3) default 5.0,
+  auto_reduce_risk boolean default true,
   updated_at timestamptz not null default now()
 );
 
