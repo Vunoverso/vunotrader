@@ -41,6 +41,30 @@ const checklist = [
   "Status conectado no Dashboard",
 ];
 
+const robotTypes = [
+  {
+    title: "Robô EA no MT5 (recomendado)",
+    profile: "Onboarding simples e integrado ao painel",
+    bestFor: "Quem quer o fluxo oficial com token, heartbeat, auditoria e gestão de instâncias.",
+    howTo: [
+      "Baixe o EA da Vuno Trader e copie para MQL5/Experts.",
+      "Gere RobotID/RobotToken nesta página e preencha no EA.",
+      "Anexe no gráfico, habilite AutoTrading e valide conexão no checker.",
+    ],
+  },
+  {
+    title: "Bot Python no CMD (avançado)",
+    profile: "Controle local direto do terminal MT5",
+    bestFor:
+      "Quem quer operar por comandos no Windows, testar estratégia local ou usar run-engine no terminal.",
+    howTo: [
+      "Instale dependências: pip install -r brain-requirements.txt",
+      "Verifique conexão: python scripts/mt5_cmd_bot.py status",
+      "Rodar motor compartilhado: python scripts/mt5_cmd_bot.py run-engine --symbol EURUSD --timeframe M5 --volume 0.01 --dry-run",
+    ],
+  },
+];
+
 const faqItems = [
   {
     question: "Se eu mudar parâmetros no painel, preciso instalar tudo de novo?",
@@ -127,6 +151,35 @@ export default async function InstalacaoPage() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Escolha o tipo de robô</h2>
+        <p className="mt-2 text-sm text-slate-400">
+          Você pode operar pelo fluxo oficial com EA no MT5 ou pelo controlador Python no CMD. Escolha conforme seu perfil.
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {robotTypes.map((type) => (
+            <article key={type.title} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <h3 className="text-sm font-semibold text-slate-100">{type.title}</h3>
+              <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">{type.profile}</p>
+              <p className="mt-2 text-sm text-slate-300">{type.bestFor}</p>
+
+              <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 p-3">
+                <p className="text-[11px] uppercase tracking-wider text-slate-500">Como usar</p>
+                <ul className="mt-2 space-y-2 text-sm text-slate-300">
+                  {type.howTo.map((step) => (
+                    <li key={step} className="flex items-start gap-2">
+                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-400" />
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 

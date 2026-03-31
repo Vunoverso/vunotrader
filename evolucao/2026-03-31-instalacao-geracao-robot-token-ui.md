@@ -36,3 +36,38 @@ Remover friccao do onboarding: permitir gerar credenciais de conexao MT5 diretam
 1. Adicionar botao de rotacao/revogacao explicito por instancia.
 2. Exibir historico de instancias no painel admin.
 3. Vincular modo real a confirmacao adicional de risco no frontend.
+
+## Atualizacao 2026-03-31 - Escolha de tipo de robo e instrucoes de uso
+
+### Objetivo
+Deixar explicito na instalacao que o usuario pode escolher entre dois conectores:
+
+- fluxo oficial com EA no MT5
+- fluxo avancado com bot Python no CMD
+
+Tambem foi incluido um guia curto de como usar cada opcao para reduzir duvida no onboarding.
+
+### Arquivo impactado
+- `web/src/app/app/instalacao/page.tsx`
+
+### Implementacao
+1. Nova secao **"Escolha o tipo de robo"** com dois cards comparativos.
+2. Cada card informa:
+- perfil de uso
+- quando escolher
+- passo a passo rapido de operacao
+3. Para o caminho Python CMD, foram incluidos comandos de partida:
+- instalacao de dependencias
+- checagem de status
+- execucao com `run-engine` em `dry-run`
+
+### Decisao tecnica
+Foi escolhida uma UX de comparativo no proprio onboarding (sem criar nova pagina) para manter o fluxo linear e reduzir cliques.
+
+Alternativa nao adotada nesta etapa:
+- criar wizard separado por tipo de conector.
+Motivo: aumentaria complexidade de navegacao sem necessidade imediata.
+
+### Observacoes
+- O fluxo EA segue como recomendado por ser integrado a heartbeat, instancias e auditoria.
+- O fluxo CMD fica como opcao avancada para usuarios tecnicos.
