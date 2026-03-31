@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ── Tipos internos ────────────────────────────────────────────
 type PlanDist = { name: string; count: number; color: string; price: number };
@@ -133,47 +134,49 @@ export default async function AdminPage() {
   if (!isAdmin) redirect("/app/dashboard");
 
   // ── Dados reais: total de perfis ──────────────────────────
-  const { count: totalUsers } = await supabase
+  const adminClient = createAdminClient();
+
+  const { count: totalUsers } = await adminClient
     .from("user_profiles")
     .select("id", { count: "exact", head: true });
 
-  const { count: totalOrgs } = await supabase
+  const { count: totalOrgs } = await adminClient
     .from("organizations")
     .select("id", { count: "exact", head: true });
 
-  const { count: activeSubs } = await supabase
+  const { count: activeSubs } = await adminClient
     .from("saas_subscriptions")
     .select("id", { count: "exact", head: true })
     .eq("status", "active");
 
   // Últimos 5 usuários cadastrados
-  const { data: recentProfiles } = await supabase
+  const { data: recentProfiles } = await adminClient
     .from("user_profiles")
     .select("id, full_name, email, created_at")
     .order("created_at", { ascending: false })
     .limit(8);
 
   // Subscrições com plano
-  const { data: subsByPlan } = await supabase
+  const { data: subsByPlan } = await adminClient
     .from("saas_subscriptions")
     .select("status, saas_plans(name, monthly_price)")
     .eq("status", "active");
 
   // Uso de IA hoje
   const today = new Date().toISOString().slice(0, 10);
-  const { data: aiToday } = await supabase
+  const { data: aiToday } = await adminClient
     .from("ai_usage_logs")
     .select("total_tokens, estimated_cost")
     .gte("created_at", today);
 
   // Robot instances: todas as instâncias, cruzando nome da org
-  const { data: robotsRaw } = await supabase
+  const { data: robotsRaw } = await adminClient
     .from("robot_instances")
     .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, organization_id")
     .order("last_seen_at", { ascending: false })
     .limit(50);
 
-  const { data: orgsForRobots } = await supabase
+  const { data: orgsForRobots } = await adminClient
     .from("organizations")
     .select("id, name");
 
