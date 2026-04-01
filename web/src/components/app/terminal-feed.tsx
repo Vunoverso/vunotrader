@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 type TradeDecision = {
   id: string;
@@ -18,143 +17,150 @@ type TradeDecision = {
 export function TerminalFeed({
   userId,
   robotId,
+  initialLogs,
 }: {
   userId: string;
   robotId?: string;
+  initialLogs?: TradeDecision[];
 }) {
-  const [logs, setLogs] = useState<TradeDecision[]>([]);
-  const [activeAssets, setActiveAssets] = useState<string[]>([]);
+  const [logs, setLogs] = useState<TradeDecision[]>(initialLogs ?? []);
+  const [activeAssets, setActiveAssets] = useState<string[]>(
+    Array.from(new Set((initialLogs ?? []).map((d) => d.symbol)))
+  );
   const [time, setTime] = useState<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
 
   // Tick clock
   useEffect(() => {
+    setTime(new Date().toLocaleTimeString("pt-BR", { hour12: false }));
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString("pt-BR", { hour12: false }));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Poll for logs
+  // Poll via API route a cada 10s (sem precisar de auth client-side)
   useEffect(() => {
     async function fetchLogs() {
       if (!userId) return;
-      let query = supabase
-        .from("trade_decisions")
-        .select("id, symbol, timeframe, side, confidence, risk_pct, mode, rationale, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (robotId) {
-        query = query.eq("robot_instance_id", robotId);
-      }
-
-      const { data } = await query;
-      if (data) {
-        setLogs(data.reverse()); // Reverse to show oldest first in a top-down scroll, or keep DESC if we render bottom-up
-        
-        // Extract active assets from last 20 signals
-        const assets = new Set(data.map((d: TradeDecision) => d.symbol));
-        setActiveAssets(Array.from(assets));
+      try {
+        const params = new URLSearchParams({ userId });
+        if (robotId) params.set("robotId", robotId);
+        const res = await fetch(`/api/terminal-feed?${params.toString()}`);
+        if (!res.ok) return;
+        const data: TradeDecision[] = await res.json();
+        if (data.length > 0) {
+          const sorted = [...data].sort(
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          setLogs(sorted);
+          setActiveAssets(Array.from(new Set(sorted.map((d) => d.symbol))));
+        }
+      } catch {
+        // silencioso — mantém dados locais
       }
     }
 
     fetchLogs();
-    const interval = setInterval(fetchLogs, 5000); // Poll a cada 5 segundos
-
+    const interval = setInterval(fetchLogs, 10_000);
     return () => clearInterval(interval);
   }, [userId, robotId]);
 
-  // Handle scrollToBottom if needed
+  // Scroll para o fim quando chegar novos logs
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
   if (logs.length === 0) {
     return (
-      <div className="w-full bg-[#0a0a0c] border border-cyan-800/30 rounded-lg p-4 font-mono text-cyan-500/50 text-xs">
-        &gt; Inicializando terminal de rastreio VunoScreener...
+      <div className="w-full bg-[#0a0a0c] border border-cyan-800/30 rounded-lg p-4 font-mono text-xs text-cyan-500/50 flex items-center gap-2">
+        <span className="animate-pulse text-cyan-400">█</span>
+        <span>&gt; Inicializando terminal de rastreio VunoScreener...</span>
+        <span className="animate-pulse text-cyan-800 ml-1">aguardando 1º ciclo do motor</span>
       </div>
     );
   }
 
-  // Pegar último log para dados do cabeçalho
   const lastLog = logs[logs.length - 1];
 
   return (
     <div className="w-full bg-[#050505] border border-cyan-900/40 rounded-lg overflow-hidden flex flex-col font-mono text-xs text-slate-300 relative shadow-[0_0_20px_rgba(8,145,178,0.05)]">
-      {/* HEADER HACKER */}
-      <div className="border-b border-cyan-900/50 bg-[#0a0a0c] p-3">
+      {/* HEADER */}
+      <div className="border-b border-cyan-900/50 bg-[#0a0a0c] p-3 space-y-1">
         <div className="flex justify-between items-center text-cyan-400">
           <div>
-            <span className="font-bold">STATUS:</span> RODANDO DUAL/MULTI-ATIVO
+            <span className="text-cyan-600">█ </span>
+            <span className="font-bold">VUNO/SCREENER</span>
+            <span className="text-cyan-700 ml-2">| STATUS: ATIVO</span>
           </div>
-          <div>
-            <span className="font-bold">CICLO HORA:</span> {time}
+          <div className="text-cyan-600 tabular-nums">
+            HORA: <span className="text-cyan-300">{time || "––:––:––"}</span>
           </div>
         </div>
-        <div className="mt-1 flex items-center justify-between text-cyan-600/80">
+        <div className="flex items-center justify-between text-cyan-700">
           <div>
-            <span className="font-bold">MODO DO CÉREBRO:</span> {lastLog?.mode === "observer" ? "SIMULAÇÃO/APRENDIZADO" : lastLog?.mode.toUpperCase()}
+            MODO:{" "}
+            <span className="text-cyan-400">
+              {lastLog?.mode === "observer" ? "SIMULAÇÃO/APREND." : lastLog?.mode?.toUpperCase() ?? "–"}
+            </span>
           </div>
-          <div className="flex gap-2">
-            <span className="font-bold">ATIVOS:</span>
-            {activeAssets.map(sym => (
-              <span key={sym} className="text-cyan-300">[{sym}]</span>
+          <div className="flex gap-2 items-center flex-wrap">
+            <span>ATIVOS RASTREADOS:</span>
+            {activeAssets.map((sym) => (
+              <span
+                key={sym}
+                className="border border-cyan-800/60 bg-cyan-950/40 text-cyan-300 px-1.5 py-0.5 rounded text-[10px]"
+              >
+                {sym}
+              </span>
             ))}
           </div>
         </div>
       </div>
 
-      {/* TERMINAL FEED AREA */}
-      <div className="h-64 overflow-y-auto p-4 space-y-2 scroller flex flex-col">
+      {/* FEED */}
+      <div className="h-64 overflow-y-auto p-3 space-y-1 scroller">
         {logs.map((log) => {
           const isBuy = log.side.toLowerCase() === "buy";
           const isSell = log.side.toLowerCase() === "sell";
-          const isHold = log.side.toLowerCase() === "hold";
           const timeStr = new Date(log.created_at).toLocaleTimeString("pt-BR", { hour12: false });
           const confStr = log.confidence ? Math.round(log.confidence * 100) + "%" : "---";
-          
-          let color = "text-slate-400";
-          if (isBuy) color = "text-emerald-400 font-bold";
-          if (isSell) color = "text-red-400 font-bold";
-          if (isHold) color = "text-cyan-500/60";
+          const sigColor = isBuy
+            ? "text-emerald-400 font-bold"
+            : isSell
+            ? "text-red-400 font-bold"
+            : "text-cyan-600";
+          const sigLabel = isBuy ? "▲ BUY " : isSell ? "▼ SELL" : "– HOLD";
 
           return (
-            <div key={log.id} className="flex flex-col border-l-2 pl-2 border-cyan-900/30">
+            <div key={log.id} className="flex flex-col border-l border-cyan-900/40 pl-2">
               <div className="flex items-center gap-2">
-                <span className="text-cyan-700">[{timeStr}]</span>
-                <span className="text-cyan-300 w-16">{log.symbol}</span>
-                <span className={`w-12 ${color}`}>{log.side.toUpperCase()}</span>
+                <span className="text-cyan-800 shrink-0 tabular-nums">[{timeStr}]</span>
+                <span className="text-cyan-200 w-16 shrink-0">{log.symbol}</span>
+                <span className={`w-14 shrink-0 ${sigColor}`}>{sigLabel}</span>
                 <span className="text-cyan-800">|</span>
-                <span className="text-slate-500 w-16">cnf:{confStr}</span>
+                <span className="text-slate-500">
+                  cnf:<span className="text-slate-400">{confStr}</span>
+                </span>
               </div>
               {log.rationale && (
-                <div className="text-[10px] text-cyan-600/70 ml-[100px] mt-0.5 line-clamp-2 leading-tight">
+                <div className="text-[10px] text-cyan-700/70 ml-[170px] leading-tight line-clamp-1">
                   {log.rationale}
                 </div>
               )}
             </div>
           );
         })}
-        <div ref={bottomRef} className="h-1 pb-2">
-           <span className="animate-pulse text-cyan-500">_</span>
+        <div ref={bottomRef} className="flex items-center gap-1 pt-1">
+          <span className="animate-pulse text-cyan-500 text-sm">_</span>
+          <span className="text-cyan-800 text-[10px]">aguardando próximo ciclo...</span>
         </div>
       </div>
 
       <style jsx>{`
-        .scroller::-webkit-scrollbar {
-          width: 5px;
-        }
-        .scroller::-webkit-scrollbar-track {
-          background: #050505;
-        }
-        .scroller::-webkit-scrollbar-thumb {
-          background: #086682;
-          border-radius: 4px;
-        }
+        .scroller::-webkit-scrollbar { width: 4px; }
+        .scroller::-webkit-scrollbar-track { background: #050505; }
+        .scroller::-webkit-scrollbar-thumb { background: #086682; border-radius: 4px; }
       `}</style>
     </div>
   );

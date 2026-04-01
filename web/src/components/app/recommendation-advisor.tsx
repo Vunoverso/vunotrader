@@ -109,8 +109,8 @@ export default function RecommendationAdvisor({
             Recommendation Engine
           </h2>
           <p className="mt-1 text-sm text-slate-400">
-            O sistema compara perfis com base no seu histórico real e sugere a configuração mais adequada.
-            A decisão final continua sendo sua.
+            Depois que o robô fizer algumas operações, o sistema analisa os resultados e sugere as melhores configurações para o seu perfil.
+            Você decide se quer aplicar ou não.
           </p>
         </div>
         <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300">
@@ -177,10 +177,12 @@ export default function RecommendationAdvisor({
 
       {result?.status === "insufficient_data" && (
         <div className="rounded-lg border border-amber-800/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
-          {result.message ?? "Dados insuficientes para recomendação confiável."}
+          <p className="font-medium">⏳ O robô ainda não operou o suficiente para gerar uma sugestão.</p>
           {result.metrics && (
-            <p className="mt-1 text-xs text-amber-400/80">
-              Pontos disponíveis: {result.metrics.data_points} de {result.metrics.minimum_required ?? 50} mínimos.
+            <p className="mt-1.5 text-xs text-amber-400/80">
+              Ele precisa de pelo menos {result.metrics.minimum_required ?? 50} operações realizadas para calcular uma recomendação confiável.
+              Até agora foram registradas <strong>{result.metrics.data_points}</strong>.
+              Continue operando em modo Demo e volte aqui quando tiver mais histórico!
             </p>
           )}
         </div>

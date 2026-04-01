@@ -7,28 +7,34 @@ import Mt5RobotInstancesPanel from "@/components/app/mt5-robot-instances-panel";
 const steps = [
   {
     title: "1) Instalar o MetaTrader 5",
+
     description:
       "Instale o MT5 da sua corretora (ou da MetaQuotes), faça login em uma conta demo e mantenha o terminal aberto durante a operação.",
   },
   {
     title: "2) Baixar e copiar o robô (EA)",
     description:
-      "No MT5, abra Arquivo > Abrir pasta de dados > MQL5 > Experts e copie o arquivo do EA da Vuno Trader (.ex5).",
+      "No MT5, abra Arquivo > Abrir pasta de dados > MQL5 > Experts e copie o arquivo do EA da Vuno Trader (.mq5 ou .ex5).",
   },
   {
-    title: "3) Gerar token de conexão",
+    title: "3) Adicionar a URL do servidor nas configurações do MT5",
+    description:
+      "No MT5 vá em Ferramentas > Opções > Expert Advisors. Em 'URLs permitidas' adicione: https://vunotrader-api.onrender.com",
+  },
+  {
+    title: "4) Gerar seu token de conexão",
     description:
       "Na seção abaixo, gere RobotID e RobotToken e salve com segurança. Essas credenciais vinculam o MT5 à sua conta.",
   },
   {
-    title: "4) Configurar o EA no gráfico",
+    title: "5) Configurar o EA no gráfico",
     description:
-      "Arraste o EA para o gráfico, preencha token, modo (observer/demo/real), símbolo e timeframe. Habilite AutoTrading no MT5.",
+      "Arraste o EA para o gráfico. No campo BackendURL deixe: https://vunotrader-api.onrender.com — já vem preenchido. Preencha RobotID, RobotToken e escolha o modo (demo). Habilite AutoTrading.",
   },
   {
-    title: "5) Validar status no painel",
+    title: "6) Validar status no painel",
     description:
-      "Volte ao Dashboard e confira se Brain Python e MT5 aparecem como conectados. Faça primeiro teste sempre em modo demo.",
+      "Volte ao Dashboard e confira se o robô aparece como conectado. Faça o primeiro teste sempre em modo Demo.",
   },
 ];
 
@@ -36,7 +42,9 @@ const checklist = [
   "Conta demo ativa na corretora",
   "MT5 aberto e AutoTrading habilitado",
   "EA da Vuno Trader em MQL5/Experts",
-  "Token configurado no EA",
+  "URL do servidor colada no campo BackendURL do EA",
+  "Token (RobotID e RobotToken) configurado no EA",
+  "URL do servidor adicionada nas URLs permitidas do MT5",
   "Modo DEMO selecionado para teste inicial",
   "Status conectado no Dashboard",
 ];
@@ -119,6 +127,74 @@ export default async function InstalacaoPage() {
           <span className="rounded-lg border border-slate-700 px-4 py-2 text-xs text-slate-300">
             Depois de baixar: MT5 {'>'} Arquivo {'>'} Abrir pasta de dados {'>'} MQL5 {'>'} Experts
           </span>
+        </div>
+      </section>
+
+      {/* ── URL do Servidor Cloud ─────────────────────────────────────── */}
+      <section className="rounded-2xl border border-sky-500/30 bg-slate-900 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">🌐</span>
+          <div>
+            <h2 className="text-base font-bold text-slate-100">URL do Servidor Vuno</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              O robô fala diretamente com este endereço — não precisa de Python instalado no seu PC.
+            </p>
+          </div>
+        </div>
+
+        {/* URL para copiar */}
+        <div className="flex items-center gap-3 rounded-xl border border-sky-500/40 bg-sky-950/40 px-4 py-3">
+          <code className="flex-1 text-sm font-mono text-sky-300 select-all">
+            https://vunotrader-api.onrender.com
+          </code>
+          <span className="text-xs text-slate-500 shrink-0">clique e selecione para copiar</span>
+        </div>
+
+        {/* Passo a passo onde colocar no MT5 */}
+        <div className="mt-5 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Onde colocar no MT5 — passo a passo</p>
+
+          <ol className="space-y-3">
+            {[
+              {
+                n: "1",
+                label: "Adicionar URL nas permissões do MT5",
+                detail: 'No MT5, clique em Ferramentas → Opções → aba \'Expert Advisors\'. Em \'URLs permitidas\', clique em \'+\' e cole: https://vunotrader-api.onrender.com. Clique OK.',
+                badge: "MT5 → Ferramentas → Opções → Expert Advisors",
+              },
+              {
+                n: "2",
+                label: "Campo BackendURL no EA",
+                detail: 'Ao arrastar o EA para o gráfico, na aba \'Inputs\', o campo BackendURL já vem preenchido com essa URL. Confira se está exatamente assim:',
+                code: "https://vunotrader-api.onrender.com",
+                badge: "EA → Inputs → BackendURL",
+              },
+              {
+                n: "3",
+                label: "Habilitar AutoTrading",
+                detail: "No topo do MT5 certifique que o botão AutoTrading está verde (ativo). Sem isso o robô observa mas não executa.",
+                badge: "MT5 → Barra superior → AutoTrading",
+              },
+            ].map((item) => (
+              <li key={item.n} className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white">
+                  {item.n}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-100 text-sm">{item.label}</p>
+                  <span className="inline-block mt-1 mb-2 rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">
+                    {item.badge}
+                  </span>
+                  <p className="text-sm text-slate-400 leading-relaxed">{item.detail}</p>
+                  {'code' in item && (
+                    <code className="mt-2 block rounded-lg border border-sky-500/30 bg-sky-950/40 px-3 py-2 text-xs font-mono text-sky-300 select-all">
+                      {item.code}
+                    </code>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 

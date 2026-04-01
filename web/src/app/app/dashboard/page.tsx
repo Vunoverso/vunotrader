@@ -250,6 +250,22 @@ export default async function DashboardPage() {
 
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "Trader";
 
+  // ── Terminal Feed: busca server-side para passar como initialLogs ──
+  const { data: terminalLogsRaw } = user
+    ? await supabase
+        .from("trade_decisions")
+        .select("id, symbol, timeframe, side, confidence, risk_pct, mode, rationale, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(25)
+    : { data: null };
+
+  // Ordenados do mais antigo ao mais novo (do topo para baixo no terminal)
+  const terminalLogs = ((terminalLogsRaw ?? []) as Array<{
+    id: string; symbol: string; timeframe: string; side: string;
+    confidence: number; risk_pct: number; mode: string; rationale: string; created_at: string;
+  }>).reverse();
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Cabeçalho */}
@@ -364,7 +380,7 @@ export default async function DashboardPage() {
 
       {/* Terminal Hacker de Pensamentos do Motor */}
       {motorOnline && user?.id && (
-        <TerminalFeed userId={user.id} robotId={robotInstance?.id} />
+        <TerminalFeed userId={user.id} robotId={robotInstance?.id} initialLogs={terminalLogs} />
       )}
 
       {/* Painel Motor de Decisão */}
