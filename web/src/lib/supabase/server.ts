@@ -4,9 +4,21 @@ import { cookies } from "next/headers";
 export async function createClient() {
   const cookieStore = await cookies();
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+              process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+              process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    console.error("Erro de Inicialização Supabase (Server):", { urlExists: !!url, keyExists: !!key });
+    throw new Error(
+      `Dados do projeto (URL e Key) são obrigatórios para o client server! Faltando: ${!url ? 'URL ' : ''}${!key ? 'KEY' : ''}`
+    );
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll() {
