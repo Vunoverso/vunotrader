@@ -56,8 +56,7 @@ export default async function AppLayout({
       isAdmin={isAdmin}
       hasActivePlan={access.hasActivePlan}
       userEmail={user.email}
-      motorOnline={motorOnline}
-      motorLabel={motorLabel}
+      lastSeenAt={robotRow?.last_seen_at || null}
       subscriptionAccess={{
         hasActivePlan: access.hasActivePlan,
         isTrialing: access.isTrialing,

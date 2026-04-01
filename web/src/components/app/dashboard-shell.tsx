@@ -8,8 +8,7 @@ interface DashboardShellProps {
   isAdmin: boolean;
   hasActivePlan: boolean;
   userEmail?: string;
-  motorOnline: boolean;
-  motorLabel: string;
+  lastSeenAt: string | null;
   subscriptionAccess: {
     hasActivePlan: boolean;
     isTrialing: boolean;
@@ -22,11 +21,42 @@ export default function DashboardShell({
   isAdmin,
   hasActivePlan,
   userEmail,
-  motorOnline,
-  motorLabel,
+  lastSeenAt,
   subscriptionAccess,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [motorStatus, setMotorStatus] = useState({
+    online: false,
+    label: "Calculando status...",
+  });
+
+  React.useEffect(() => {
+    setIsMounted(true);
+    
+    const updateStatus = () => {
+      if (!lastSeenAt) {
+        setMotorStatus({ online: false, label: "Motor desconectado" });
+        return;
+      }
+
+      const diffMs = new Date().getTime() - new Date(lastSeenAt).getTime();
+      const online = diffMs < 5 * 60 * 1000;
+      
+      if (!online) {
+        setMotorStatus({ online: false, label: "Motor desconectado" });
+        return;
+      }
+
+      const diffMin = Math.floor(diffMs / 60000);
+      const timeStr = diffMin < 1 ? "agora" : `há ${diffMin} min`;
+      setMotorStatus({ online: true, label: `Motor ativo · ${timeStr}` });
+    };
+
+    updateStatus();
+    const interval = setInterval(updateStatus, 30000); // Atualiza a cada 30s
+    return () => clearInterval(interval);
+  }, [lastSeenAt]);
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden">
@@ -82,22 +112,24 @@ export default function DashboardShell({
 
           <div className="flex items-center gap-3">
             {/* Status do motor */}
-            <div
-              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] md:text-xs ${
-                motorOnline
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                  : "border-slate-700 bg-slate-800 text-slate-400"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  motorOnline ? "bg-emerald-400 animate-pulse" : "bg-slate-600"
+            {isMounted && (
+              <div
+                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] md:text-xs ${
+                  motorStatus.online
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border-slate-700 bg-slate-800 text-slate-400"
                 }`}
-              />
-              <span className="hidden xs:inline">{motorLabel}</span>
-              {!motorOnline && <span className="xs:hidden">Off</span>}
-              {motorOnline && <span className="xs:hidden">On</span>}
-            </div>
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    motorStatus.online ? "bg-emerald-400 animate-pulse" : "bg-slate-600"
+                  }`}
+                />
+                <span className="hidden xs:inline">{motorStatus.label}</span>
+                {!motorStatus.online && <span className="xs:hidden">Off</span>}
+                {motorStatus.online && <span className="xs:hidden">On</span>}
+              </div>
+            )}
             {/* Avatar / email */}
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-600/20 text-sky-400 text-xs font-bold select-none shrink-0">
               {userEmail?.[0]?.toUpperCase() ?? "U"}
