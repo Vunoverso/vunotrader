@@ -1,21 +1,17 @@
 //+------------------------------------------------------------------+
-//| VunoScreener v3 — MT5 Multi-Asset Client (Conecta ao Python)     |
+//| VunoScreener v3 — MT5 Multi-Asset Client (Conecta ao Cloud)      |
 //| Rastreia uma lista de símbolos e envia dados iterativos.        |
 //+------------------------------------------------------------------+
 
 #include <Trade\Trade.mqh>
 #include <Trade\PositionInfo.mqh>
 
-input group "=== CONEXÃO PYTHON ==="
-input string   PythonHost       = "127.0.0.1";
-input int      PythonPort       = 9999;
-input int      DataBars         = 200;
-
 input group "=== CONEXÃO CLOUD ==="
 input string   BackendURL       = "https://vunotrader-api.onrender.com";
 
 input group "=== GESTÃO SCREENER ==="
 input string   AssetList        = "EURUSD,GBPUSD,XAUUSD"; // Moedas
+input int      DataBars         = 200;
 input double   MaxDailyLoss     = 5.0;
 input double   MaxDrawdown      = 15.0;
 input int      MaxPositions     = 3; // Máximo global

@@ -71,8 +71,6 @@ int OnInit()
 void OnTick()
 {
    ResetDaily();
-   if(!SafetyOK())     return;
-   if(!TradingHour())  return;
    if(!IdentityReady()) return;
    if(TimeCurrent() - g_lastSignal < g_signalDelay) return;
 
@@ -81,6 +79,16 @@ void OnTick()
    //--- Coletar dados de mercado
    string candles = CollectCandles(DataBars);
    if(candles == "") return;
+
+   //--- Determinar Modo Efetivo (Opera ou apenas Observa?)
+   string effMode = TradingMode;
+   bool safe      = SafetyOK();
+   bool inHr     = TradingHour();
+   
+   if(!safe || !inHr) 
+   {
+      effMode = "observer"; // Manda ao brain p/ aprendizado simulado, mas NÃO abre ordem
+   }
 
    //--- Montar payload com identificação Vuno
    string request = StringFormat(
@@ -95,7 +103,7 @@ void OnTick()
       "\"candles\":%s}",
       _Symbol,
       TFToString(PERIOD_CURRENT),
-      TradingMode,
+      effMode,
       UserID,
       OrganizationID,
       RobotID,
@@ -105,6 +113,9 @@ void OnTick()
 
    string response = SendToCloud("/api/mt5/signal", request);
    if(response == "") return;
+
+   // Se modo efetivo era observer, descarta trade APÓS registrar na nuvem
+   if(effMode == "observer") return; 
 
    //--- Parsear resposta
    string signal     = ExtractString(response, "signal");

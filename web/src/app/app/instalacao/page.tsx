@@ -114,18 +114,36 @@ export default async function InstalacaoPage() {
       <section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-300">Cereja do bolo</h2>
         <p className="mt-2 text-sm text-emerald-100">
-          Comece por aqui: baixe o EA, copie para o MT5 e conecte em modo demo.
+          Escolha a versão do robô (EA) que prefere baixar e copie para o seu MetaTrader 5:
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <a
-            href="/downloads/VunoTrader_v2.mq5"
-            download
-            className="rounded-lg border border-emerald-400/30 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30 transition-colors"
-          >
-            Baixar EA (.mq5)
-          </a>
-          <span className="rounded-lg border border-slate-700 px-4 py-2 text-xs text-slate-300">
-            Depois de baixar: MT5 {'>'} Arquivo {'>'} Abrir pasta de dados {'>'} MQL5 {'>'} Experts
+        <div className="mt-4 flex flex-wrap gap-4">
+          <div className="space-y-2">
+            <a
+              href="/downloads/VunoTrader_v2.mq5"
+              download
+              className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/20 px-4 py-3 text-sm font-semibold text-emerald-100 hover:bg-emerald-500/30 transition-colors"
+            >
+              <span className="text-lg">🤖</span>
+              Baixar VunoTrader v2 (Simples)
+            </a>
+            <p className="text-[10px] text-slate-400 pl-1 italic">Recomendado para 1 ativo por gráfico</p>
+          </div>
+
+          <div className="space-y-2">
+            <a
+              href="/downloads/VunoScreener_v3.mq5"
+              download
+              className="flex items-center gap-2 rounded-lg border border-sky-400/30 bg-sky-500/20 px-4 py-3 text-sm font-semibold text-sky-100 hover:bg-sky-500/30 transition-colors"
+            >
+              <span className="text-lg">⚡</span>
+              Baixar VunoScreener v3 (Multi-Ativos)
+            </a>
+            <p className="text-[10px] text-slate-400 pl-1 italic">Várias moedas em um único robô</p>
+          </div>
+        </div>
+        <div className="mt-6 border-t border-emerald-500/10 pt-4">
+          <span className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-xs text-slate-300">
+            Caminho no MT5: Arquivo {'>'} Abrir pasta de dados {'>'} MQL5 {'>'} Experts
           </span>
         </div>
       </section>

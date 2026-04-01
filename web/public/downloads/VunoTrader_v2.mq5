@@ -8,10 +8,9 @@
 #include <Trade\Trade.mqh>
 #include <Trade\PositionInfo.mqh>
 
-input group "=== CONEXÃO PYTHON ==="
-input string   PythonHost       = "127.0.0.1";  // IP do Python Brain
-input int      PythonPort       = 9999;          // Porta socket
-input int      DataBars         = 200;           // Candles enviados ao Python
+input group "=== CONEXÃO CLOUD ==="
+input string   BackendURL       = "https://vunotrader-api.onrender.com"; // URL do backend Render
+input int      DataBars         = 200;           // Candles enviados ao Render
 
 input group "=== GESTÃO ==="
 input double   MaxDailyLoss     = 5.0;    // Perda máxima diária (%)
@@ -22,10 +21,10 @@ input string   TradingStart     = "08:00";
 input string   TradingEnd       = "20:00";
 
 input group "=== IDENTIFICAÇÃO VUNO (Supabase) ==="
-input string   UserID           = "96fd6e0d-ae81-4eeb-b6fd-37279373a7db";        // UUID do usuário (copiar do painel)
+input string   UserID           = "0e3d7cd9-7e39-4714-a52f-f7eb793a4640";        // UUID do usuário (copiar do painel)
 input string   OrganizationID   = "24affdc3-dc7b-4672-b20d-65033949bb76";        // UUID da organização (copiar do painel)
-input string   RobotID          = "";        // UUID da instância do robô
-input string   RobotToken       = "";        // token da instância do robô
+input string   RobotID          = "8e048faa-937c-4a3e-8760-9d59c3f64d77";        // UUID da instância do robô
+input string   RobotToken       = "dBiAqxGYo2S6nxFtdNH7oufKa_MYGms0";        // token da instância do robô
 input string   TradingMode      = "demo";    // Modo: observer | demo | real
 
 CTrade         Trade;
@@ -56,8 +55,15 @@ int OnInit()
    g_initialBal = AccountInfoDouble(ACCOUNT_BALANCE);
    g_peakBal    = g_initialBal;
 
-   Print("VunoTrader v2 iniciado | Python Brain: ",
-         PythonHost, ":", PythonPort);
+   EventSetTimer(30); // Heartbeat a cada 30 segundos
+
+   Print("VunoTrader v2 iniciado | Backend: ", BackendURL);
+         
+   // Envia primeiro heartbeat imediato ao iniciar
+   if(IdentityReady()) {
+      SendHeartbeat();
+   }         
+         
    return INIT_SUCCEEDED;
 }
 
@@ -65,8 +71,6 @@ int OnInit()
 void OnTick()
 {
    ResetDaily();
-   if(!SafetyOK())     return;
-   if(!TradingHour())  return;
    if(!IdentityReady()) return;
    if(TimeCurrent() - g_lastSignal < g_signalDelay) return;
 
@@ -75,6 +79,16 @@ void OnTick()
    //--- Coletar dados de mercado
    string candles = CollectCandles(DataBars);
    if(candles == "") return;
+
+   //--- Determinar Modo Efetivo (Opera ou apenas Observa?)
+   string effMode = TradingMode;
+   bool safe      = SafetyOK();
+   bool inHr     = TradingHour();
+   
+   if(!safe || !inHr) 
+   {
+      effMode = "observer"; // Manda ao brain p/ aprendizado simulado, mas NÃO abre ordem
+   }
 
    //--- Montar payload com identificação Vuno
    string request = StringFormat(
@@ -89,7 +103,7 @@ void OnTick()
       "\"candles\":%s}",
       _Symbol,
       TFToString(PERIOD_CURRENT),
-      TradingMode,
+      effMode,
       UserID,
       OrganizationID,
       RobotID,
@@ -97,8 +111,11 @@ void OnTick()
       candles
    );
 
-   string response = SendToPython(request);
+   string response = SendToCloud("/api/mt5/signal", request);
    if(response == "") return;
+
+   // Se modo efetivo era observer, descarta trade APÓS registrar na nuvem
+   if(effMode == "observer") return; 
 
    //--- Parsear resposta
    string signal     = ExtractString(response, "signal");
@@ -235,7 +252,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          profit,
          _Symbol
       );
-      SendToPython(msg);
+      SendToCloud("/api/mt5/signal", msg);
 
       Print("Resultado: ", (profit > 0 ? "WIN" : "LOSS"),
             " | P&L: ",    DoubleToString(profit, 2),
@@ -307,50 +324,26 @@ string CollectCandles(int bars)
 }
 
 //+------------------------------------------------------------------+
-// Comunicação TCP com Python Brain
+// Comunicação HTTPS com Render (sem Python local)
 //+------------------------------------------------------------------+
-string SendToPython(string message)
+string SendToCloud(string path, string body)
 {
-   int socket_h = SocketCreate();
-   if(socket_h == INVALID_HANDLE) return "";
+   string url     = BackendURL + path;
+   string headers = "Content-Type: application/json\r\n";
+   uchar  bodyArr[], resArr[];
+   string resHeaders;
+   StringToCharArray(body, bodyArr, 0, StringLen(body));
 
-   if(!SocketConnect(socket_h, PythonHost, PythonPort, 3000))
-   {
-      SocketClose(socket_h);
-      return "";
-   }
+   int code = WebRequest("POST", url, headers, 8000, bodyArr, resArr, resHeaders);
+   if(code == 200)
+      return CharArrayToString(resArr);
 
-   uchar data[];
-   StringToCharArray(message, data, 0, StringLen(message));
+   if(code == -1)
+      Print("[Cloud] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+   else
+      Print("[Cloud] Erro HTTP ", code, " ao contactar Render");
 
-   if(SocketSend(socket_h, data, ArraySize(data)) < 0)
-   {
-      SocketClose(socket_h);
-      return "";
-   }
-
-   string response = "";
-   uchar buffer[];
-   ArrayResize(buffer, 65536);
-
-   uint timeout = GetTickCount() + 5000;
-   while(GetTickCount() < timeout)
-   {
-      uint available = SocketIsReadable(socket_h);
-      if(available > 0)
-      {
-         int received = SocketRead(socket_h, buffer, available, 2000);
-         if(received > 0)
-         {
-            response += CharArrayToString(buffer, 0, received);
-            break;
-         }
-      }
-      Sleep(10);
-   }
-
-   SocketClose(socket_h);
-   return response;
+   return "";
 }
 
 //+------------------------------------------------------------------+
@@ -415,7 +408,7 @@ void ResetDaily()
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
    datetime today = StringToTime(StringFormat("%04d.%02d.%02d 00:00",
-                                              dt.year, dt.mon, dt.day));
+                                               dt.year, dt.mon, dt.day));
    if(today > g_lastReset)
    {
       g_dailyPnL  = 0;
@@ -514,6 +507,55 @@ double ExtractDouble(string json, string key)
 
 void OnDeinit(const int reason)
 {
+   EventKillTimer();
    IndicatorRelease(hATR);
    Print("VunoTrader v2 encerrado");
+}
+
+//+------------------------------------------------------------------+
+// Envia heartbeat HTTPS direto ao backend Render (sem Python local)
+//+------------------------------------------------------------------+
+void SendHeartbeat()
+{
+   string url     = BackendURL + "/api/mt5/heartbeat";
+   string headers = "Content-Type: application/json\r\n";
+   string body    = StringFormat(
+      "{\"robot_id\":\"%s\","
+      "\"robot_token\":\"%s\","
+      "\"user_id\":\"%s\","
+      "\"organization_id\":\"%s\","
+      "\"mode\":\"%s\"}",
+      RobotID, RobotToken, UserID, OrganizationID, TradingMode
+   );
+
+   uchar  bodyArr[], resArr[];
+   string resHeaders;
+   StringToCharArray(body, bodyArr, 0, StringLen(body));
+
+   int code = WebRequest("POST", url, headers, 5000, bodyArr, resArr, resHeaders);
+   if(code == 200) {
+      Print("[HB] Heartbeat enviado com sucesso → Render");
+   } else if(code == -1) {
+      // Fallback: tenta Python local se ainda estiver rodando
+      string req = StringFormat(
+         "{\"type\":\"HEARTBEAT\",\"user_id\":\"%s\","
+         "\"organization_id\":\"%s\",\"robot_id\":\"%s\","
+         "\"robot_token\":\"%s\"}",
+         UserID, OrganizationID, RobotID, RobotToken
+      );
+      string r = SendToPython(req);
+      if(r != "") Print("[HB] Fallback Python local OK");
+      else Print("[HB] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+   } else {
+      Print("[HB] Erro HTTP ", code, " ao contactar Render");
+   }
+}
+
+//+------------------------------------------------------------------+
+// Timer: dispara heartbeat a cada 30 segundos
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   if(!IdentityReady()) return;
+   SendHeartbeat();
 }
