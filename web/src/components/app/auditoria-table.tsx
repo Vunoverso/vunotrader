@@ -60,12 +60,13 @@ function resultBadge(result?: string | null) {
 
 function fmtDt(value?: string | null) {
   if (!value) return "—";
-  return new Date(value).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}, ${hours}:${minutes}`;
 }
 
 function csvEscape(value: string | number | null | undefined) {
@@ -99,9 +100,13 @@ function parseShadowFromRationale(rationale: string | null) {
 }
 
 function stripTechSuffix(rationale: string) {
+  if (!rationale) return "";
   return rationale
-    .replace(/\s*\|\s*SHADOW:(agree|diverge);global=(BUY|SELL);wr=[0-9]+(?:\.[0-9]+)?%;n=\d+/i, "")
-    .replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "");
+    .replace(/\s*\|\s*SHADOW:.*$/i, "")
+    .replace(/\s*\|\s*(tech|score|RSI|MACD|EMA|Regime|Vol|BBpos):.*$/i, "")
+    .replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "")
+    .replace(/^(BUY|SELL|HOLD)\|/i, "") // Remove old signal prefix if it's the only thing left
+    .trim();
 }
 
 export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRow[]; currentDateIso: string }) {
@@ -449,8 +454,8 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                   onClick={() => setExpanded(expanded === row.id ? null : row.id)}
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <span className="min-w-0 block">
+                    <span className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-slate-100">{row.symbol}</span>
                       <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${sideBadge(row.side)}`}>
                         {row.side.toUpperCase()}
@@ -471,14 +476,14 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                       <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${resultBadge(outcome?.result)}`}>
                         {outcome?.result?.toUpperCase() ?? "SEM RESULTADO"}
                       </span>
-                    </div>
+                    </span>
                     {row.rationale && (
-                      <p className="mt-1 text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
+                      <span className="mt-1 block text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
                         {stripTechSuffix(row.rationale).slice(0, 80)}
-                      </p>
+                      </span>
                     )}
-                    <p className="mt-0.5 text-[10px] text-slate-600">{fmtDt(row.created_at)} • modo {row.mode}</p>
-                  </div>
+                    <span className="mt-0.5 block text-[10px] text-slate-600">{fmtDt(row.created_at)} • modo {row.mode}</span>
+                  </span>
                   <span className={`text-xs text-slate-500 transition-transform ${expanded === row.id ? "rotate-180" : ""}`}>▼</span>
                 </button>
 
@@ -511,8 +516,15 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                       </div>
 
                       <div className="space-y-1 text-slate-400">
-                        <p className="text-slate-500">Motivo da entrada</p>
-                        <p className="leading-relaxed">{row.rationale ? stripTechSuffix(row.rationale) : "Sem motivo textual registrado."}</p>
+                        <p className="text-slate-500">Explicação do sinal</p>
+                        <p className="leading-relaxed text-slate-300">
+                          {row.rationale ? stripTechSuffix(row.rationale) : "Sem motivo registrado."}
+                        </p>
+                        {row.rationale && row.rationale.includes("|") && (
+                          <p className="mt-2 text-[9px] text-slate-600 break-all border-t border-slate-800/50 pt-1">
+                            Technical: {row.rationale}
+                          </p>
+                        )}
                         {outcome?.post_analysis && (
                           <>
                             <p className="pt-2 text-slate-500">Pós-análise</p>

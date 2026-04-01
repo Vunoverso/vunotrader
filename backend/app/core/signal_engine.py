@@ -251,16 +251,35 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
         if regime == "volatil":
             risk *= 0.6
 
-    # ── Racional legível ────────────────────────────────────────────────
-    rsi_str    = f"RSI={rsi:.1f}"
-    macd_str   = f"MACD={'acima' if macd_hist > 0 else 'abaixo'} do sinal"
-    ema_str    = f"EMA9{'>' if ema9 > ema21 else '<'}EMA21{'>' if ema21 > ema50 else '<'}EMA50"
-    regime_str = f"Regime={regime}"
-    vol_str    = f"Vol={vol_ratio:.1f}x"
-    bb_str     = f"BBpos={bb_pos:.2f}"
-    bb_w_str   = f"BBwidth={bb_width:.4f}"
+    # ── Racional amigável (Português) ───────────────────────────────────
+    reasons = []
+    if signal == "BUY":
+        if rsi < 35: reasons.append("recuperação de preço (RSI baixo)")
+        if macd_hist > 0: reasons.append("impulso de alta no MACD")
+        if ema9 > ema21: reasons.append("médias móveis alinhadas para alta")
+        if bb_pos < 0.2: reasons.append("preço em zona de suporte de Bollinger")
+        if vol_ratio > 1.3: reasons.append("volume comprador confirmando força")
+    elif signal == "SELL":
+        if rsi > 65: reasons.append("exaustão de alta (RSI sobrecomprado)")
+        if macd_hist < 0: reasons.append("impulso de queda no MACD")
+        if ema9 < ema21: reasons.append("médias móveis alinhadas para queda")
+        if bb_pos > 0.8: reasons.append("preço em zona de resistência de Bollinger")
+        if vol_ratio > 1.3: reasons.append("volume vendedor confirmando pressão")
+    else: # HOLD
+        if abs(raw_score) < THRESHOLD_WEAK: reasons.append("ausência de sinal direcional forte")
+        if regime == "volatil": reasons.append("mercado muito volátil (aguardando estabilidade)")
+        if regime == "lateral": reasons.append("mercado em consolidação lateral")
+        if 45 < rsi < 55: reasons.append("força relativa em zona neutra")
 
-    rationale = f"{signal}|score={raw_score:.3f}|{rsi_str}|{macd_str}|{ema_str}|{regime_str}|{vol_str}|{bb_str}|{bb_w_str}"
+    if not reasons:
+        friendly_text = "Aguardando melhor oportunidade."
+    else:
+        friendly_text = " e ".join(reasons[:2]).capitalize() + "."
+
+    # ── Racional final (Friendly + Tech Suffix) ───────────────────────
+    # Mantemos o "tech:" no final para auditoria se necessário
+    tech_info = f"score={raw_score:.3f}|RSI={rsi:.1f}|Regime={regime}|Vol={vol_ratio:.1f}x"
+    rationale = f"{friendly_text} | tech:{tech_info}"
 
     return SignalResult(
         signal=signal,
