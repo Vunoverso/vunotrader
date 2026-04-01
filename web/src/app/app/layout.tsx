@@ -34,7 +34,7 @@ export default async function AppLayout({
         .select("name, last_seen_at")
         .eq("profile_id", profileRow.id)
         .eq("status", "active")
-        .order("last_seen_at", { ascending: false })
+        .order("last_seen_at", { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle()
     : { data: null };

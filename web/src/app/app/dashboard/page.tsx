@@ -91,7 +91,7 @@ export default async function DashboardPage() {
               .data?.id ?? ""
         )
         .eq("status", "active")
-        .order("last_seen_at", { ascending: false })
+        .order("last_seen_at", { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle()
     : { data: null };

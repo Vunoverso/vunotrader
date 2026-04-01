@@ -31,7 +31,7 @@ export default function Mt5ConnectionChecker({ userId }: { userId: string }) {
       .select("name, last_seen_at")
       .eq("profile_id", profile.id)
       .eq("status", "active")
-      .order("last_seen_at", { ascending: false })
+      .order("last_seen_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
 

@@ -173,7 +173,7 @@ export default async function AdminPage() {
   const { data: robotsRaw } = await adminClient
     .from("robot_instances")
     .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, organization_id")
-    .order("last_seen_at", { ascending: false })
+    .order("last_seen_at", { ascending: false, nullsFirst: false })
     .limit(50);
 
   const { data: orgsForRobots } = await adminClient
