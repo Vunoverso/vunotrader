@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix="/api")
 
     @app.get("/", tags=["Health"])
+    @app.head("/", tags=["Health"])
     async def root():
         return {
             "status": "online",
