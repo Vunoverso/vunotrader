@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscriptionAccess } from "@/lib/subscription-access";
+import { TerminalFeed } from "@/components/app/terminal-feed";
 
 // ── Cards de métrica ─────────────────────────────────────────
 function MetricCard({
@@ -360,6 +361,11 @@ export default async function DashboardPage() {
           accent={metrics.openTrades > 0 ? "sky" : "slate"}
         />
       </div>
+
+      {/* Terminal Hacker de Pensamentos do Motor */}
+      {motorOnline && user?.id && (
+        <TerminalFeed userId={user.id} robotId={robotInstance?.id} />
+      )}
 
       {/* Painel Motor de Decisão */}
       <div className="rounded-xl bg-slate-900 border border-slate-800">
