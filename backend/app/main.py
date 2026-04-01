@@ -25,6 +25,15 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router, prefix="/api")
+
+    @app.get("/", tags=["Health"])
+    async def root():
+        return {
+            "status": "online",
+            "message": "Vuno Price Action Engine is active",
+            "version": "2.1.0"
+        }
+
     return app
 
 
