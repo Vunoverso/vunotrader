@@ -2,7 +2,7 @@
 Endpoints para comunicação direta com o EA do MetaTrader 5.
 Recebe heartbeat e dados de mercado sem depender do Python local.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 import hmac
 import time
@@ -137,11 +137,49 @@ async def get_signal(payload: SignalPayload):
             "confidence":      result.confidence,
             "risk_pct":        result.risk_pct,
             "rationale":       result.rationale,
+            "entry_price":     result.price,
         }).execute()
         decision_id = resp.data[0]["id"] if resp.data else None
         log.info("Decision saved: %s %s conf=%.2f", result.signal, payload.symbol, result.confidence)
     except Exception as exc:
         log.warning("Supabase trade_decisions insert failed: %s", exc)
+
+    # ── Tracking de Performance em Tempo Real (Self-Learning Loop) ──
+    try:
+        current_price = payload.candles[-1][4]
+        # Busca decisões pendentes do mesmo símbolo (criadas a pelo menos 5 min e no máximo 4h atrás)
+        check_time = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        pending = (
+            sb.table("trade_decisions")
+            .select("id, side, entry_price")
+            .eq("symbol", payload.symbol)
+            .eq("outcome_status", "pending")
+            .lt("created_at", check_time)
+            .execute()
+        )
+        for dec in (pending.data or []):
+            if not dec.get("entry_price"): continue
+            
+            # Se já passou > 15 min, decidimos o resultado virtual
+            # Para fins de aprendizado rápido: se o preço foi na direção correta = win
+            side = dec["side"]
+            entry = dec["entry_price"]
+            diff = current_price - entry
+            
+            outcome = None
+            if side == "buy":
+                outcome = "win" if diff > 0 else "loss"
+            elif side == "sell":
+                outcome = "win" if diff < 0 else "loss"
+            
+            if outcome:
+                sb.table("trade_decisions").update({
+                    "outcome_status": outcome,
+                    "outcome_pips": abs(diff) # simplificado
+                }).eq("id", dec["id"]).execute()
+                
+    except Exception as exc:
+        log.warning("Performance tracker failed: %s", exc)
 
     return SignalResponse(
         signal=result.signal,

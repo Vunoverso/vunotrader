@@ -128,25 +128,45 @@ export default async function DashboardPage() {
     0
   );
 
+  // ── Ciclo de Aprendizado: Taxa de acerto global (Real + Virtual) ──
+  const { data: learningStats } = user
+    ? await supabase
+        .from("trade_decisions")
+        .select("outcome_status")
+        .eq("user_id", user.id)
+        .neq("side", "hold")
+        .neq("outcome_status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(100)
+    : { data: null };
+
+  const iaAccuracy = (() => {
+    const rows = (learningStats ?? []) as any[];
+    if (rows.length < 5) return null;
+    const wins = rows.filter(r => r.outcome_status === "win").length;
+    return Math.round((wins / rows.length) * 100);
+  })();
+
   // Consistência: % de decisões BUY/SELL que resultaram em WIN nos últimos 20 trades
   const { data: recentOutcomes } = user
     ? await supabase
         .from("trade_decisions")
-        .select("side, executed_trades(trade_outcomes(result))")
+        .select("side, outcome_status, executed_trades(trade_outcomes(result))")
         .eq("user_id", user.id)
         .neq("side", "hold")
         .order("created_at", { ascending: false })
         .limit(20)
     : { data: null };
+
   const consistencyScore = (() => {
-    const rows = (recentOutcomes ?? []) as Array<{
-      side: string;
-      executed_trades?: Array<{ trade_outcomes?: Array<{ result?: string }> }>;
-    }>;
-    const withResult = rows.filter(r => r.executed_trades?.[0]?.trade_outcomes?.[0]?.result);
+    const rows = (recentOutcomes ?? []) as any[];
+    const withResult = rows.filter(r => r.outcome_status !== "pending" || r.executed_trades?.[0]?.trade_outcomes?.[0]?.result);
     if (withResult.length < 5) return null;
-    const wins = withResult.filter(r => r.executed_trades?.[0]?.trade_outcomes?.[0]?.result === "win");
-    return Math.round((wins.length / withResult.length) * 100);
+    const wins = withResult.filter(r => 
+      r.outcome_status === "win" || 
+      r.executed_trades?.[0]?.trade_outcomes?.[0]?.result === "win"
+    ).length;
+    return Math.round((wins / withResult.length) * 100);
   })();
 
   // Regime de mercado atual (da última decisão)
@@ -207,18 +227,8 @@ export default async function DashboardPage() {
     (sum, d) => sum + (d.executed_trades[0]?.trade_outcomes[0]?.pnl_money ?? 0), 0
   );
 
-  // Win rate dos últimos 20 trades (reutiliza recentOutcomes)
-  const roRows = (recentOutcomes as unknown as Array<{
-    side: string;
-    executed_trades?: Array<{ trade_outcomes?: Array<{ result?: string }> }>;
-  }> | null) ?? [];
-  const roWithResult = roRows.filter(r => r.executed_trades?.[0]?.trade_outcomes?.[0]?.result);
-  const winRateCalc = roWithResult.length >= 5
-    ? Math.round(
-        (roWithResult.filter(r => r.executed_trades?.[0]?.trade_outcomes?.[0]?.result === "win").length
-          / roWithResult.length) * 100
-      )
-    : null;
+  // Win rate global para o card principal (prioriza Ciclo de Aprendizado)
+  const winRateCalc = iaAccuracy ?? consistencyScore;
 
   // Últimas 5 operações fechadas para a tabela do dashboard
   const { data: recentClosedRaw } = user
@@ -349,17 +359,17 @@ export default async function DashboardPage() {
           accent="slate"
         />
         <MetricCard
-          label="Acerto"
-          value={metrics.winRate !== null ? `${metrics.winRate}%` : "—"}
-          sub="Taxa atual"
+          label="Acerto IA"
+          value={iaAccuracy !== null ? `${iaAccuracy}%` : "Calculando..."}
+          sub={iaAccuracy !== null ? "Meta: 68%" : "Aguardando dados de treino"}
           accent={
-            metrics.winRate === null ? "slate"
-            : metrics.winRate >= 60 ? "green"
-            : "red"
+            iaAccuracy === null ? "slate"
+            : iaAccuracy >= 68 ? "green"
+            : iaAccuracy >= 50 ? "sky" : "red"
           }
         />
         <MetricCard
-          label="Resultado"
+          label="Resultado HOJE"
           value={
             metrics.pnl === 0
               ? "R$ 0,00"
@@ -367,7 +377,7 @@ export default async function DashboardPage() {
               ? `+R$ ${metrics.pnl.toFixed(2)}`
               : `-R$ ${Math.abs(metrics.pnl).toFixed(2)}`
           }
-          sub="Dia atual"
+          sub="Conta ativa"
           accent={metrics.pnl > 0 ? "green" : metrics.pnl < 0 ? "red" : "slate"}
         />
         <MetricCard

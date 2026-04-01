@@ -11,7 +11,8 @@ Decisão final: combinação ponderada dos indicadores + filtro de regime.
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any, Optional
+from app.core.price_action import VunoCandle, score_setup, get_sr_zones, check_market_structure
 
 # ── Tipos internos ──────────────────────────────────────────────────────
 Candle = List[float]   # [timestamp, open, high, low, close, volume]
@@ -102,6 +103,73 @@ def _momentum(closes: Closes, period: int = 10) -> float:
     return (closes[-1] - base) / base * 100.0
 
 
+def _adx(highs: Highs, lows: Lows, closes: Closes, period: int = 14) -> float:
+    """Average Directional Index (Wilder). Retorna força da tendência (0-100)."""
+    if len(closes) < period * 2:
+        return 20.0
+    
+    tr, pdm, ndm = [], [], []
+    for i in range(1, len(closes)):
+        h, l, pc = highs[i], lows[i], closes[i-1]
+        tr.append(max(h - l, abs(h - pc), abs(l - pc)))
+        
+        move_up = h - highs[i-1]
+        move_down = lows[i-1] - l
+        
+        if move_up > move_down and move_up > 0:
+            pdm.append(move_up)
+            ndm.append(0)
+        elif move_down > move_up and move_down > 0:
+            pdm.append(0)
+            ndm.append(move_down)
+        else:
+            pdm.append(0)
+            ndm.append(0)
+            
+    # Wilder's Smoothing
+    def smooth(data, p):
+        s = [sum(data[:p])]
+        for v in data[p:]:
+            s.append(s[-1] - (s[-1] / p) + v)
+        return s
+
+    str_s = smooth(tr, period)
+    spdm_s = smooth(pdm, period)
+    sndm_s = smooth(ndm, period)
+    
+    dx = []
+    for i in range(len(str_s)):
+        if str_s[i] == 0:
+            dx.append(0)
+            continue
+        pdi = 100 * spdm_s[i] / str_s[i]
+        ndi = 100 * sndm_s[i] / str_s[i]
+        div = pdi + ndi
+        dx.append(100 * abs(pdi - ndi) / div if div != 0 else 0)
+        
+    return sum(dx[-period:]) / period if dx else 20.0
+
+
+def _stochastic(highs: Highs, lows: Lows, closes: Closes, k_period: int = 14, d_period: int = 3) -> Tuple[float, float]:
+    """Estocástico (%K, %D)."""
+    if len(closes) < k_period + d_period:
+        return 50.0, 50.0
+    
+    k_vals = []
+    for i in range(len(closes) - k_period + 1):
+        window_high = max(highs[i : i + k_period])
+        window_low = min(lows[i : i + k_period])
+        diff = window_high - window_low
+        if diff == 0:
+            k_vals.append(50.0)
+        else:
+            k_vals.append(100 * (closes[i + k_period - 1] - window_low) / diff)
+            
+    pk = k_vals[-1]
+    pd = sum(k_vals[-d_period:]) / d_period
+    return pk, pd
+
+
 # ── Motor de decisão ────────────────────────────────────────────────────
 
 class SignalResult:
@@ -112,18 +180,20 @@ class SignalResult:
         risk_pct: float,
         rationale: str,
         regime: str,
+        price: float = 0.0,
     ):
         self.signal     = signal        # "BUY" | "SELL" | "HOLD"
         self.confidence = confidence    # 0.0 – 1.0
         self.risk_pct   = risk_pct      # % do capital
         self.rationale  = rationale
         self.regime     = regime        # "tendencia" | "lateral" | "volatil"
+        self.price      = price
 
 
 def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     """
     Processa lista de candles e retorna um SignalResult.
-    Cada candle: [timestamp, open, high, low, close, volume]
+    Meta: 68% de assertividade equilibrada com frequência.
     """
     if len(candles) < 60:
         return SignalResult("HOLD", 0.0, 0.0, "Histórico insuficiente (<60 candles)", "lateral")
@@ -133,14 +203,17 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     lows   = [c[3] for c in candles]
     vols   = [c[5] for c in candles]
 
-    # ── Indicadores ────────────────────────────────────────────────────
+    # ── Indicadores Base ───────────────────────────────────────────────
     rsi  = _rsi(closes)
     macd_val, macd_sig, macd_hist = _macd(closes)
     atr  = _atr(highs, lows, closes)
     bb_upper, bb_mid, bb_lower = _bollinger(closes)
     vol_ratio  = _volume_ratio(vols)
     mom10      = _momentum(closes, 10)
-    mom20      = _momentum(closes, 20)
+    
+    # ── Novos Indicadores de Inteligência ──────────────────────────────
+    adx      = _adx(highs, lows, closes)
+    stoch_k, stoch_d = _stochastic(highs, lows, closes)
 
     ema9_arr  = _ema(closes, 9)
     ema21_arr = _ema(closes, 21)
@@ -151,135 +224,144 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     ema50 = ema50_arr[-1] if ema50_arr else closes[-1]
     price = closes[-1]
 
-    # ── Regime de mercado ───────────────────────────────────────────────
+    # ── Regime de mercado Dinâmico ──────────────────────────────────────
+    # ADX > 25 indica tendência forte. ADX < 20 indica lateralização.
     atr_pct = atr / price if price > 0 else 0.0
-    if atr_pct > 0.012:
+    
+    if atr_pct > 0.015:
         regime = "volatil"
-    elif ema9 > ema21 > ema50 or ema9 < ema21 < ema50:
+    elif adx > 25:
         regime = "tendencia"
-    else:
+    elif adx < 18:
         regime = "lateral"
+    else:
+        # Padrão anterior se ADX estiver em zona cinzenta
+        if (ema9 > ema21 > ema50) or (ema9 < ema21 < ema50):
+            regime = "tendencia"
+        else:
+            regime = "lateral"
 
     # ── Scores de sinal (–1 bearish … +1 bullish) ──────────────────────
-    scores: list[float] = []
+    scores_map = {}
 
-    # RSI
-    if rsi < 30:
-        scores.append(1.0)
-    elif rsi > 70:
-        scores.append(-1.0)
-    elif rsi < 45:
-        scores.append(0.4)
-    elif rsi > 55:
-        scores.append(-0.4)
-    else:
-        scores.append(0.0)
+    # 1. RSI (Peso Variável)
+    if rsi < 30: scores_map['rsi'] = 1.0
+    elif rsi > 70: scores_map['rsi'] = -1.0
+    elif rsi < 40: scores_map['rsi'] = 0.5
+    elif rsi > 60: scores_map['rsi'] = -0.5
+    else: scores_map['rsi'] = 0.0
 
-    # MACD crossover
+    # 2. MACD (Seguidor de Tendência)
     if macd_val > macd_sig and macd_hist > 0:
-        scores.append(0.8 if macd_hist > 0.0001 else 0.3)
+        scores_map['macd'] = 0.8 if macd_hist > 0.0001 else 0.4
     elif macd_val < macd_sig and macd_hist < 0:
-        scores.append(-0.8 if macd_hist < -0.0001 else -0.3)
+        scores_map['macd'] = -0.8 if macd_hist < -0.0001 else -0.4
     else:
-        scores.append(0.0)
+        scores_map['macd'] = 0.0
 
-    # EMA crossover
-    if ema9 > ema21 and ema21 > ema50:
-        scores.append(0.9)
-    elif ema9 < ema21 and ema21 < ema50:
-        scores.append(-0.9)
-    elif ema9 > ema21:
-        scores.append(0.4)
-    elif ema9 < ema21:
-        scores.append(-0.4)
-    else:
-        scores.append(0.0)
+    # 3. EMA (Cruzamento e Alinhamento)
+    if ema9 > ema21 and ema21 > ema50: scores_map['ema'] = 0.9
+    elif ema9 < ema21 and ema21 < ema50: scores_map['ema'] = -0.9
+    elif ema9 > ema21: scores_map['ema'] = 0.5
+    elif ema9 < ema21: scores_map['ema'] = -0.5
+    else: scores_map['ema'] = 0.0
 
-    # Bollinger Bands
-    bb_width = (bb_upper - bb_lower) / bb_mid if bb_mid != 0 else 0.0
-    bb_pos   = (price - bb_lower) / (bb_upper - bb_lower) if (bb_upper - bb_lower) != 0 else 0.5
-    if bb_pos < 0.15:
-        scores.append(0.7)
-    elif bb_pos > 0.85:
-        scores.append(-0.7)
-    else:
-        scores.append(0.0)
+    # 4. Bollinger
+    bb_pos = (price - bb_lower) / (bb_upper - bb_lower) if (bb_upper - bb_lower) != 0 else 0.5
+    if bb_pos < 0.15: scores_map['bb'] = 0.7
+    elif bb_pos > 0.85: scores_map['bb'] = -0.7
+    else: scores_map['bb'] = 0.0
 
-    # Momentum
-    if mom10 > 0.5 and mom20 > 0.3:
-        scores.append(0.6)
-    elif mom10 < -0.5 and mom20 < -0.3:
-        scores.append(-0.6)
-    else:
-        scores.append(mom10 / 2.0)
+    # 5. Stochastic (Novo filtro de reversão)
+    if stoch_k < 20 and stoch_k > stoch_d: scores_map['stoch'] = 0.8  # Cruzou pra cima no fundo
+    elif stoch_k > 80 and stoch_k < stoch_d: scores_map['stoch'] = -0.8 # Cruzou pra baixo no topo
+    elif stoch_k < 25: scores_map['stoch'] = 0.4
+    elif stoch_k > 75: scores_map['stoch'] = -0.4
+    else: scores_map['stoch'] = 0.0
+
+    # ── Ajuste de Pesos por Regime ──────────────────────────────────────
+    # Se Tendência: MACD e EMA valem mais.
+    # Se Lateral: RSI, BB e Estocástico valem mais.
+    if regime == "tendencia":
+        w = {"macd": 0.35, "ema": 0.35, "rsi": 0.10, "bb": 0.10, "stoch": 0.10}
+    elif regime == "lateral":
+        w = {"rsi": 0.30, "stoch": 0.30, "bb": 0.20, "macd": 0.10, "ema": 0.10}
+    else: # Volátil
+        w = {"macd": 0.20, "ema": 0.20, "rsi": 0.20, "bb": 0.20, "stoch": 0.20}
+
+    raw_score = sum(scores_map[k] * w[k] for k in w)
 
     # Volume confirma
     vol_mult = min(vol_ratio, 2.0)
-    scores = [s * (0.7 + 0.3 * min(vol_mult, 1.5)) for s in scores]
+    raw_score *= (0.8 + 0.2 * min(vol_mult, 1.5))
 
-    # ── Score final ─────────────────────────────────────────────────────
-    weights = [0.20, 0.25, 0.25, 0.15, 0.15]
-    raw_score = sum(s * w for s, w in zip(scores, weights))
-
-    # Penaliza mercado volátil
+    # Penaliza mercado excessivamente volátil
     if regime == "volatil":
-        raw_score *= 0.6
+        raw_score *= 0.7
 
-    # ── Limiar de decisão ───────────────────────────────────────────────
-    THRESHOLD_STRONG = 0.45
-    THRESHOLD_WEAK   = 0.28
-
-    if raw_score >= THRESHOLD_STRONG:
+    # ── Limiar de decisão (Equilibrado para evitar inatividade) ──────────
+    # Conservador p/ 68%, mas flexível em tendências claras.
+    THRESHOLD_ENTRY = 0.38
+    
+    if raw_score >= THRESHOLD_ENTRY:
         signal = "BUY"
-        confidence = min(0.95, 0.62 + abs(raw_score) * 0.4)
-    elif raw_score <= -THRESHOLD_STRONG:
+    elif raw_score <= -THRESHOLD_ENTRY:
         signal = "SELL"
-        confidence = min(0.95, 0.62 + abs(raw_score) * 0.4)
-    elif abs(raw_score) >= THRESHOLD_WEAK and regime == "tendencia":
-        signal = "BUY" if raw_score > 0 else "SELL"
-        confidence = 0.58 + abs(raw_score) * 0.2
     else:
         signal = "HOLD"
-        confidence = 0.0
 
-    # ── Risco dinâmico ──────────────────────────────────────────────────
+    # Confiança baseada na força do sinal
+    confidence = abs(raw_score) * 1.5
+    confidence = max(0.4, min(0.95, confidence))
+    
     if signal == "HOLD":
+        confidence = 0.0
         risk = 0.0
     else:
+        # Risco base ponderado pela confiança
         risk = risk_base * confidence
-        risk = max(0.5, min(4.0, risk))
-        if regime == "volatil":
-            risk *= 0.6
+        risk = max(0.5, min(3.5, risk))
+        if regime == "volatil": risk *= 0.5
 
-    # ── Racional amigável (Português) ───────────────────────────────────
+    # ── [VPE] Análise de Price Action (Estrutura e Zonas) ───────────────
+    vuno_candles = [VunoCandle(c[2], c[3], c[1], c[4], c[5]) for c in candles]
+    v_curr = vuno_candles[-1]
+    v_prev = vuno_candles[-2] if len(vuno_candles) >= 2 else None
+    
+    # Detecção de Zonas e Estrutura VPE
+    vpe_zones = get_sr_zones(vuno_candles, atr)
+    vpe_struct = check_market_structure(vuno_candles)
+    vpe_score, vpe_factors = score_setup(v_curr, v_prev, vpe_zones, vpe_struct, atr)
+
+    # ── Racional em Português (Inteligente - VPE) ──────────────────────
     reasons = []
-    if signal == "BUY":
-        if rsi < 35: reasons.append("recuperação de preço (RSI baixo)")
-        if macd_hist > 0: reasons.append("impulso de alta no MACD")
-        if ema9 > ema21: reasons.append("médias móveis alinhadas para alta")
-        if bb_pos < 0.2: reasons.append("preço em zona de suporte de Bollinger")
-        if vol_ratio > 1.3: reasons.append("volume comprador confirmando força")
-    elif signal == "SELL":
-        if rsi > 65: reasons.append("exaustão de alta (RSI sobrecomprado)")
-        if macd_hist < 0: reasons.append("impulso de queda no MACD")
-        if ema9 < ema21: reasons.append("médias móveis alinhadas para queda")
-        if bb_pos > 0.8: reasons.append("preço em zona de resistência de Bollinger")
-        if vol_ratio > 1.3: reasons.append("volume vendedor confirmando pressão")
-    else: # HOLD
-        if abs(raw_score) < THRESHOLD_WEAK: reasons.append("ausência de sinal direcional forte")
-        if regime == "volatil": reasons.append("mercado muito volátil (aguardando estabilidade)")
-        if regime == "lateral": reasons.append("mercado em consolidação lateral")
-        if 45 < rsi < 55: reasons.append("força relativa em zona neutra")
-
-    if not reasons:
-        friendly_text = "Aguardando melhor oportunidade."
+    if signal != "HOLD":
+        if vpe_struct == "bullish" and signal == "BUY": reasons.append("tendência de alta confirmada (H1/H4)")
+        if vpe_struct == "bearish" and signal == "SELL": reasons.append("tendência de baixa confirmada (H1/H4)")
+        
+        # Confluências VPE
+        for f in vpe_factors:
+            if "PIN_BAR" in f: reasons.append("rejeição institucional (Pin Bar)")
+            if "ENGULFING" in f: reasons.append("força de momentum (Engolfo)")
+            if "ZONE" in f: reasons.append("em zona de suporte/resistência relevante")
+            if "INSIDE_BAR" in f: reasons.append("compressão para rompimento")
+            
+        if vol_ratio > 1.4: reasons.append("fluxo de volume acima da média")
     else:
-        friendly_text = " e ".join(reasons[:2]).capitalize() + "."
+        if vpe_score > 0.4:
+            reasons.append(f"setup em formação ({vpe_score:.2f}), aguardando confirmação {vpe_struct}")
+        elif adx < 15:
+            reasons.append("mercado parado (ADX baixo), evitando ruído")
+        else:
+            reasons.append("ausência de confluência Price Action")
 
-    # ── Racional final (Friendly + Tech Suffix) ───────────────────────
-    # Mantemos o "tech:" no final para auditoria se necessário
-    tech_info = f"score={raw_score:.3f}|RSI={rsi:.1f}|Regime={regime}|Vol={vol_ratio:.1f}x"
-    rationale = f"{friendly_text} | tech:{tech_info}"
+    friendly_text = " e ".join(reasons[:2]).capitalize() + "." if reasons else "Aguardando sinal claro."
+    
+    # ── Racional final (VPE + tech info) ──────────────────────────────
+    vpe_factors_str = ",".join(vpe_factors)
+    tech_info = f"score={raw_score:.2f}|vpe={vpe_score:.2f}|ADX={adx:.0f}|{vpe_struct}|factors={vpe_factors_str}"
+    rationale = f"[{vpe_struct.upper()}] {friendly_text} | tech:{tech_info}"
+
 
     return SignalResult(
         signal=signal,
@@ -287,4 +369,5 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
         risk_pct=round(risk, 3),
         rationale=rationale,
         regime=regime,
+        price=price,
     )

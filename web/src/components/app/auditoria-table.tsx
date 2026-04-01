@@ -103,10 +103,26 @@ function stripTechSuffix(rationale: string) {
   if (!rationale) return "";
   return rationale
     .replace(/\s*\|\s*SHADOW:.*$/i, "")
-    .replace(/\s*\|\s*(tech|score|RSI|MACD|EMA|Regime|Vol|BBpos):.*$/i, "")
-    .replace(/^\[(TENDENCIA|LATERAL|VOLATIL)\]\s*/i, "")
-    .replace(/^(BUY|SELL|HOLD)\|/i, "") // Remove old signal prefix if it's the only thing left
+    .replace(/\s*\|\s*(tech|score|vpe|ADX|Stoch|factors):.*$/i, "")
+    .replace(/^\[(BULLISH|BEARISH|LATERAL|TENDENCIA|VOLATIL)\]\s*/i, "")
+    .replace(/^(BUY|SELL|HOLD)\|/i, "") 
     .trim();
+}
+
+function vpeBadges(rationale: string) {
+  if (!rationale || !rationale.includes("factors=")) return [];
+  const factorsPart = rationale.split("factors=")[1];
+  const factors = factorsPart.split("|")[0].split(",");
+  
+  const b = [];
+  if (factors.includes("ZONE_SUPPORT")) b.push({ label: "SUPORTE ATIVO", cls: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" });
+  if (factors.includes("ZONE_RESISTANCE")) b.push({ label: "RESISTÊNCIA", cls: "bg-rose-500/20 text-rose-400 border border-rose-500/30" });
+  if (factors.includes("INSIDE_BAR")) b.push({ label: "COMPRESSÃO", cls: "bg-blue-500/20 text-blue-400 border border-blue-500/30" });
+  if (factors.includes("PIN_BAR_BULLISH") || factors.includes("PIN_BAR_BEARISH")) b.push({ label: "PIN BAR", cls: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" });
+  if (factors.includes("ENGULFING_BULLISH") || factors.includes("ENGULFING_BEARISH")) b.push({ label: "ENGOLFO", cls: "bg-violet-500/20 text-violet-300 border border-violet-500/30" });
+  if (factors.includes("STRUCTURE_BULLISH") || factors.includes("STRUCTURE_BEARISH")) b.push({ label: "ESTRUTURA OK", cls: "bg-orange-500/20 text-orange-300 border border-orange-500/30" });
+  
+  return b;
 }
 
 export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRow[]; currentDateIso: string }) {
@@ -476,6 +492,11 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                       <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${resultBadge(outcome?.result)}`}>
                         {outcome?.result?.toUpperCase() ?? "SEM RESULTADO"}
                       </span>
+                      {vpeBadges(row.rationale ?? "").map((b, i) => (
+                        <span key={i} className={`rounded px-2 py-0.5 text-[9px] font-bold ${b.cls}`}>
+                          {b.label}
+                        </span>
+                      ))}
                     </span>
                     {row.rationale && (
                       <span className="mt-1 block text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
