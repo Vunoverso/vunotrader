@@ -142,15 +142,9 @@ async def get_signal(payload: SignalPayload):
         decision_id = resp.data[0]["id"] if resp.data else None
         log.info("Decision saved: %s %s conf=%.2f", result.signal, payload.symbol, result.confidence)
     except Exception as exc:
-        log.error("CRITICAL ERROR in Engine: %s", exc, exc_info=True)
-        return SignalResponse(
-            signal="HOLD",
-            confidence=0.0,
-            risk=0.0,
-            decision_id=None,
-            regime="lateral",
-            rationale="error_in_engine_audit_logs",
-        )
+        log.error("Database insert failed (but continuing signal): %s", exc)
+        # Prosseguimos mesmo sem salvar no banco para não travar o robô
+        decision_id = None
 
     # ── Tracking de Performance em Tempo Real (Self-Learning Loop) ──
     try:
