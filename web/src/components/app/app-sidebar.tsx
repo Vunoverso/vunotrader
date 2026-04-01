@@ -111,7 +111,17 @@ const navItems = [
 
 const PLAN_LOCKED_ROUTES = ["/app/operacoes", "/app/parametros", "/app/estudos", "/app/auditoria", "/app/ia-analises"];
 
-export default function AppSidebar({ isAdmin = false, hasActivePlan = false }: { isAdmin?: boolean; hasActivePlan?: boolean }) {
+export default function AppSidebar({
+  isAdmin = false,
+  hasActivePlan = false,
+  isOpen = false,
+  onClose,
+}: {
+  isAdmin?: boolean;
+  hasActivePlan?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -123,44 +133,67 @@ export default function AppSidebar({ isAdmin = false, hasActivePlan = false }: {
   }
 
   return (
-    <aside className="flex h-full w-60 flex-col bg-slate-900 border-r border-slate-800">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-sm font-bold text-white select-none">
-          VT
-        </span>
-        <div className="leading-tight">
-          <p className="text-sm font-semibold text-white">Vuno Trader</p>
-          <p className="text-xs text-slate-500">Painel Operacional</p>
-        </div>
-      </div>
+    <>
+      {/* Backdrop (Mobile) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm transition-opacity md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.map((item) => {
-          const isPlanLocked = !hasActivePlan && PLAN_LOCKED_ROUTES.some((route) => item.href.startsWith(route));
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.href}
-              href={isPlanLocked ? "/app/assinatura" : item.href}
-              title={isPlanLocked ? "Requer plano ativo" : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                active
-                  ? "bg-sky-600/20 text-sky-400"
-                  : isPlanLocked
-                  ? "text-slate-500 hover:bg-slate-800"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-              }`}
-            >
-              <span className={active ? "text-sky-400" : "text-slate-500"}>
-                {item.icon}
-              </span>
-              {item.label}
-              {isPlanLocked && <span className="ml-auto text-[10px] text-amber-400">bloqueado</span>}
-            </Link>
-          );
-        })}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r border-slate-800 bg-slate-900 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 select-none items-center justify-center rounded-lg bg-sky-600 text-sm font-bold text-white">
+              VT
+            </span>
+            <div className="leading-tight">
+              <p className="text-sm font-semibold text-white">Vuno Trader</p>
+              <p className="text-xs text-slate-500">Painel Operacional</p>
+            </div>
+          </div>
+          {/* Botão fechar (Mobile) */}
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 md:hidden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {navItems.map((item) => {
+            const isPlanLocked = !hasActivePlan && PLAN_LOCKED_ROUTES.some((route) => item.href.startsWith(route));
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={isPlanLocked ? "/app/assinatura" : item.href}
+                title={isPlanLocked ? "Requer plano ativo" : undefined}
+                onClick={() => onClose?.()} // Fecha ao clicar no mobile
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-sky-600/20 text-sky-400"
+                    : isPlanLocked
+                    ? "text-slate-500 hover:bg-slate-800"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                }`}
+              >
+                <span className={active ? "text-sky-400" : "text-slate-500"}>
+                  {item.icon}
+                </span>
+                {item.label}
+                {isPlanLocked && <span className="ml-auto text-[10px] text-amber-400">bloqueado</span>}
+              </Link>
+            );
+          })}
 
         {/* Link Admin — só aparece para administradores da plataforma */}
         {isAdmin && (
@@ -227,5 +260,6 @@ export default function AppSidebar({ isAdmin = false, hasActivePlan = false }: {
         </button>
       </div>
     </aside>
+    </>
   );
 }
