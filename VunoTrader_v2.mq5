@@ -83,11 +83,22 @@ void OnTick()
    //--- Determinar Modo Efetivo (Opera ou apenas Observa?)
    string effMode = TradingMode;
    bool safe      = SafetyOK();
-   bool inHr     = TradingHour();
+   bool inHr      = TradingHour();
    
-   if(!safe || !inHr) 
-   {
-      effMode = "observer"; // Manda ao brain p/ aprendizado simulado, mas NÃO abre ordem
+   if(!safe) {
+      effMode = "observer";
+      static datetime lastErrLog = 0;
+      if(TimeCurrent() - lastErrLog > 600) {
+         Print("Vuno: Forçando modo OBSERVER por SEGURANÇA (Limite de perda/drawdown atingido).");
+         lastErrLog = TimeCurrent();
+      }
+   } else if(!inHr) {
+      effMode = "observer";
+      static datetime lastHrLog = 0;
+      if(TimeCurrent() - lastHrLog > 600) {
+         Print("Vuno: Forçando modo OBSERVER por HORÁRIO (Fora da janela configurada: ", TradingStart, " - ", TradingEnd, ")");
+         lastHrLog = TimeCurrent();
+      }
    }
 
    //--- Montar payload com identificação Vuno

@@ -120,8 +120,20 @@ void OnTimer()
          bool safe = SafetyOK();
          bool inHr = TradingHour();
          
-         if(!safe || !inHr) {
-            effMode = "observer"; // Manda ao brain p/ aprendizado simulado // não opera
+         if(!safe) {
+            effMode = "observer";
+            static datetime lastLogSafe = 0;
+            if(TimeCurrent() - lastLogSafe > 3600) {
+                Print("Vuno: Modo Observador ATIVADO por Segurança (Limite de Perda/Drawdown)");
+                lastLogSafe = TimeCurrent();
+            }
+         } else if(!inHr) {
+            effMode = "observer";
+            static datetime lastLogHr = 0;
+            if(TimeCurrent() - lastLogHr > 3600) {
+                Print("Vuno: Modo Observador ATIVADO por Horário (Fora da janela configurada)");
+                lastLogHr = TimeCurrent();
+            }
          }
 
          string request = StringFormat(
