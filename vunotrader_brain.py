@@ -1089,10 +1089,17 @@ class MT5Bridge:
         # MT5 enviando dados de mercado → retornar sinal
         if msg_type == 'MARKET_DATA':
             return self._handle_market_data(msg)
-
+            
         # MT5 reportando resultado de operação → aprender
         elif msg_type == 'TRADE_RESULT':
             return self._handle_trade_result(msg)
+
+        # MT5 enviando apenas ping de atividade (mesmo fora de hora)
+        elif msg_type == 'HEARTBEAT':
+            robot_id = msg.get('robot_id')
+            if robot_id:
+                self.db.heartbeat(robot_id)
+            return {"type": "HEARTBEAT_ACK", "status": "ok"}
 
         # MT5 pedindo status do modelo
         elif msg_type == 'STATUS':

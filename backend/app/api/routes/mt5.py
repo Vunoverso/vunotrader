@@ -29,12 +29,16 @@ class HeartbeatResponse(BaseModel):
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+import hashlib
+import hmac
+from fastapi import APIRouter, HTTPException, status
+
 def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> dict:
     """Valida se o robot_id + token pertencem à organização. Retorna o registro."""
     sb = get_service_supabase()
     result = (
         sb.table("robot_instances")
-        .select("id, token, organization_id, status")
+        .select("id, robot_token_hash, organization_id, status")
         .eq("id", robot_id)
         .eq("organization_id", organization_id)
         .single()
@@ -43,8 +47,12 @@ def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> di
     row = result.data
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Robot not found")
-    if row.get("token") != robot_token:
+        
+    stored_hash = str(row.get("robot_token_hash") or "")
+    incoming_hash = hashlib.sha256(robot_token.encode("utf-8")).hexdigest()
+    if not hmac.compare_digest(stored_hash, incoming_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid robot token")
+        
     if row.get("status") == "revoked":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Robot revoked")
     return row
