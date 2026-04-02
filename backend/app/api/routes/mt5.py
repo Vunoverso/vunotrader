@@ -20,6 +20,18 @@ log = logging.getLogger("mt5")
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+class OpenPosition(BaseModel):
+    ticket: int
+    symbol: str
+    side: str
+    volume: float
+    price: float
+    profit: float
+    sl: float = 0.0
+    tp: float = 0.0
+    decision_id: str | None = None
+
+
 class HeartbeatPayload(BaseModel):
     robot_id: str
     robot_token: str
@@ -27,6 +39,7 @@ class HeartbeatPayload(BaseModel):
     organization_id: str
     mode: str = "demo"
     balance: float = 0.0
+    positions: list[OpenPosition] = []
 
 
 class HeartbeatResponse(BaseModel):
@@ -133,11 +146,18 @@ def _sync_robot_data(sb, robot_id: str, balance: float) -> None:
         now = datetime.now(timezone.utc).isoformat()
         update_data = {
             "last_seen_at": now,
-            "current_balance": balance
         }
         
-        # Busca o robô para checar se precisa setar banca inicial
-        check = sb.table("robot_instances").select("initial_balance").eq("id", robot_id).single().execute()
+        # Busca o robô para checar banca inicial e saldo atual
+        check = sb.table("robot_instances").select("initial_balance, current_balance").eq("id", robot_id).single().execute()
+        
+        # Só atualiza o saldo se for maior que zero ou se ainda não temos saldo registrado
+        # (isso evita que um payload sem o campo balance — que chega como 0.0 — zere a banca no painel)
+        if balance > 0:
+            update_data["current_balance"] = balance
+        elif not check.data or not check.data.get("current_balance"):
+            update_data["current_balance"] = 0.0
+
         if check.data and (not check.data.get("initial_balance") or check.data.get("initial_balance") == 0):
             if balance > 0:
                 log.info(f"Setando banca inicial para {robot_id}: {balance}")
@@ -226,6 +246,20 @@ async def heartbeat(payload: HeartbeatPayload):
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
     sb = get_service_supabase()
     _sync_robot_data(sb, payload.robot_id, payload.balance)
+
+    # Healing Logic: Sincroniza estados das decisões baseado no que o MT5 reportou
+    if payload.positions:
+        for pos in payload.positions:
+            if pos.decision_id:
+                # Se o MT5 diz que está aberta, garante que no DB está como 'executing'
+                # (isso cura casos onde o /trade-opened falhou mas a ordem abriu)
+                sb.table("trade_decisions").update({
+                    "outcome_status": "executing",
+                    "entry_price": pos.price,
+                    "stop_loss": pos.sl if pos.sl > 0 else None,
+                    "take_profit": pos.tp if pos.tp > 0 else None,
+                }).eq("id", pos.decision_id).neq("outcome_status", "executing").execute()
+    
     return HeartbeatResponse(status="ok", timestamp=datetime.now(timezone.utc).isoformat())
 
 

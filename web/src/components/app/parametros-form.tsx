@@ -52,11 +52,11 @@ const DEFAULT: ParametrosData = {
 };
 
 // ── Helpers de UI ────────────────────────────────────────────
-function FieldGroup({ label, tooltip, hint, children }: { label: string; tooltip?: string; hint?: string; children: React.ReactNode }) {
+function FieldGroup({ id, label, tooltip, hint, children }: { id?: string; label: string; tooltip?: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 mb-1">
-        <label className="block text-sm font-medium text-slate-300">{label}</label>
+        <label htmlFor={id} className="block text-sm font-medium text-slate-300">{label}</label>
         {tooltip && (
           <div className="group relative inline-block">
             <div className="cursor-help rounded-full bg-slate-800 p-0.5 text-slate-500 hover:bg-slate-700 hover:text-sky-400 transition-colors">
@@ -80,8 +80,9 @@ function FieldGroup({ label, tooltip, hint, children }: { label: string; tooltip
 }
 
 function Input({
-  value, onChange, type = "text", placeholder, prefix, suffix, min, step,
+  id, value, onChange, type = "text", placeholder, prefix, suffix, min, step,
 }: {
+  id?: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
@@ -99,6 +100,8 @@ function Input({
         </span>
       )}
       <input
+        id={id}
+        name={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -318,8 +321,9 @@ export default function ParametrosForm({
           Metas de resultado
         </h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <FieldGroup label="Meta diária" hint="Alvo de lucro por dia">
+          <FieldGroup id="daily_profit_target" label="Meta diária" hint="Alvo de lucro por dia">
             <Input
+              id="daily_profit_target"
               value={form.daily_profit_target}
               onChange={(v) => set("daily_profit_target", v)}
               type="number"
@@ -329,8 +333,9 @@ export default function ParametrosForm({
               step="0.01"
             />
           </FieldGroup>
-          <FieldGroup label="Meta semanal" hint="Alvo de lucro por semana">
+          <FieldGroup id="weekly_profit_target" label="Meta semanal" hint="Alvo de lucro por semana">
             <Input
+              id="weekly_profit_target"
               value={form.weekly_profit_target}
               onChange={(v) => set("weekly_profit_target", v)}
               type="number"
@@ -340,8 +345,9 @@ export default function ParametrosForm({
               step="0.01"
             />
           </FieldGroup>
-          <FieldGroup label="Meta mensal" hint="Alvo de lucro por mês">
+          <FieldGroup id="monthly_profit_target" label="Meta mensal" hint="Alvo de lucro por mês">
             <Input
+              id="monthly_profit_target"
               value={form.monthly_profit_target}
               onChange={(v) => set("monthly_profit_target", v)}
               type="number"
@@ -361,12 +367,14 @@ export default function ParametrosForm({
         </h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FieldGroup 
+            id="capital_usd"
             label="Capital de referência" 
             hint={currentBalance ? "Sincronizado via MT5" : "Base usada para calcular risco e drawdown"}
             tooltip="Base usada para calcular o risco em dinheiro e lotes. O robô usará este valor para definir o tamanho das ordens."
           >
             <div className="relative">
               <Input
+                id="capital_usd"
                 value={currentBalance ? currentBalance.toFixed(2) : form.capital_usd}
                 onChange={(v) => !currentBalance && set("capital_usd", v)}
                 type="number"
@@ -384,11 +392,13 @@ export default function ParametrosForm({
             </div>
           </FieldGroup>
           <FieldGroup 
+            id="daily_loss_limit"
             label="Limite de perda diária" 
             hint="Robô para ao atingir este valor"
             tooltip="Trava de segurança: se o robô perder este valor líquido em um único dia (PnL Realizado), ele pausa até o dia seguinte."
           >
             <Input
+              id="daily_loss_limit"
               value={form.daily_loss_limit}
               onChange={(v) => set("daily_loss_limit", v)}
               type="number"
@@ -399,11 +409,13 @@ export default function ParametrosForm({
             />
           </FieldGroup>
           <FieldGroup 
+            id="max_drawdown_pct"
             label="Drawdown máximo" 
             hint="Percentual máximo de queda permitido"
             tooltip="A queda máxima total permitida a partir do seu topo de capital. Serve para proteger sua conta de grandes sequências de perdas."
           >
             <Input
+              id="max_drawdown_pct"
               value={form.max_drawdown_pct}
               onChange={(v) => set("max_drawdown_pct", v)}
               type="number"
@@ -414,11 +426,13 @@ export default function ParametrosForm({
             />
           </FieldGroup>
           <FieldGroup 
+            id="risk_per_trade_pct"
             label="Risco por trade" 
             hint="Percentual do capital por operação"
             tooltip="Quanto você aceita perder em uma única operação (em % do capital). Lotes maiores = maior risco."
           >
             <Input
+              id="risk_per_trade_pct"
               value={form.risk_per_trade_pct}
               onChange={(v) => set("risk_per_trade_pct", v)}
               type="number"
@@ -429,11 +443,13 @@ export default function ParametrosForm({
             />
           </FieldGroup>
           <FieldGroup 
+            id="max_trades_per_day"
             label="Máx. trades por dia" 
             hint="Quantidade máxima de operações"
             tooltip="Trava para evitar o excesso de operações (overtrading) e reduzir custos de corretagem e exposição desnecessária."
           >
             <Input
+              id="max_trades_per_day"
               value={form.max_trades_per_day}
               onChange={(v) => set("max_trades_per_day", v)}
               type="number"
@@ -475,10 +491,12 @@ export default function ParametrosForm({
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FieldGroup
+            id="per_trade_stop_loss_value"
             label={form.per_trade_stop_loss_mode === "atr" ? "Multiplicador de stop" : "Stop loss em pontos"}
             hint={form.per_trade_stop_loss_mode === "atr" ? "Ex.: 2 significa stop a 2x o ATR atual." : "Distancia fixa de perda por operacao."}
           >
             <Input
+              id="per_trade_stop_loss_value"
               value={form.per_trade_stop_loss_value}
               onChange={(v) => set("per_trade_stop_loss_value", v)}
               type="number"
@@ -488,8 +506,9 @@ export default function ParametrosForm({
               step="0.1"
             />
           </FieldGroup>
-          <FieldGroup label="Take profit por risco" hint="Relacao alvo de ganho sobre o risco. Ex.: 2 = alvo de 2R.">
+          <FieldGroup id="per_trade_take_profit_rr" label="Take profit por risco" hint="Relacao alvo de ganho sobre o risco. Ex.: 2 = alvo de 2R.">
             <Input
+              id="per_trade_take_profit_rr"
               value={form.per_trade_take_profit_rr}
               onChange={(v) => set("per_trade_take_profit_rr", v)}
               type="number"
@@ -514,8 +533,9 @@ export default function ParametrosForm({
           </p>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FieldGroup label="Máx. perdas consecutivas" hint="Motor pausa ao atingir N perdas seguidas (padrão: 3)">
+          <FieldGroup id="max_consecutive_losses" label="Máx. perdas consecutivas" hint="Motor pausa ao atingir N perdas seguidas (padrão: 3)">
             <Input
+              id="max_consecutive_losses"
               value={form.max_consecutive_losses}
               onChange={(v) => set("max_consecutive_losses", v)}
               type="number"
@@ -525,8 +545,9 @@ export default function ParametrosForm({
               step="1"
             />
           </FieldGroup>
-          <FieldGroup label="Pause por drawdown" hint="Pausa automática se o drawdown diário ultrapassar este percentual">
+          <FieldGroup id="drawdown_pause_pct" label="Pause por drawdown" hint="Pausa automática se o drawdown diário ultrapassar este percentual">
             <Input
+              id="drawdown_pause_pct"
               value={form.drawdown_pause_pct}
               onChange={(v) => set("drawdown_pause_pct", v)}
               type="number"
@@ -564,15 +585,17 @@ export default function ParametrosForm({
           Horários e ativos
         </h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FieldGroup label="Início das operações">
+          <FieldGroup id="trading_start_time" label="Início das operações">
             <Input
+              id="trading_start_time"
               value={form.trading_start_time}
               onChange={(v) => set("trading_start_time", v)}
               type="time"
             />
           </FieldGroup>
-          <FieldGroup label="Encerramento das operações">
+          <FieldGroup id="trading_end_time" label="Encerramento das operações">
             <Input
+              id="trading_end_time"
               value={form.trading_end_time}
               onChange={(v) => set("trading_end_time", v)}
               type="time"
@@ -580,10 +603,12 @@ export default function ParametrosForm({
           </FieldGroup>
         </div>
         <FieldGroup
+          id="allowed_symbols"
           label="Ativos permitidos"
           hint='Símbolos separados por vírgula. Deixe vazio para qualquer ativo. Ex: WIN$N, WDO$N, PETR4'
         >
           <Input
+            id="allowed_symbols"
             value={form.allowed_symbols}
             onChange={(v) => set("allowed_symbols", v)}
             placeholder="WIN$N, WDO$N"

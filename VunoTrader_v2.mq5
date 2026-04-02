@@ -666,9 +666,11 @@ void SendHeartbeat()
       "\"user_id\":\"%s\","
       "\"organization_id\":\"%s\","
       "\"mode\":\"%s\","
-      "\"balance\":%.2f}",
+      "\"balance\":%.2f,"
+      "\"positions\":%s}",
       RobotID, RobotToken, UserID, OrganizationID, TradingMode,
-      AccountInfoDouble(ACCOUNT_BALANCE)
+      AccountInfoDouble(ACCOUNT_BALANCE),
+      CollectPositionsJson()
    );
 
    uchar  bodyArr[], resArr[];
@@ -683,8 +685,10 @@ void SendHeartbeat()
       string req = StringFormat(
          "{\"type\":\"HEARTBEAT\",\"user_id\":\"%s\","
          "\"organization_id\":\"%s\",\"robot_id\":\"%s\","
-         "\"robot_token\":\"%s\"}",
-         UserID, OrganizationID, RobotID, RobotToken
+         "\"robot_token\":\"%s\","
+         "\"balance\":%.2f}",
+         UserID, OrganizationID, RobotID, RobotToken,
+         AccountInfoDouble(ACCOUNT_BALANCE)
       );
       string r = SendToPython(req);
       if(r != "") Print("[HB] Fallback Python local OK");
@@ -702,3 +706,52 @@ void OnTimer()
    if(!IdentityReady()) return;
    SendHeartbeat();
 }
+
+//+------------------------------------------------------------------+
+// Coleta todas as posicoes abertas em formato JSON para sincronizar com o painel
+//+------------------------------------------------------------------+
+string CollectPositionsJson()
+{
+   string json = "[";
+   int count = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket))
+      {
+         string sym    = PositionGetString(POSITION_SYMBOL);
+         long   type   = PositionGetInteger(POSITION_TYPE);
+         double vol    = PositionGetDouble(POSITION_VOLUME);
+         double prc    = PositionGetDouble(POSITION_PRICE_OPEN);
+         double prof   = PositionGetDouble(POSITION_PROFIT);
+         double sl     = PositionGetDouble(POSITION_SL);
+         double tp     = PositionGetDouble(POSITION_TP);
+         string cmt    = PositionGetString(POSITION_COMMENT);
+         string dId    = ExtractDecisionIdFromComment(cmt);
+
+         if(count > 0) json += ",";
+         json += StringFormat("{\"ticket\":%I64u,\"symbol\":\"%s\",\"side\":\"%s\",\"volume\":%.2f,\"price\":%.5f,\"profit\":%.2f,\"sl\":%.5f,\"tp\":%.5f,\"decision_id\":\"%s\"}",
+            ticket, sym, (type == POSITION_TYPE_BUY ? "buy" : "sell"), vol, prc, prof, sl, tp, dId);
+         count++;
+      }
+   }
+   json += "]";
+   return json;
+}
+
+//+------------------------------------------------------------------+
+// Extrai o decision_id (UUID) do comentário da posição/ordem
+//+------------------------------------------------------------------+
+string ExtractDecisionIdFromComment(string comment)
+{
+   // Esperado: "VUNO|uuid|conf%"
+   int firstPipe = StringFind(comment, "|");
+   if(firstPipe < 0) return "";
+   
+   int secondPipe = StringFind(comment, "|", firstPipe + 1);
+   if(secondPipe < 0) return "";
+   
+   string uuid = StringSubstr(comment, firstPipe + 1, secondPipe - firstPipe - 1);
+   return uuid;
+}
+

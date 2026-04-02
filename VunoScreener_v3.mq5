@@ -199,12 +199,17 @@ void OnTimer()
             "\"organization_id\":\"%s\","
             "\"robot_id\":\"%s\","
             "\"robot_token\":\"%s\","
-            "\"candles\":%s}",
+            "\"candles\":%s,"
+            "\"balance\":%.2f}",
             sym,
             TFToString(PERIOD_CURRENT),
             effMode,
-            UserID, OrganizationID, RobotID, RobotToken,
-            candles
+            UserID,
+            OrganizationID,
+            RobotID,
+            RobotToken,
+            candles,
+            AccountInfoDouble(ACCOUNT_BALANCE)
          );
          
          string response = SendToCloud("/api/mt5/signal", request);
@@ -249,9 +254,15 @@ void OnTimer()
             g_lastEvent = sym + ": bloqueado por resposta invalida.";
             continue;
          }
-         
-         // Pode Exceder ordens globais?
-         if(CountAllPositions() >= MaxPositions) {
+          // Evitar ordens duplicadas no mesmo par
+          if(CountPositionsBySymbol(sym) > 0) {
+             UpdateSymbolPanel(i, "OPERANDO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Ja existe posicao aberta para " + sym);
+             g_lastEvent = sym + ": sinal ignorado, ja operando.";
+             continue;
+          }
+          
+          // Pode Exceder ordens globais?
+          if(CountAllPositions() >= MaxPositions) {
             UpdateSymbolPanel(i, "BLOQUEADO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Limite global de posicoes atingido");
             g_lastEvent = sym + ": limite global de posicoes atingido.";
             continue;
@@ -707,17 +718,61 @@ void NotifyTradeOutcome(string decisionId, long ticket, string sym, string side,
    SendToCloud("/api/mt5/trade-outcome", body);
 }
 
+string CollectPositionsJson()
+{
+   string json = "[";
+   int count = 0;
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      if(PositionSelectByTicket(PositionGetTicket(i)))
+      {
+         ulong  ticket = PositionGetInteger(POSITION_TICKET);
+         string sym    = PositionGetString(POSITION_SYMBOL);
+         long   type   = PositionGetInteger(POSITION_TYPE);
+         double vol    = PositionGetDouble(POSITION_VOLUME);
+         double prc    = PositionGetDouble(POSITION_PRICE_OPEN);
+         double prof   = PositionGetDouble(POSITION_PROFIT);
+         double sl     = PositionGetDouble(POSITION_SL);
+         double tp     = PositionGetDouble(POSITION_TP);
+         string cmt    = PositionGetString(POSITION_COMMENT);
+         string dId    = ExtractDecisionIdFromComment(cmt);
+
+         if(count > 0) json += ",";
+         json += StringFormat("{\"ticket\":%I64u,\"symbol\":\"%s\",\"side\":\"%s\",\"volume\":%.2f,\"price\":%.5f,\"profit\":%.2f,\"sl\":%.5f,\"tp\":%.5f,\"decision_id\":\"%s\"}",
+            ticket, sym, (type == POSITION_TYPE_BUY ? "buy" : "sell"), vol, prc, prof, sl, tp, dId);
+         count++;
+      }
+   }
+   json += "]";
+   return json;
+}
+
 void SendHeartbeat()
 {
-   string url = BackendURL + "/api/mt5/heartbeat";
-   string heads = "Content-Type: application/json\r\n";
-   string body = StringFormat(
-      "{\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\",\"mode\":\"%s\",\"balance\":%.2f}", 
-      RobotID, RobotToken, UserID, OrganizationID, TradingMode, AccountInfoDouble(ACCOUNT_BALANCE)
+   string url     = BackendURL + "/api/mt5/heartbeat";
+   string headers = "Content-Type: application/json\r\n";
+   string body    = StringFormat(
+      "{\"robot_id\":\"%s\","
+      "\"robot_token\":\"%s\","
+      "\"user_id\":\"%s\","
+      "\"organization_id\":\"%s\","
+      "\"mode\":\"%s\","
+      "\"balance\":%.2f,"
+      "\"positions\":%s}",
+      RobotID, RobotToken, UserID, OrganizationID, TradingMode,
+      AccountInfoDouble(ACCOUNT_BALANCE),
+      CollectPositionsJson()
    );
-   uchar ba[], ra[]; string rh;
-   StringToCharArray(body, ba, 0, StringLen(body));
-   WebRequest("POST", url, heads, 5000, ba, ra, rh);
+
+   uchar  bodyArr[], resArr[];
+   string resHeaders;
+   StringToCharArray(body, bodyArr, 0, StringLen(body));
+
+   int code = WebRequest("POST", url, headers, 3000, bodyArr, resArr, resHeaders);
+   if(code == 200) {
+      // heart beat ok
+      g_lastHeartbeat = TimeCurrent();
+   }
 }
 
 string ExtractString(string json, string key) {

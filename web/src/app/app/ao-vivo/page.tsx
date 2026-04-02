@@ -24,6 +24,7 @@ export default function AoVivoPage() {
   const [trades, setTrades] = useState<LiveTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
 
@@ -41,6 +42,7 @@ export default function AoVivoPage() {
   }
 
   useEffect(() => {
+    setMounted(true);
     fetchLiveTrades();
     const interval = setInterval(fetchLiveTrades, 5000); // 5s refresh
     const clock = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -65,7 +67,11 @@ export default function AoVivoPage() {
           </h1>
           <p className="text-sm font-medium text-slate-500 mt-1 uppercase tracking-widest flex items-center gap-2">
             Operações em Atuação no Mercado · 
-            <span className="text-slate-400 tabular-nums">{currentTime.toLocaleTimeString()}</span>
+            {mounted ? (
+              <span className="text-slate-400 tabular-nums">{currentTime.toLocaleTimeString()}</span>
+            ) : (
+                <span className="text-slate-400 tabular-nums">--:--:--</span>
+            )}
           </p>
         </div>
       </div>
