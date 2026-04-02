@@ -32,6 +32,10 @@ export type AuditRow = {
   stop_loss: number | null;
   take_profit: number | null;
   outcome_status: string | null;
+  outcome_profit: number | null;
+  outcome_pips: number | null;
+  closed_at: string | null;
+  duration_seconds: number | null;
   post_analysis: string | null;
   executed_trades: AuditTrade[];
 };
@@ -67,11 +71,26 @@ function fmtDt(value?: string | null) {
   if (!value) return "—";
   const d = new Date(value);
   if (isNaN(d.getTime())) return "—";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month}, ${hours}:${minutes}`;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function fmtDuration(seconds: number | null) {
+  if (seconds == null || seconds <= 0) return "—";
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  const parts = [];
+  if (hrs > 0) parts.push(`${hrs}h`);
+  if (mins > 0) parts.push(`${mins}m`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+  
+  return parts.join(" ");
 }
 
 function csvEscape(value: string | number | null | undefined) {
@@ -80,15 +99,13 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function getOutcome(row: AuditRow) {
-  // Prioriza resultado real do MT5, senão usa o virtual calculado pelo backend
-  const realOutcome = row.executed_trades?.[0]?.trade_outcomes?.[0];
-  if (realOutcome) return realOutcome;
-
+  // Prioriza resultado real do MT5
   if (row.outcome_status && row.outcome_status !== 'pending') {
     return {
-      result: row.outcome_status as "win" | "loss" | "breakeven",
-      pnl_money: null,
-      win_loss_reason: "Resultado Virtual (Screener)",
+      result: row.outcome_status as "win" | "loss" | "breakeven" | "executing",
+      pnl_money: row.outcome_profit,
+      pnl_pips: row.outcome_pips,
+      win_loss_reason: row.outcome_status === "executing" ? "Em execução no MT5" : (row.outcome_profit != null ? "Finalizado" : "Resultado Virtual"),
       post_analysis: row.post_analysis
     };
   }
@@ -144,9 +161,12 @@ function vpeBadges(rationale: string) {
 
 export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRow[]; currentDateIso: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"trades" | "screener">("trades");
   const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [symbolQuery, setSymbolQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -157,6 +177,9 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
   const currentDate = new Date(currentDateIso);
   const now = currentDate.getTime();
   const filtered = rows.filter((row) => {
+    // Se estivermos em modo "Trades", removemos os HOLDS e focamos no que teve intenção de trade
+    if (viewMode === "trades" && row.side === "hold") return false;
+
     const outcome = getOutcome(row);
     const query = symbolQuery.trim().toLowerCase();
 
@@ -186,6 +209,19 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
       }
       if (periodFilter === "7d" && diffDays > 7) return false;
       if (periodFilter === "30d" && diffDays > 30) return false;
+    }
+
+    if (startDate) {
+      const start = new Date(startDate).getTime();
+      const created = new Date(row.created_at).getTime();
+      if (created < start) return false;
+    }
+    if (endDate) {
+      const end = new Date(endDate).getTime();
+      const created = new Date(row.created_at).getTime();
+      // Adiciona um dia ao end date para cobrir o dia completo
+      const endOfDay = end + (24 * 60 * 60 * 1000);
+      if (created > endOfDay) return false;
     }
 
     return true;
@@ -303,23 +339,47 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-100">Auditoria</h1>
-          <p className="text-sm text-slate-500">Motor de decisão — trilha auditável de cada sinal gerado</p>
+          <p className="text-sm text-slate-500">Trilha de decisões do motor Vuno</p>
         </div>
+        
+        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 self-start sm:self-center">
+          <button
+            onClick={() => setViewMode("trades")}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              viewMode === "trades" 
+                ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20" 
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Execuções Reais
+          </button>
+          <button
+            onClick={() => setViewMode("screener")}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              viewMode === "screener" 
+                ? "bg-slate-700 text-white" 
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Screener Full
+          </button>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={exportCsv}
             className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 transition-colors hover:bg-sky-500/20"
           >
-            Exportar CSV
+            CSV
           </button>
           <button
             onClick={exportXlsx}
             className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/20"
           >
-            Exportar XLSX
+            Excel
           </button>
         </div>
       </div>
@@ -411,6 +471,34 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
         </div>
 
         <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Início</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPeriodFilter("all");
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-sky-500"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-500">Fim</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPeriodFilter("all");
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-sky-500"
+          />
+        </div>
+
+        <div>
           <label className="mb-1 block text-xs font-medium text-slate-500">Ordenar por</label>
           <select
             value={sortField}
@@ -481,48 +569,74 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
             const outcome = getOutcome(row);
             const shadow = parseShadowFromRationale(row.rationale);
             return (
-              <div key={row.id} className="rounded-xl border border-slate-800 bg-slate-900">
+              <div key={row.id} className={`rounded-xl border transition-all ${expanded === row.id ? "bg-slate-800/20 border-slate-700 shadow-inner" : "bg-slate-900 border-slate-800 hover:border-slate-700"}`}>
                 <button
                   type="button"
                   onClick={() => setExpanded(expanded === row.id ? null : row.id)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
                 >
-                  <span className="min-w-0 block">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-100">{row.symbol}</span>
-                      <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${sideBadge(row.side)}`}>
-                        {row.side.toUpperCase()}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="text-base font-bold text-slate-100">{row.symbol}</span>
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${sideBadge(row.side)}`}>
+                        {row.side}
                       </span>
-                      <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400">{row.timeframe}</span>
-                      {(() => { const c = convictionBadge(row.confidence); return c ? <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${c.cls}`}>{c.label}</span> : null; })()}
-                      {shadow && (
-                        <span
-                          className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                            shadow.agreement
-                              ? "bg-cyan-500/20 text-cyan-300"
-                              : "bg-orange-500/20 text-orange-300"
-                          }`}
-                        >
-                          {shadow.agreement ? "Global alinhado" : "Global divergente"}
+                      <span className="rounded-md bg-slate-800/80 px-2 py-0.5 text-[10px] font-medium text-slate-400 border border-slate-700/50">
+                        {row.timeframe}
+                      </span>
+                      {(() => { 
+                        const c = convictionBadge(row.confidence); 
+                        return c ? <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${c.cls}`}>{c.label}</span> : null; 
+                      })()}
+                      
+                      {outcome?.result === 'executing' ? (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                          <span className="text-[10px] font-bold text-sky-300 uppercase">EM EXECUÇÃO</span>
+                        </div>
+                      ) : (
+                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${resultBadge(outcome?.result)}`}>
+                          {outcome?.result || "PENDENTE"}
                         </span>
                       )}
-                      <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${resultBadge(outcome?.result)}`}>
-                        {outcome?.result?.toUpperCase() ?? "SEM RESULTADO"}
-                      </span>
-                      {vpeBadges(row.rationale ?? "").map((b, i) => (
-                        <span key={i} className={`rounded px-2 py-0.5 text-[9px] font-bold ${b.cls}`}>
-                          {b.label}
+
+                      {row.outcome_profit != null && (
+                        <span className={`text-[10px] font-bold ml-auto sm:ml-0 ${row.outcome_profit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                          {row.outcome_profit >= 0 ? "+" : ""}{row.outcome_profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
-                      ))}
-                    </span>
-                    {row.rationale && (
-                      <span className="mt-1 block text-[10px] text-slate-500 truncate max-w-sm" title={row.rationale}>
-                        {stripTechSuffix(row.rationale).slice(0, 80)}
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                        <span className="opacity-60">ID:</span> {row.id.slice(0, 8)} 
                       </span>
-                    )}
-                    <span className="mt-0.5 block text-[10px] text-slate-600">{fmtDt(row.created_at)} • modo {row.mode}</span>
-                  </span>
-                  <span className={`text-xs text-slate-500 transition-transform ${expanded === row.id ? "rotate-180" : ""}`}>▼</span>
+                      <span className="text-[11px] text-slate-500 whitespace-nowrap italic">
+                        {fmtDt(row.created_at)}
+                      </span>
+                      {row.duration_seconds && (
+                         <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                            <span className="opacity-60">Dur:</span> {fmtDuration(row.duration_seconds)}
+                         </span>
+                      )}
+                      {viewMode === "screener" && (
+                        <span className="text-[11px] text-slate-400 font-medium px-1.5 rounded bg-slate-800/50">
+                          {row.mode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {vpeBadges(row.rationale ?? "").slice(0, 1).map((b, i) => (
+                      <span key={i} className={`hidden sm:inline-flex rounded px-2 py-0.5 text-[9px] font-black uppercase ${b.cls}`}>
+                        {b.label}
+                      </span>
+                    ))}
+                    <span className={`text-slate-500 transition-transform duration-200 ${expanded === row.id ? "rotate-180" : ""}`}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
+                  </div>
                 </button>
 
                 {expanded === row.id && (

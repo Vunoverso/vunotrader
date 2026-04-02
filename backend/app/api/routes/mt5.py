@@ -305,25 +305,36 @@ async def get_signal(payload: SignalPayload):
 async def trade_outcome(payload: TradeOutcomePayload):
     """
     Recebe o resultado financeiro final de uma operação fechada no MT5.
-    Atualiza trade_decisions para Auditoria fiel.
+    Atualiza trade_decisions para Auditoria fiel, incluindo lucro e duração.
     """
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
     
     sb = get_service_supabase()
     
-    # 1. Tenta localizar a decisão original pelo decision_id
+    # 1. Localiza a decisão para calcular a duração
     if payload.decision_id:
         try:
+            # Buscar dados da decisão para calcular a duração
+            dec_res = sb.table("trade_decisions").select("created_at").eq("id", payload.decision_id).single().execute()
+            
+            duration_secs = 0
+            now_utc = datetime.now(timezone.utc)
+            if dec_res.data and dec_res.data.get("created_at"):
+                created_at = datetime.fromisoformat(dec_res.data["created_at"].replace("Z", "+00:00"))
+                duration_secs = int((now_utc - created_at).total_seconds())
+
             status = "win" if payload.profit > 0 else "loss" if payload.profit < 0 else "neutral"
             
             sb.table("trade_decisions").update({
                 "outcome_status": status,
                 "outcome_pips": payload.points,
-                "outcome_profit": payload.profit # Certifique-se de que esta coluna existe no banco
+                "outcome_profit": payload.profit,
+                "closed_at": now_utc.isoformat(),
+                "duration_seconds": duration_secs
             }).eq("id", payload.decision_id).execute()
             
-            log.info(f"Resultado real processado: {payload.decision_id} -> {status} ({payload.profit})")
-            return {"status": "success", "message": "Outcome updated"}
+            log.info(f"Resultado real processado: {payload.decision_id} -> {status} (PnL: {payload.profit}, Dur: {duration_secs}s)")
+            return {"status": "success", "message": "Outcome updated with performance data"}
         except Exception as exc:
             log.error("Failed to update trade outcome: %s", exc)
             raise HTTPException(status_code=500, detail="Database update failed")
@@ -335,23 +346,23 @@ async def trade_outcome(payload: TradeOutcomePayload):
 async def trade_opened(payload: TradeOpenedPayload):
     """
     Recebe a confirmação de que uma ordem foi aberta no MT5.
-    Marca trade_decisions como 'executing' para aparecer no 'Agora' do Dashboard.
+    Marca trade_decisions como 'executing' e atualiza preços reais de entrada/stops.
     """
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
     
     sb = get_service_supabase()
     
     try:
-        # Atualiza o registro original do sinal para 'executing'
+        # Atualiza o registro original do sinal para 'executing' 
+        # e salva os preços REAIS que foram executados no MT5
         sb.table("trade_decisions").update({
             "outcome_status": "executing",
             "entry_price": payload.price,
-            "stop_loss": payload.sl,
-            "take_profit": payload.tp,
-            # "ticket": payload.ticket # Adicione se criar a coluna
+            "stop_loss": payload.sl if payload.sl > 0 else None,
+            "take_profit": payload.tp if payload.tp > 0 else None
         }).eq("id", payload.decision_id).execute()
         
-        log.info(f"Trade aberto confirmado: {payload.decision_id} (Ticket: {payload.ticket})")
+        log.info(f"Trade aberto confirmado: {payload.decision_id} (Ticket: {payload.ticket}, Price: {payload.price})")
         return {"status": "success", "message": "Trade marked as executing"}
     except Exception as exc:
         log.error("Failed to mark trade as opened: %s", exc)
