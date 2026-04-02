@@ -49,6 +49,11 @@ function MetricCard({
   );
 }
 
+// Helper de formatação de moeda seguro (evita erro de hidratação #418)
+function formatCurrency(val: number) {
+  return "R$ " + val.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 // ── Tabela de operações recentes ─────────────────────────────
 function EmptyState({ message }: { message: string }) {
   return (
@@ -389,8 +394,8 @@ export default async function DashboardPage() {
         <MetricCard
           label="Banca Atual"
           value={
-            robotInstance?.current_balance
-              ? `R$ ${robotInstance.current_balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+            robotInstance?.current_balance != null
+              ? formatCurrency(robotInstance.current_balance)
               : "R$ --"
           }
           sub="Sincronizado"
@@ -556,7 +561,7 @@ export default async function DashboardPage() {
                         out.pnl_money > 0 ? "text-emerald-400" :
                         out.pnl_money < 0 ? "text-red-400" : "text-slate-400"
                       }`}>
-                        {out.pnl_money > 0 ? "+" : ""}R$ {out.pnl_money.toFixed(2)}
+                        {out.pnl_money > 0 ? "+" : ""}{formatCurrency(out.pnl_money)}
                       </p>
                     )}
                     <p className="text-[10px] text-slate-600">
