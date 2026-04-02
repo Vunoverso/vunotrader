@@ -18,6 +18,26 @@ const navItems = [
     ),
   },
   {
+    href: "/app/ao-vivo",
+    label: "Ao Vivo",
+    icon: (
+      <div className="relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+          <path d="M12 2v20" />
+          <path d="m4.93 4.93 4.24 4.24" />
+          <path d="m14.83 14.83 4.24 4.24" />
+          <path d="M2 12h20" />
+          <path d="m4.93 19.07 4.24-4.24" />
+          <path d="m14.83 9.17 4.24-4.24" />
+        </svg>
+        <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500"></span>
+        </span>
+      </div>
+    ),
+  },
+  {
     href: "/app/assinatura",
     label: "Assinatura",
     icon: (
@@ -109,7 +129,7 @@ const navItems = [
   },
 ];
 
-const PLAN_LOCKED_ROUTES = ["/app/operacoes", "/app/parametros", "/app/estudos", "/app/auditoria", "/app/ia-analises"];
+const PLAN_LOCKED_ROUTES = ["/app/ao-vivo", "/app/operacoes", "/app/parametros", "/app/estudos", "/app/auditoria", "/app/ia-analises"];
 
 export default function AppSidebar({
   isAdmin = false,

@@ -699,10 +699,10 @@ void NotifyTradeOutcome(string decisionId, long ticket, string sym, string side,
    string body = StringFormat(
       "{\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\","
       "\"decision_id\":\"%s\",\"ticket\":\"%d\",\"symbol\":\"%s\",\"side\":\"%s\","
-      "\"profit\":%.2f,\"points\":%d,\"mode\":\"%s\"}",
+      "\"profit\":%.2f,\"points\":%d,\"mode\":\"%s\",\"balance\":%.2f}",
       RobotID, RobotToken, UserID, OrganizationID,
       decisionId, ticket, sym, side,
-      profit, points, TradingMode
+      profit, points, TradingMode, AccountInfoDouble(ACCOUNT_BALANCE)
    );
    SendToCloud("/api/mt5/trade-outcome", body);
 }
@@ -711,7 +711,10 @@ void SendHeartbeat()
 {
    string url = BackendURL + "/api/mt5/heartbeat";
    string heads = "Content-Type: application/json\r\n";
-   string body = StringFormat("{\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\",\"mode\":\"%s\"}", RobotID, RobotToken, UserID, OrganizationID, TradingMode);
+   string body = StringFormat(
+      "{\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\",\"mode\":\"%s\",\"balance\":%.2f}", 
+      RobotID, RobotToken, UserID, OrganizationID, TradingMode, AccountInfoDouble(ACCOUNT_BALANCE)
+   );
    uchar ba[], ra[]; string rh;
    StringToCharArray(body, ba, 0, StringLen(body));
    WebRequest("POST", url, heads, 5000, ba, ra, rh);

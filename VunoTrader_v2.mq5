@@ -367,7 +367,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          "\"lot\":%.2f,"
          "\"profit\":%.2f,"
          "\"points\":0,"
-         "\"symbol\":\"%s\"}",
+         "\"symbol\":\"%s\","
+         "\"balance\":%.2f}",
          dealTicket,
          decisionId,
          TradingMode,
@@ -380,7 +381,8 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          tp,
          lot,
          profit,
-         _Symbol
+         _Symbol,
+         AccountInfoDouble(ACCOUNT_BALANCE)
       );
       SendToCloud("/api/mt5/trade-outcome", msg);
 

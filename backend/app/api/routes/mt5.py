@@ -81,6 +81,7 @@ class TradeOutcomePayload(BaseModel):
     profit: float
     points: int = 0
     mode: str = "demo"
+    balance: float = 0.0
 
 
 class TradeOpenedPayload(BaseModel):
@@ -124,6 +125,27 @@ def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> di
     if row.get("status") == "revoked":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Robot revoked")
     return row
+
+
+def _sync_robot_data(sb, robot_id: str, balance: float) -> None:
+    """Força a atualização do saldo e presença do robô no Supabase."""
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        update_data = {
+            "last_seen_at": now,
+            "current_balance": balance
+        }
+        
+        # Busca o robô para checar se precisa setar banca inicial
+        check = sb.table("robot_instances").select("initial_balance").eq("id", robot_id).single().execute()
+        if check.data and (not check.data.get("initial_balance") or check.data.get("initial_balance") == 0):
+            if balance > 0:
+                log.info(f"Setando banca inicial para {robot_id}: {balance}")
+                update_data["initial_balance"] = balance
+        
+        sb.table("robot_instances").update(update_data).eq("id", robot_id).execute()
+    except Exception as exc:
+        log.warning(f"Failed to sync robot data for {robot_id}: {exc}")
 
 
 def _log_cycle_signal(
@@ -200,48 +222,19 @@ def _mark_cycle_closed(sb, decision_id: str, profit: float, points: int, result_
 
 @router.post("/heartbeat", response_model=HeartbeatResponse, summary="Ping de vida do EA")
 async def heartbeat(payload: HeartbeatPayload):
-    """
-    Recebe um ping do EA do MetaTrader 5 e atualiza last_seen_at no Supabase.
-    Chamado a cada 30 segundos pelo OnTimer() — sem necessidade do Python local.
-    """
-    robot = _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
-
-    now = datetime.now(timezone.utc).isoformat()
+    """Atualiza presença e saldo via heartbeat."""
+    _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
     sb = get_service_supabase()
-    
-    update_data = {
-        "last_seen_at": now,
-        "current_balance": payload.balance
-    }
-
-    # Se a banca inicial ainda não foi definida (0 ou NULL), define a atual como ponto de partida
-    if not robot.get("initial_balance") or robot.get("initial_balance") == 0:
-        log.info(f"Registrando banca inicial para {payload.robot_id}: {payload.balance}")
-        update_data["initial_balance"] = payload.balance
-
-    sb.table("robot_instances").update(update_data).eq("id", payload.robot_id).execute()
-
-    return HeartbeatResponse(status="ok", timestamp=now)
+    _sync_robot_data(sb, payload.robot_id, payload.balance)
+    return HeartbeatResponse(status="ok", timestamp=datetime.now(timezone.utc).isoformat())
 
 
 @router.post("/signal", response_model=SignalResponse, summary="Análise de mercado e sinal de trade")
 async def get_signal(payload: SignalPayload):
-    """
-    Recebe candles do EA, executa análise técnica no Render (sem Python local)
-    e retorna BUY / SELL / HOLD com confiança, risco e decision_id para rastreio completo.
-    """
+    """Recebe candles, analisa mercado e sincroniza saldo."""
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
-
-    # Atualiza o saldo e presença do robô antes da análise
-    try:
-        sb.table("robot_instances").update({
-            "last_seen_at": datetime.now(timezone.utc).isoformat(),
-            "current_balance": payload.balance
-        }).eq("id", payload.robot_id).execute()
-    except:
-        pass
-
     sb = get_service_supabase()
+    _sync_robot_data(sb, payload.robot_id, payload.balance)
 
     if len(payload.candles) < 60:
         result = SignalResponse(
@@ -427,16 +420,30 @@ async def get_signal(payload: SignalPayload):
 
 @router.post("/trade-outcome", summary="Reportar resultado real da operação")
 async def trade_outcome(payload: TradeOutcomePayload):
-    """
-    Recebe o resultado financeiro final de uma operação fechada no MT5.
-    Atualiza trade_decisions, cria/atualiza executed_trades e cria trade_outcomes.
-    """
+    """Reporta resultado e sincroniza saldo final."""
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
-
-    if not payload.decision_id:
-        return {"status": "ignored", "message": "No decision_id provided"}
-
     sb = get_service_supabase()
+    _sync_robot_data(sb, payload.robot_id, payload.balance)
+
+    decision_id = payload.decision_id
+
+    # HEALING LOGIC: Se não veio decision_id, tenta encontrar pelo ticket ou pelo último Buy/Sell neste símbolo
+    if not decision_id:
+        try:
+            # 1. Tenta pelo ticket já registrado em executed_trades
+            find_exec = sb.table("executed_trades").select("trade_decision_id").eq("broker_ticket", payload.ticket).maybeSingle().execute()
+            if find_exec.data:
+                decision_id = find_exec.data["trade_decision_id"]
+            else:
+                # 2. Tenta a decisão 'executing' mais recente para este símbolo e robô
+                find_dec = sb.table("trade_decisions").select("id").eq("robot_instance_id", payload.robot_id).eq("symbol", payload.symbol).eq("outcome_status", "executing").order("created_at", { "ascending": False }).limit(1).execute()
+                if find_dec.data:
+                    decision_id = find_dec.data[0]["id"]
+        except:
+            pass
+
+    if not decision_id:
+        return {"status": "ignored", "message": "Could not link outcome to any decision"}
     try:
         # 1. Busca dados da decisão para duração e preços de referência
         dec_res = sb.table("trade_decisions").select(
@@ -526,13 +533,10 @@ async def trade_outcome(payload: TradeOutcomePayload):
 
 @router.post("/trade-opened", summary="Reportar abertura imediata de trade")
 async def trade_opened(payload: TradeOpenedPayload):
-    """
-    Recebe a confirmação de que uma ordem foi aberta no MT5.
-    Marca trade_decisions como 'executing', atualiza preços reais e cria executed_trades.
-    """
+    """Confirma abertura e sincroniza saldo com a nova margem."""
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
-
     sb = get_service_supabase()
+    _sync_robot_data(sb, payload.robot_id, payload.balance)
     try:
         now_utc = datetime.now(timezone.utc).isoformat()
 
