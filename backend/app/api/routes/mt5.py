@@ -98,7 +98,7 @@ def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> di
     sb = get_service_supabase()
     result = (
         sb.table("robot_instances")
-        .select("id, robot_token_hash, organization_id, status")
+        .select("id, robot_token_hash, organization_id, status, initial_balance")
         .eq("id", robot_id)
         .eq("organization_id", organization_id)
         .single()
@@ -126,14 +126,22 @@ async def heartbeat(payload: HeartbeatPayload):
     Recebe um ping do EA do MetaTrader 5 e atualiza last_seen_at no Supabase.
     Chamado a cada 30 segundos pelo OnTimer() — sem necessidade do Python local.
     """
-    _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
+    robot = _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
 
     now = datetime.now(timezone.utc).isoformat()
     sb = get_service_supabase()
-    sb.table("robot_instances").update({
+    
+    update_data = {
         "last_seen_at": now,
         "current_balance": payload.balance
-    }).eq("id", payload.robot_id).execute()
+    }
+
+    # Se a banca inicial ainda não foi definida (0 ou NULL), define a atual como ponto de partida
+    if not robot.get("initial_balance") or robot.get("initial_balance") == 0:
+        log.info(f"Registrando banca inicial para {payload.robot_id}: {payload.balance}")
+        update_data["initial_balance"] = payload.balance
+
+    sb.table("robot_instances").update(update_data).eq("id", payload.robot_id).execute()
 
     return HeartbeatResponse(status="ok", timestamp=now)
 

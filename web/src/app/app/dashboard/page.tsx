@@ -110,7 +110,7 @@ export default async function DashboardPage() {
   const { data: robotInstance } = user
     ? await supabase
         .from("robot_instances")
-        .select("id, name, status, last_seen_at, allowed_modes, real_trading_enabled, current_balance")
+        .select("id, name, status, last_seen_at, allowed_modes, real_trading_enabled, current_balance, initial_balance")
         .eq("profile_id",
             (await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).limit(1).single())
               .data?.id ?? ""
@@ -263,6 +263,9 @@ export default async function DashboardPage() {
     return sum + (realProfit !== 0 ? realProfit : oldProfit);
   }, 0);
 
+  // Lucro total (Vitalício)
+  const totalProfit = (robotInstance?.current_balance ?? 0) - (robotInstance?.initial_balance ?? 0);
+
   // Win rate global para o card principal (prioriza Ciclo de Aprendizado)
   const winRateCalc = iaAccuracy ?? consistencyScore;
 
@@ -389,8 +392,19 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Métricas principais */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      {/* Métricas de Conta (Vitalício) */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 mb-6">
+        <MetricCard
+          label="Banca Inicial"
+          value={
+            robotInstance?.initial_balance != null
+              ? formatCurrency(robotInstance.initial_balance)
+              : "R$ --"
+          }
+          sub="Capital de referência"
+          accent="slate"
+          tooltip="Valor original da banca quando o robô foi conectado pela primeira vez."
+        />
         <MetricCard
           label="Banca Atual"
           value={
@@ -398,47 +412,64 @@ export default async function DashboardPage() {
               ? formatCurrency(robotInstance.current_balance)
               : "R$ --"
           }
-          sub="Sincronizado"
+          sub="Saldo em tempo real"
           accent="sky"
-          tooltip="Saldo total da conta MT5 sincronizado em tempo real pelo robô. Base para cálculo de risco."
+          tooltip="Saldo total da conta MT5 sincronizado em tempo real pelo robô."
         />
         <MetricCard
+          label="Lucro Total"
+          value={
+            totalProfit === 0
+              ? "R$ 0,00"
+              : totalProfit > 0
+              ? `+${formatCurrency(totalProfit)}`
+              : `-${formatCurrency(Math.abs(totalProfit))}`
+          }
+          sub="Acumulado Vitalício"
+          accent={totalProfit > 0 ? "green" : totalProfit < 0 ? "red" : "slate"}
+          tooltip="Lucro ou prejuízo líquido acumulado desde a primeira conexão do robô."
+        />
+      </div>
+
+      {/* Métricas de Performance (Hoje) */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <MetricCard
           label="Hoje"
-          value={metrics.totalTrades.toString()}
+          value={todayTotalTrades.toString()}
           sub="Operações"
           accent="slate"
-          tooltip="Número de decisões que resultaram em abertura de ordens no MetaTrader nas últimas 24 horas."
+          tooltip="Número de ordens abertas no MetaTrader nas últimas 24 horas."
         />
         <MetricCard
           label="Acerto IA"
-          value={iaAccuracy !== null ? `${iaAccuracy}%` : "Calculando..."}
-          sub={iaAccuracy !== null ? "Meta: 68%" : "Aguardando dados de treino"}
+          value={winRateCalc !== null ? `${winRateCalc}%` : "Calculando..."}
+          sub={winRateCalc !== null ? "Meta: 68%" : "Aguardando dados"}
           accent={
-            iaAccuracy === null ? "slate"
-            : iaAccuracy >= 68 ? "green"
-            : iaAccuracy >= 50 ? "sky" : "red"
+            winRateCalc === null ? "slate"
+            : winRateCalc >= 68 ? "green"
+            : winRateCalc >= 50 ? "sky" : "red"
           }
-          tooltip="Taxa de acerto global baseada nos últimos 100 sinais (Reais + Virtuais). Meta de consistência: 68%."
+          tooltip="Taxa de acerto global baseada no histórico de sinais finalizados."
         />
         <MetricCard
           label="Resultado HOJE"
           value={
-            metrics.pnl === 0
+            todayPnl === 0
               ? "R$ 0,00"
-              : metrics.pnl > 0
-              ? `+${formatCurrency(metrics.pnl)}`
-              : `-${formatCurrency(Math.abs(metrics.pnl))}`
+              : todayPnl > 0
+              ? `+${formatCurrency(todayPnl)}`
+              : `-${formatCurrency(Math.abs(todayPnl))}`
           }
-          sub="Conta ativa"
-          accent={metrics.pnl > 0 ? "green" : metrics.pnl < 0 ? "red" : "slate"}
-          tooltip="Lucro ou prejuízo líquido (PnL) acumulado hoje com base nas operações encerradas."
+          sub="Lucro/Prejuízo"
+          accent={todayPnl > 0 ? "green" : todayPnl < 0 ? "red" : "slate"}
+          tooltip="PnL líquido das operações encerradas hoje."
         />
         <MetricCard
           label="Abertas"
-          value={metrics.openTrades.toString()}
+          value={todayOpenTrades.toString()}
           sub="Agora"
-          accent={metrics.openTrades > 0 ? "sky" : "slate"}
-          tooltip="Número de ordens que o robô está mantendo abertas no mercado neste exato momento."
+          accent={todayOpenTrades > 0 ? "sky" : "slate"}
+          tooltip="Ordens que o robô mantém abertas no mercado no momento."
         />
       </div>
 
