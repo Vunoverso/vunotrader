@@ -26,6 +26,7 @@ class HeartbeatPayload(BaseModel):
     user_id: str
     organization_id: str
     mode: str = "demo"
+    balance: float = 0.0
 
 
 class HeartbeatResponse(BaseModel):
@@ -48,6 +49,7 @@ class SignalPayload(BaseModel):
     open_entry: float | None = None
     open_sl: float | None = None
     open_tp: float | None = None
+    balance: float = 0.0
 
 
 class SignalResponse(BaseModel):
@@ -86,6 +88,7 @@ class TradeOpenedPayload(BaseModel):
     sl: float = 0.0
     tp: float = 0.0
     lot: float = 0.0
+    balance: float = 0.0
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -127,7 +130,10 @@ async def heartbeat(payload: HeartbeatPayload):
 
     now = datetime.now(timezone.utc).isoformat()
     sb = get_service_supabase()
-    sb.table("robot_instances").update({"last_seen_at": now}).eq("id", payload.robot_id).execute()
+    sb.table("robot_instances").update({
+        "last_seen_at": now,
+        "current_balance": payload.balance
+    }).eq("id", payload.robot_id).execute()
 
     return HeartbeatResponse(status="ok", timestamp=now)
 
@@ -139,6 +145,15 @@ async def get_signal(payload: SignalPayload):
     e retorna BUY / SELL / HOLD com confiança, risco e decision_id para rastreio completo.
     """
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
+
+    # Atualiza o saldo e presença do robô antes da análise
+    try:
+        sb.table("robot_instances").update({
+            "last_seen_at": datetime.now(timezone.utc).isoformat(),
+            "current_balance": payload.balance
+        }).eq("id", payload.robot_id).execute()
+    except:
+        pass
 
     if len(payload.candles) < 60:
         return SignalResponse(

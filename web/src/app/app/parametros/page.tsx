@@ -67,11 +67,21 @@ export default async function ParametrosPage() {
       }
     : null;
 
+  // Busca a instância do robô para obter o saldo atual (sincronizado via MT5)
+  const { data: robotInstance } = await supabase
+    .from("robot_instances")
+    .select("current_balance")
+    .eq("user_id", user.id)
+    .order("last_seen_at", { ascending: false })
+    .limit(1)
+    .single();
+
   return (
     <ParametrosForm
       initial={initial}
       userId={user.id}
       organizationId={organizationId}
+      currentBalance={robotInstance?.current_balance}
     />
   );
 }

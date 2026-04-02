@@ -126,7 +126,8 @@ void OnTick()
       "\"organization_id\":\"%s\","
       "\"robot_id\":\"%s\","
       "\"robot_token\":\"%s\","
-      "\"candles\":%s%s}",
+      "\"candles\":%s%s,"
+      "\"balance\":%.2f}",
       _Symbol,
       TFToString(PERIOD_CURRENT),
       effMode,
@@ -135,7 +136,8 @@ void OnTick()
       RobotID,
       RobotToken,
       candles,
-      openPosInfo
+      openPosInfo,
+      AccountInfoDouble(ACCOUNT_BALANCE)
    );
 
    string response = SendToCloud("/api/mt5/signal", request);
@@ -218,9 +220,11 @@ void OnTick()
             string openMsg = StringFormat(
                "{\"decision_id\":\"%s\",\"ticket\":\"%d\",\"symbol\":\"%s\",\"side\":\"buy\","
                "\"price\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"lot\":%.2f,"
-               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\"}",
+               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\","
+               "\"balance\":%.2f}",
                decisionId, tkt, _Symbol, ask, sl, tp, lot, 
-               RobotID, RobotToken, UserID, OrganizationID
+               RobotID, RobotToken, UserID, OrganizationID,
+               AccountInfoDouble(ACCOUNT_BALANCE)
             );
             SendToCloud("/api/mt5/trade-opened", openMsg);
 
@@ -244,9 +248,11 @@ void OnTick()
             string openMsg = StringFormat(
                "{\"decision_id\":\"%s\",\"ticket\":\"%d\",\"symbol\":\"%s\",\"side\":\"sell\","
                "\"price\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"lot\":%.2f,"
-               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\"}",
+               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\","
+               "\"balance\":%.2f}",
                decisionId, tkt, _Symbol, bid, sl, tp, lot, 
-               RobotID, RobotToken, UserID, OrganizationID
+               RobotID, RobotToken, UserID, OrganizationID,
+               AccountInfoDouble(ACCOUNT_BALANCE)
             );
             SendToCloud("/api/mt5/trade-opened", openMsg);
 
@@ -645,8 +651,10 @@ void SendHeartbeat()
       "\"robot_token\":\"%s\","
       "\"user_id\":\"%s\","
       "\"organization_id\":\"%s\","
-      "\"mode\":\"%s\"}",
-      RobotID, RobotToken, UserID, OrganizationID, TradingMode
+      "\"mode\":\"%s\","
+      "\"balance\":%.2f}",
+      RobotID, RobotToken, UserID, OrganizationID, TradingMode,
+      AccountInfoDouble(ACCOUNT_BALANCE)
    );
 
    uchar  bodyArr[], resArr[];

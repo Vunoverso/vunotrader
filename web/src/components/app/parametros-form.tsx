@@ -155,10 +155,12 @@ export default function ParametrosForm({
   initial,
   userId,
   organizationId,
+  currentBalance,
 }: {
   initial: ParametrosData | null;
   userId: string;
   organizationId: string | null;
+  currentBalance?: number;
 }) {
   const [form, setForm] = useState<ParametrosData>(initial ?? DEFAULT);
   const [saving, setSaving] = useState(false);
@@ -360,18 +362,26 @@ export default function ParametrosForm({
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FieldGroup 
             label="Capital de referência" 
-            hint="Base usada para calcular risco e drawdown"
+            hint={currentBalance ? "Sincronizado via MT5" : "Base usada para calcular risco e drawdown"}
             tooltip="Base usada para calcular o risco em dinheiro e lotes. O robô usará este valor para definir o tamanho das ordens."
           >
-            <Input
-              value={form.capital_usd}
-              onChange={(v) => set("capital_usd", v)}
-              type="number"
-              placeholder="Ex: 10000"
-              prefix="R$"
-              min="0"
-              step="0.01"
-            />
+            <div className="relative">
+              <Input
+                value={currentBalance ? currentBalance.toFixed(2) : form.capital_usd}
+                onChange={(v) => !currentBalance && set("capital_usd", v)}
+                type="number"
+                placeholder="Ex: 10000"
+                prefix="R$"
+                min="0"
+                step="0.01"
+              />
+              {currentBalance && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-500/80 uppercase">Ativo</span>
+                </div>
+              )}
+            </div>
           </FieldGroup>
           <FieldGroup 
             label="Limite de perda diária" 
