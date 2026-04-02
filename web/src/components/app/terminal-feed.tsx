@@ -103,17 +103,18 @@ export function TerminalFeed({
   const lastLog = logs[logs.length - 1];
 
   return (
-    <div className="w-full bg-[#050505] border border-cyan-900/40 rounded-lg overflow-hidden flex flex-col font-mono text-xs text-slate-300 relative shadow-[0_0_20px_rgba(8,145,178,0.05)]">
+    <div className="w-full glass-card border-sky-900/40 rounded-2xl overflow-hidden flex flex-col font-mono text-xs text-slate-300 relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-500/5 to-transparent pointer-events-none" />
       {/* HEADER */}
       <div className="border-b border-cyan-900/50 bg-[#0a0a0c] p-3 space-y-1">
-        <div className="flex justify-between items-center text-cyan-400">
-          <div>
-            <span className="text-cyan-600">█ </span>
-            <span className="font-bold">VUNO/SCREENER</span>
-            <span className="text-cyan-700 ml-2">| STATUS: ATIVO</span>
+        <div className="flex justify-between items-center text-sky-400">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
+            <span className="font-black uppercase tracking-widest text-[10px]">VUNO/SCREENER</span>
+            <span className="text-sky-700 font-bold ml-2 text-[9px] border border-sky-900/50 px-1.5 rounded">STATUS: ATIVO</span>
           </div>
-          <div className="text-cyan-600 tabular-nums">
-            HORA: <span className="text-cyan-300">{time || "––:––:––"}</span>
+          <div className="text-sky-600 tabular-nums font-bold text-[10px]">
+            SYSTEM_TIME: <span className="text-sky-300">{time || "––:––:––"}</span>
           </div>
         </div>
         <div className="flex items-center justify-between text-cyan-700">
@@ -141,7 +142,7 @@ export function TerminalFeed({
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="h-64 overflow-y-auto p-3 space-y-1 scroller"
+        className="h-64 overflow-y-auto p-4 space-y-1 terminal-scrollbar relative z-10"
       >
         {logs.map((log) => {
           const isBuy = log.side.toLowerCase() === "buy";
@@ -149,42 +150,35 @@ export function TerminalFeed({
           const timeStr = new Date(log.created_at).toLocaleTimeString("pt-BR", { hour12: false });
           const confStr = log.confidence ? Math.round(log.confidence * 100) + "%" : "---";
           const sigColor = isBuy
-            ? "text-emerald-400 font-bold"
+            ? "text-emerald-400 font-black"
             : isSell
-            ? "text-red-400 font-bold"
-            : "text-cyan-600";
+            ? "text-rose-400 font-black"
+            : "text-sky-800";
           const sigLabel = isBuy ? "▲ BUY " : isSell ? "▼ SELL" : "– HOLD";
 
           return (
-            <div key={log.id} className="flex flex-col border-l border-cyan-900/40 pl-2">
-              <div className="flex items-center gap-2">
-                <span className="text-cyan-800 shrink-0 tabular-nums">[{timeStr}]</span>
-                <span className="text-cyan-200 w-16 shrink-0">{log.symbol}</span>
-                <span className={`w-14 shrink-0 ${sigColor}`}>{sigLabel}</span>
-                <span className="text-cyan-800">|</span>
-                <span className="text-slate-500">
-                  cnf:<span className="text-slate-400">{confStr}</span>
+            <div key={log.id} className="flex flex-col border-l border-sky-900/30 pl-3 py-0.5 hover:bg-white/5 transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="text-sky-800 shrink-0 tabular-nums text-[10px]">[{timeStr}]</span>
+                <span className="text-sky-100 w-20 shrink-0 font-bold tracking-wider">{log.symbol}</span>
+                <span className={`w-16 shrink-0 text-[10px] tracking-widest ${sigColor}`}>{sigLabel}</span>
+                <span className="text-slate-600 text-[10px]">
+                  CONF:<span className="text-slate-400 ml-1">{confStr}</span>
                 </span>
               </div>
               {log.rationale && (
-                <div className="text-[10px] text-cyan-700/70 ml-[170px] leading-tight line-clamp-1">
+                <div className="text-[9px] text-sky-700/60 ml-[185px] leading-tight line-clamp-1 italic">
                   {log.rationale}
                 </div>
               )}
             </div>
           );
         })}
-        <div className="flex items-center gap-1 pt-1">
-          <span className="animate-pulse text-cyan-500 text-sm">_</span>
-          <span className="text-cyan-800 text-[10px]">aguardando próximo ciclo...</span>
+        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+          <span className="animate-pulse text-sky-500 font-black text-sm">_</span>
+          <span className="text-sky-900 text-[9px] font-bold uppercase tracking-widest">Listening for next signal cycle...</span>
         </div>
       </div>
-
-      <style jsx>{`
-        .scroller::-webkit-scrollbar { width: 4px; }
-        .scroller::-webkit-scrollbar-track { background: #050505; }
-        .scroller::-webkit-scrollbar-thumb { background: #086682; border-radius: 4px; }
-      `}</style>
     </div>
   );
 }
