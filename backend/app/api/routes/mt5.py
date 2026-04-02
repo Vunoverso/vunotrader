@@ -43,6 +43,11 @@ class SignalPayload(BaseModel):
     timeframe: str = "M5"
     # candles: lista de [timestamp, open, high, low, close, volume]
     candles: list[list[float]]
+    # Informação de posição aberta (se houver) para Smart Exit
+    open_side: str | None = None
+    open_entry: float | None = None
+    open_sl: float | None = None
+    open_tp: float | None = None
 
 
 class SignalResponse(BaseModel):
@@ -116,14 +121,55 @@ async def get_signal(payload: SignalPayload):
             rationale="insufficient_candles",
         )
 
-    # ── Análise técnica ───────────────────────────────────────────────────────
-    from app.core.signal_engine import analyse
-    result = analyse(payload.candles)
+    # ── Buscar parâmetros do usuário p/ personalizar o sinal ─────────────
+    sb = get_service_supabase()
+    user_params = {}
+    try:
+        params_res = (
+            sb.table("user_parameters")
+            .select("per_trade_stop_loss_mode, per_trade_stop_loss_value, per_trade_take_profit_rr")
+            .eq("user_id", payload.user_id)
+            .single()
+            .execute()
+        )
+        if params_res.data:
+            user_params = params_res.data
+    except Exception as exc:
+        log.warning("Failed to fetch user parameters: %s. Using defaults.", exc)
+
+    # ── Análise técnica p/ Novo Sinal ─────────────────────────────────────────
+    from app.core.signal_engine import analyse, check_smart_exit
+    result = analyse(
+        payload.candles,
+        sl_mode=user_params.get("per_trade_stop_loss_mode", "atr"),
+        sl_value=float(user_params.get("per_trade_stop_loss_value", 2.0)),
+        tp_rr=float(user_params.get("per_trade_take_profit_rr", 2.0))
+    )
+
+    # ── 🔍 SMART EXIT: Verificar se deve fechar posição atual ────────────────
+    if payload.open_side and payload.open_entry:
+        should_exit, exit_reason = check_smart_exit(
+            payload.candles,
+            payload.open_side,
+            payload.open_entry,
+            payload.open_sl or 0.0,
+            payload.open_tp or 0.0
+        )
+        
+        if should_exit:
+            log.info(f"Smart Exit acionado: {exit_reason} para {payload.symbol}")
+            return SignalResponse(
+                signal=f"CLOSE_{payload.open_side.upper()}",
+                confidence=1.0,
+                risk=0.0,
+                decision_id=None,
+                regime="lateral",
+                rationale=f"Smart Exit: {exit_reason}",
+            )
 
     # ── Salvar TODOS os sinais no Supabase ──
     decision_id: str | None = None
     try:
-        sb = get_service_supabase()
         trade_id = f"{payload.symbol}-{int(time.time() * 1000)}"
         resp = sb.table("trade_decisions").insert({
             "trade_id":        trade_id,

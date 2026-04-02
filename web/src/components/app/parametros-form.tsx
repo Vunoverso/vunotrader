@@ -52,10 +52,27 @@ const DEFAULT: ParametrosData = {
 };
 
 // ── Helpers de UI ────────────────────────────────────────────
-function FieldGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FieldGroup({ label, tooltip, hint, children }: { label: string; tooltip?: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="block text-sm font-medium text-slate-300">{label}</label>
+        {tooltip && (
+          <div className="group relative inline-block">
+            <div className="cursor-help rounded-full bg-slate-800 p-0.5 text-slate-500 hover:bg-slate-700 hover:text-sky-400 transition-colors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4m0-4h.01" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            {/* Balloon / Tooltip */}
+            <div className="invisible group-hover:visible absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-48 rounded-lg bg-slate-950 border border-slate-700 p-2.5 text-[11px] leading-relaxed text-slate-300 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1">
+              {tooltip}
+              <div className="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-slate-700" />
+            </div>
+          </div>
+        )}
+      </div>
       {hint && <p className="text-xs text-slate-600 mb-1.5">{hint}</p>}
       {children}
     </div>
@@ -341,7 +358,11 @@ export default function ParametrosForm({
           Limites de risco
         </h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FieldGroup label="Capital de referência" hint="Base usada pelo motor para calcular drawdown percentual e risco">
+          <FieldGroup 
+            label="Capital de referência" 
+            hint="Base usada para calcular risco e drawdown"
+            tooltip="Base usada para calcular o risco em dinheiro e lotes. O robô usará este valor para definir o tamanho das ordens."
+          >
             <Input
               value={form.capital_usd}
               onChange={(v) => set("capital_usd", v)}
@@ -352,7 +373,11 @@ export default function ParametrosForm({
               step="0.01"
             />
           </FieldGroup>
-          <FieldGroup label="Limite de perda diária" hint="Robô para ao atingir este valor">
+          <FieldGroup 
+            label="Limite de perda diária" 
+            hint="Robô para ao atingir este valor"
+            tooltip="Trava de segurança: se o robô perder este valor líquido em um único dia (PnL Realizado), ele pausa até o dia seguinte."
+          >
             <Input
               value={form.daily_loss_limit}
               onChange={(v) => set("daily_loss_limit", v)}
@@ -363,7 +388,11 @@ export default function ParametrosForm({
               step="0.01"
             />
           </FieldGroup>
-          <FieldGroup label="Drawdown máximo" hint="Percentual máximo de drawdown permitido">
+          <FieldGroup 
+            label="Drawdown máximo" 
+            hint="Percentual máximo de queda permitido"
+            tooltip="A queda máxima total permitida a partir do seu topo de capital. Serve para proteger sua conta de grandes sequências de perdas."
+          >
             <Input
               value={form.max_drawdown_pct}
               onChange={(v) => set("max_drawdown_pct", v)}
@@ -374,7 +403,11 @@ export default function ParametrosForm({
               step="0.1"
             />
           </FieldGroup>
-          <FieldGroup label="Risco por trade" hint="Percentual do capital por operação">
+          <FieldGroup 
+            label="Risco por trade" 
+            hint="Percentual do capital por operação"
+            tooltip="Quanto você aceita perder em uma única operação (em % do capital). Lotes maiores = maior risco."
+          >
             <Input
               value={form.risk_per_trade_pct}
               onChange={(v) => set("risk_per_trade_pct", v)}
@@ -385,7 +418,11 @@ export default function ParametrosForm({
               step="0.1"
             />
           </FieldGroup>
-          <FieldGroup label="Máx. trades por dia" hint="Quantidade máxima de operações">
+          <FieldGroup 
+            label="Máx. trades por dia" 
+            hint="Quantidade máxima de operações"
+            tooltip="Trava para evitar o excesso de operações (overtrading) e reduzir custos de corretagem e exposição desnecessária."
+          >
             <Input
               value={form.max_trades_per_day}
               onChange={(v) => set("max_trades_per_day", v)}

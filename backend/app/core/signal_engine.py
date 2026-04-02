@@ -12,7 +12,14 @@ from __future__ import annotations
 
 import math
 from typing import List, Tuple, Dict, Any, Optional
-from app.core.price_action import VunoCandle, score_setup, get_sr_zones, check_market_structure
+from app.core.price_action import (
+    VunoCandle, 
+    score_setup, 
+    get_sr_zones, 
+    check_market_structure,
+    detect_pin_bar,
+    detect_engulfing
+)
 
 # ── Tipos internos ──────────────────────────────────────────────────────
 Candle = List[float]   # [timestamp, open, high, low, close, volume]
@@ -194,7 +201,13 @@ class SignalResult:
         self.tp         = tp
 
 
-def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
+def analyse(
+    candles: list[Candle], 
+    risk_base: float = 2.0,
+    sl_mode: str = "atr",
+    sl_value: float = 2.0,
+    tp_rr: float = 2.0
+) -> SignalResult:
     """
     Processa lista de candles e retorna um SignalResult.
     Meta: 68% de assertividade equilibrada com frequência.
@@ -229,14 +242,14 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     price = closes[-1]
 
     # ── Regime de mercado Dinâmico ──────────────────────────────────────
-    # ADX > 25 indica tendência forte. ADX < 20 indica lateralização.
+    # ADX > 25 indica tendência forte. ADX < 18 indica lateralização.
     atr_pct = atr / price if price > 0 else 0.0
     
     if atr_pct > 0.015:
         regime = "volatil"
     elif adx > 25:
         regime = "tendencia"
-    elif adx < 18:
+    elif adx < 15: # Estrechamos a lateral para evitar flip-flop
         regime = "lateral"
     else:
         # Padrão anterior se ADX estiver em zona cinzenta
@@ -367,24 +380,31 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     rationale = f"[{vpe_struct.upper()}] {friendly_text} | tech:{tech_info}"
 
 
-    # ── Cálculo de SL e TP (Virtual) ──────────────────────────────────
+    # ── Cálculo de SL e TP (Configurável via DB) ──────────────────────
     sl, tp = 0.0, 0.0
-    if signal == "BUY":
-        # SL abaixo do suporte ou 1.5 ATR. TP em 2.5 ATR (R:R ~1.6)
-        sl = price - (atr * 1.5)
-        for z in vpe_zones:
-            if z["type"] == "support" and z["bottom"] < price:
-                sl = max(sl, z["bottom"])
-                break
-        tp = price + (atr * 2.5)
-    elif signal == "SELL":
-        # SL acima da resistência ou 1.5 ATR. TP em 2.5 ATR
-        sl = price + (atr * 1.5)
-        for z in vpe_zones:
-            if z["type"] == "resistance" and z["top"] > price:
-                sl = min(sl, z["top"])
-                break
-        tp = price - (atr * 2.5)
+    if signal != "HOLD":
+        # ── STOP LOSS ──
+        if sl_mode == "fixed_points":
+            sl_dist = sl_value
+        else: # atr
+            sl_dist = atr * sl_value
+            
+        if signal == "BUY":
+            sl = price - sl_dist
+            # Proteção VPE: Se houver zona suporte próxima, ajusta o SL abaixo dela
+            for z in vpe_zones:
+                if z["type"] == "support" and z["bottom"] < price and z["bottom"] > (price - sl_dist * 1.2):
+                    sl = min(sl, z["bottom"] - (atr * 0.2)) # SL folgado abaixo da zona
+                    break
+            tp = price + (sl_dist * tp_rr)
+        elif signal == "SELL":
+            sl = price + sl_dist
+            # Proteção VPE: Se houver zona resistência próxima, ajusta o SL acima dela
+            for z in vpe_zones:
+                if z["type"] == "resistance" and z["top"] > price and z["top"] < (price + sl_dist * 1.2):
+                    sl = max(sl, z["top"] + (atr * 0.2)) # SL folgado acima da zona
+                    break
+            tp = price - (sl_dist * tp_rr)
 
     return SignalResult(
         signal=signal,
@@ -396,3 +416,60 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
         sl=round(sl, 5),
         tp=round(tp, 5),
     )
+
+
+def check_smart_exit(
+    candles: list[Candle], 
+    side: str, 
+    entry_price: float, 
+    sl: float, 
+    tp: float
+) -> Tuple[bool, str]:
+    """
+    Verifica se a operação atual deve ser encerrada antecipadamente (Smart Exit).
+    Retorna (should_exit, reason)
+    """
+    if len(candles) < 20: return False, ""
+
+    closes = [c[4] for c in candles]
+    highs  = [c[2] for c in candles]
+    lows   = [c[3] for c in candles]
+    price  = closes[-1]
+    atr    = _atr(highs, lows, closes)
+    
+    # ── VPE Price Action ────────────────────────────────────────────────
+    v_candles = [VunoCandle(c[2], c[3], c[1], c[4], c[5]) for c in candles]
+    v_curr = v_candles[-1]
+    v_prev = v_candles[-2]
+    zones = get_sr_zones(v_candles, atr)
+    struct = check_market_structure(v_candles)
+
+    # 1. Reversão por Price Action (Candle de Força oposto em zona S/R)
+    if side == "buy":
+        is_pin, _, p_type = detect_pin_bar(v_curr)
+        is_eng, _, e_type = detect_engulfing(v_prev, v_curr)
+        
+        # Se COMPRA e sinal de VENDA (Engolfo/Pin Bar) em resistência
+        if (is_pin and p_type == "bearish") or (is_eng and e_type == "bearish"):
+            for z in zones:
+                if z["type"] == "resistance" and z["bottom"] <= v_curr.high <= z["top"]:
+                    return True, "Reversão detectada em zona de resistência (VPE)"
+        
+        # Se a tendência do preço cruzar a EMA50 para baixo
+        if struct == "bearish":
+            return True, "Estrutura de mercado mudou para Baixa (VPE)"
+
+    elif side == "sell":
+        is_pin, _, p_type = detect_pin_bar(v_curr)
+        is_eng, _, e_type = detect_engulfing(v_prev, v_curr)
+        
+        # Se VENDA e sinal de COMPRA em suporte
+        if (is_pin and p_type == "bullish") or (is_eng and e_type == "bullish"):
+            for z in zones:
+                if z["type"] == "support" and z["bottom"] <= v_curr.low <= z["top"]:
+                    return True, "Reversão detectada em zona de suporte (VPE)"
+                    
+        if struct == "bullish":
+            return True, "Estrutura de mercado mudou para Alta (VPE)"
+
+    return False, ""

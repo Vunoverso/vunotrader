@@ -101,7 +101,22 @@ void OnTick()
       }
    }
 
-   //--- Montar payload com identificação Vuno
+   //--- Montar payload com identificação Vuno e INFO de posição atual
+   string openPosInfo = ",\"open_side\":null,\"open_entry\":null,\"open_sl\":null,\"open_tp\":null";
+   
+   // Verifica se já temos posição aberta para este símbolo (VUNO)
+   if(PositionSelect(_Symbol))
+   {
+      if(PositionGetInteger(POSITION_MAGIC) == 20260330)
+      {
+         string side = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY ? "buy" : "sell");
+         openPosInfo = StringFormat(
+            ",\"open_side\":\"%s\",\"open_entry\":%.5f,\"open_sl\":%.5f,\"open_tp\":%.5f",
+            side, PositionGetDouble(POSITION_PRICE_OPEN), PositionGetDouble(POSITION_SL), PositionGetDouble(POSITION_TP)
+         );
+      }
+   }
+
    string request = StringFormat(
       "{\"type\":\"MARKET_DATA\","
       "\"symbol\":\"%s\","
@@ -111,7 +126,7 @@ void OnTick()
       "\"organization_id\":\"%s\","
       "\"robot_id\":\"%s\","
       "\"robot_token\":\"%s\","
-      "\"candles\":%s}",
+      "\"candles\":%s%s}",
       _Symbol,
       TFToString(PERIOD_CURRENT),
       effMode,
@@ -119,30 +134,53 @@ void OnTick()
       OrganizationID,
       RobotID,
       RobotToken,
-      candles
+      candles,
+      openPosInfo
    );
 
    string response = SendToCloud("/api/mt5/signal", request);
    if(response == "") return;
 
+   // Se o brain enviou um comando de FECHAMENTO (Smart Exit)
+   string signal = ExtractString(response, "signal");
+   if(signal == "CLOSE_BUY" || signal == "CLOSE_SELL")
+   {
+      if(PositionSelect(_Symbol) && PositionGetInteger(POSITION_MAGIC) == 20260330)
+      {
+         if(Trade.PositionClose(_Symbol))
+            Print("SMART EXIT: Posição encerrada antecipadamente por confirmação Price Action.");
+      }
+      return;
+   }
+
+   // ── GESTÃO ADICIONAL: Trailing Stop Automático ──
+   if(PositionSelect(_Symbol) && PositionGetInteger(POSITION_MAGIC) == 20260330)
+   {
+      ApplyTrailingStop();
+   }
+
    // Se modo efetivo era observer, descarta trade APÓS registrar na nuvem
    if(effMode == "observer") return; 
 
-   //--- Parsear resposta
-   string signal     = ExtractString(response, "signal");
+   //--- Parsear resposta do sinal
    double confidence = ExtractDouble(response, "confidence");
    double risk       = ExtractDouble(response, "risk");
    string decisionId = ExtractString(response, "decision_id"); // UUID do brain
 
    if(signal == "HOLD" || risk <= 0) return;
+
+   // ── TRAVA DIRECIONAL (Anti-Hedge) ──
+   // Se já houver posição, não abre outra (mesmo que seja na mesma direção, para evitar overtrading)
+   if(CountPositions() > 0) return;
+
    if(decisionId == "")
    {
       Print("SINAL ignorado: decision_id ausente na resposta do brain");
       return;
    }
 
-   int openPos = CountPositions();
-   if(openPos >= MaxPositions) return;
+   int openTotal = CountPositions(); // redundante pelo check anterior mas mantido por segurança
+   if(openTotal >= MaxPositions) return;
 
    //--- Calcular SL/TP com ATR
    double atr[];
@@ -150,7 +188,7 @@ void OnTick()
    if(CopyBuffer(hATR, 0, 0, 2, atr) < 2) return;
 
    double slDist = atr[1] * ATR_SL_Multi;
-   double tpDist = slDist * 2.0; // RR 1:2
+   double tpDist = slDist * 2.0; // RR 1:2 default (agora customizável via Cloud)
 
    // decision_id viaja no comment do trade para ser recuperado em OnTradeTransaction
    // Formato: "VUNO|<decision_id>|<confiança>"
@@ -187,6 +225,42 @@ void OnTick()
             Print("SELL executado | Conf: ", DoubleToString(confidence * 100, 1),
                   "% | Risk: ", risk, "% | Lot: ", lot,
                   " | DecisionID: ", decisionId);
+         }
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+// Gerencia Trailing Stop / Break Even
+//+------------------------------------------------------------------+
+void ApplyTrailingStop()
+{
+   double priceOpen = PositionGetDouble(POSITION_PRICE_OPEN);
+   double currentPrice = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double currentSL = PositionGetDouble(POSITION_SL);
+   
+   // Break Even: Se atingir 1:1 do risco (lucro >= distância inicial do stop), move SL para o preço de entrada
+   if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY)
+   {
+      double slDist = priceOpen - currentSL;
+      if(slDist > 0 && currentPrice >= (priceOpen + slDist))
+      {
+         if(currentSL < priceOpen) // Move para BE apenas se ainda não estiver no lucro
+         {
+            if(Trade.PositionModify(_Symbol, priceOpen, PositionGetDouble(POSITION_TP)))
+               Print("TRAILING: SL movido para Break Even (COMPRA)");
+         }
+      }
+   }
+   else if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL)
+   {
+      double slDist = currentSL - priceOpen;
+      if(slDist > 0 && currentPrice <= (priceOpen - slDist))
+      {
+         if(currentSL > priceOpen) // Move para BE apenas se ainda não estiver no lucro
+         {
+            if(Trade.PositionModify(_Symbol, priceOpen, PositionGetDouble(POSITION_TP)))
+               Print("TRAILING: SL movido para Break Even (VENDA)");
          }
       }
    }
