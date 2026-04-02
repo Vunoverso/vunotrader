@@ -3,6 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 
+const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+const DATETIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: BRAZIL_TIME_ZONE,
+});
+
 // ── Tipos ────────────────────────────────────────────────────────
 type TradeResult = "win" | "loss" | "breakeven";
 type TradeStatus = "open" | "closed" | "canceled";
@@ -65,9 +74,7 @@ function PnlCell({ value }: { value: number | null | undefined }) {
 
 function formatDt(dt: string | null) {
   if (!dt) return "—";
-  return new Date(dt).toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
-  });
+  return DATETIME_FORMATTER.format(new Date(dt));
 }
 
 // ── Linha expandida ───────────────────────────────────────────────

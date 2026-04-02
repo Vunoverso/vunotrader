@@ -3,6 +3,15 @@
 import * as XLSX from "xlsx";
 import { useState } from "react";
 
+const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+const DATETIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: BRAZIL_TIME_ZONE,
+});
+
 type AuditOutcome = {
   result: "win" | "loss" | "breakeven";
   pnl_money: number | null;
@@ -71,12 +80,7 @@ function fmtDt(value?: string | null) {
   if (!value) return "—";
   const d = new Date(value);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return DATETIME_FORMATTER.format(d);
 }
 
 function fmtDuration(seconds: number | null) {

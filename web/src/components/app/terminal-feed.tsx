@@ -2,6 +2,15 @@
 
 import { useEffect, useState, useRef } from "react";
 
+const BRAZIL_TIME_ZONE = "America/Sao_Paulo";
+const TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: BRAZIL_TIME_ZONE,
+});
+
 type TradeDecision = {
   id: string;
   symbol: string;
@@ -33,9 +42,9 @@ export function TerminalFeed({
 
   // Tick clock
   useEffect(() => {
-    setTime(new Date().toLocaleTimeString("pt-BR", { hour12: false }));
+    setTime(TIME_FORMATTER.format(new Date()));
     const timer = setInterval(() => {
-      setTime(new Date().toLocaleTimeString("pt-BR", { hour12: false }));
+      setTime(TIME_FORMATTER.format(new Date()));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -147,7 +156,7 @@ export function TerminalFeed({
         {logs.map((log) => {
           const isBuy = log.side.toLowerCase() === "buy";
           const isSell = log.side.toLowerCase() === "sell";
-          const timeStr = new Date(log.created_at).toLocaleTimeString("pt-BR", { hour12: false });
+          const timeStr = TIME_FORMATTER.format(new Date(log.created_at));
           const confStr = log.confidence ? Math.round(log.confidence * 100) + "%" : "---";
           const sigColor = isBuy
             ? "text-emerald-400 font-black"

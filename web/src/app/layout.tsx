@@ -15,6 +15,11 @@ const sourceCodePro = Source_Code_Pro({
 export const metadata: Metadata = {
   title: "Vuno Trader",
   description: "Plataforma SaaS para robo trader com IA, memoria inteligente e operacao controlada.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

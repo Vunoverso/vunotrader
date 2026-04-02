@@ -1,24 +1,44 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+const KEEP_ALIVE_URL = process.env.NEXT_PUBLIC_KEEP_ALIVE_URL || "https://vunotrader-api.onrender.com/";
 
 /**
- * Componente invisível que força um refresh dos dados a cada 5 minutos
- * para manter o servidor Render acordado (evitar hibernação).
+ * Componente invisível que faz um ping silencioso no backend a cada 5 minutos
+ * para manter o Render acordado, sem refrescar a UI do dashboard.
  */
 export function DashboardRefresher() {
-  const router = useRouter();
-
   useEffect(() => {
-    // Refresh a cada 5 minutos (300.000 ms)
+    let cancelled = false;
+
+    async function pingBackend() {
+      if (cancelled) return;
+      try {
+        await fetch(KEEP_ALIVE_URL, {
+          method: "GET",
+          mode: "no-cors",
+          cache: "no-store",
+        });
+      } catch {
+        // best effort only
+      }
+    }
+
+    void pingBackend();
+
     const interval = setInterval(() => {
-      console.log("[Vuno] Refreshing dashboard to keep-alive...");
-      router.refresh();
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      void pingBackend();
     }, 300000);
 
-    return () => clearInterval(interval);
-  }, [router]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   return null;
 }
