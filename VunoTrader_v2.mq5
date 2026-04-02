@@ -171,7 +171,16 @@ void OnTick()
 
    // ── TRAVA DIRECIONAL (Anti-Hedge) ──
    // Se já houver posição, não abre outra (mesmo que seja na mesma direção, para evitar overtrading)
-   if(CountPositions() > 0) return;
+   if(CountPositions() > 0)
+   {
+      static datetime lastLog = 0;
+      if(TimeCurrent() - lastLog > 300) 
+      {
+         Print("[Vuno] TRAVA Anti-Hedge: Ja existe posicao aberta para ", _Symbol, ". Ignorando novas entradas.");
+         lastLog = TimeCurrent();
+      }
+      return;
+   }
 
    if(decisionId == "")
    {
@@ -205,9 +214,18 @@ void OnTick()
       {
          if(Trade.Buy(lot, _Symbol, 0, sl, tp, tradeComment))
          {
+            long tkt = Trade.ResultOrder();
+            string openMsg = StringFormat(
+               "{\"decision_id\":\"%s\",\"ticket\":\"%d\",\"symbol\":\"%s\",\"side\":\"buy\","
+               "\"price\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"lot\":%.2f,"
+               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\"}",
+               decisionId, tkt, _Symbol, ask, sl, tp, lot, 
+               RobotID, RobotToken, UserID, OrganizationID
+            );
+            SendToCloud("/api/mt5/trade-opened", openMsg);
+
             Print("BUY executado | Conf: ", DoubleToString(confidence * 100, 1),
-                  "% | Risk: ", risk, "% | Lot: ", lot,
-                  " | DecisionID: ", decisionId);
+                  "% | Ticket: ", tkt);
          }
       }
    }
@@ -222,9 +240,18 @@ void OnTick()
       {
          if(Trade.Sell(lot, _Symbol, 0, sl, tp, tradeComment))
          {
+            long tkt = Trade.ResultOrder();
+            string openMsg = StringFormat(
+               "{\"decision_id\":\"%s\",\"ticket\":\"%d\",\"symbol\":\"%s\",\"side\":\"sell\","
+               "\"price\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"lot\":%.2f,"
+               "\"robot_id\":\"%s\",\"robot_token\":\"%s\",\"user_id\":\"%s\",\"organization_id\":\"%s\"}",
+               decisionId, tkt, _Symbol, bid, sl, tp, lot, 
+               RobotID, RobotToken, UserID, OrganizationID
+            );
+            SendToCloud("/api/mt5/trade-opened", openMsg);
+
             Print("SELL executado | Conf: ", DoubleToString(confidence * 100, 1),
-                  "% | Risk: ", risk, "% | Lot: ", lot,
-                  " | DecisionID: ", decisionId);
+                  "% | Ticket: ", tkt);
          }
       }
    }
@@ -504,11 +531,20 @@ void ResetDaily()
 int CountPositions()
 {
    int count = 0;
-   for(int i = PositionsTotal() - 1; i >= 0; i--)
-      if(PositionInfo.SelectByIndex(i))
-         if(PositionInfo.Magic() == 20260330 &&
-            PositionInfo.Symbol() == _Symbol)
+   int total = PositionsTotal();
+   
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket))
+      {
+         if(PositionGetInteger(POSITION_MAGIC) == 20260330 &&
+            PositionGetString(POSITION_SYMBOL) == _Symbol)
+         {
             count++;
+         }
+      }
+   }
    return count;
 }
 

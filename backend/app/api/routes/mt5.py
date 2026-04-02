@@ -73,6 +73,21 @@ class TradeOutcomePayload(BaseModel):
     mode: str = "demo"
 
 
+class TradeOpenedPayload(BaseModel):
+    robot_id: str
+    robot_token: str
+    user_id: str
+    organization_id: str
+    decision_id: str
+    ticket: str
+    symbol: str
+    side: str
+    price: float
+    sl: float = 0.0
+    tp: float = 0.0
+    lot: float = 0.0
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> dict:
@@ -291,3 +306,30 @@ async def trade_outcome(payload: TradeOutcomePayload):
             raise HTTPException(status_code=500, detail="Database update failed")
     
     return {"status": "ignored", "message": "No decision_id provided"}
+
+
+@router.post("/trade-opened", summary="Reportar abertura imediata de trade")
+async def trade_opened(payload: TradeOpenedPayload):
+    """
+    Recebe a confirmação de que uma ordem foi aberta no MT5.
+    Marca trade_decisions como 'executing' para aparecer no 'Agora' do Dashboard.
+    """
+    _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
+    
+    sb = get_service_supabase()
+    
+    try:
+        # Atualiza o registro original do sinal para 'executing'
+        sb.table("trade_decisions").update({
+            "outcome_status": "executing",
+            "entry_price": payload.price,
+            "stop_loss": payload.sl,
+            "take_profit": payload.tp,
+            # "ticket": payload.ticket # Adicione se criar a coluna
+        }).eq("id", payload.decision_id).execute()
+        
+        log.info(f"Trade aberto confirmado: {payload.decision_id} (Ticket: {payload.ticket})")
+        return {"status": "success", "message": "Trade marked as executing"}
+    except Exception as exc:
+        log.error("Failed to mark trade as opened: %s", exc)
+        raise HTTPException(status_code=500, detail="Database update failed")

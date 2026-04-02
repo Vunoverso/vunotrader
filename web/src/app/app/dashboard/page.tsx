@@ -232,19 +232,31 @@ export default async function DashboardPage() {
   const { data: todayDecRaw } = user
     ? await supabase
         .from("trade_decisions")
-        .select("id, symbol, timeframe, side, mode, created_at, executed_trades(id, status, opened_at, closed_at, trade_outcomes(result, pnl_money))")
+        .select("id, symbol, timeframe, side, mode, created_at, outcome_status, outcome_profit, executed_trades(id, status, opened_at, closed_at, trade_outcomes(result, pnl_money))")
         .eq("user_id", user.id)
         .gte("created_at", todayStart.toISOString())
         .order("created_at", { ascending: false })
     : { data: null };
 
   const todayDec = (todayDecRaw as unknown as TradeDecRow[] | null) ?? [];
-  const todayWithExec = todayDec.filter(d => (d.executed_trades ?? []).length > 0);
-  const todayTotalTrades = todayWithExec.length;
-  const todayOpenTrades  = todayWithExec.filter(d => d.executed_trades[0]?.status === "open").length;
-  const todayPnl = todayWithExec.reduce(
-    (sum, d) => sum + (d.executed_trades[0]?.trade_outcomes[0]?.pnl_money ?? 0), 0
+  
+  // Mudar contagem para usar a nova estrutura simplificada de Auditoria
+  const todayExecuted = todayDec.filter(d => 
+    d.executed_trades?.length > 0 || 
+    (d as any).outcome_status === "executing" || 
+    (d as any).outcome_status === "win" || 
+    (d as any).outcome_status === "loss"
   );
+  
+  const todayTotalTrades = todayExecuted.length;
+  const todayOpenTrades  = todayDec.filter(d => (d as any).outcome_status === "executing").length;
+  
+  // PnL: Prioriza outcome_profit (novo) e cai para trade_outcomes (antigo)
+  const todayPnl = todayDec.reduce((sum, d) => {
+    const realProfit = (d as any).outcome_profit ?? 0;
+    const oldProfit = d.executed_trades?.[0]?.trade_outcomes?.[0]?.pnl_money ?? 0;
+    return sum + (realProfit !== 0 ? realProfit : oldProfit);
+  }, 0);
 
   // Win rate global para o card principal (prioriza Ciclo de Aprendizado)
   const winRateCalc = iaAccuracy ?? consistencyScore;
@@ -253,7 +265,7 @@ export default async function DashboardPage() {
   const { data: recentClosedRaw } = user
     ? await supabase
         .from("trade_decisions")
-        .select("id, symbol, timeframe, side, mode, created_at, executed_trades(id, status, opened_at, closed_at, trade_outcomes(result, pnl_money))")
+        .select("id, symbol, timeframe, side, mode, created_at, outcome_status, outcome_profit, executed_trades(id, status, opened_at, closed_at, trade_outcomes(result, pnl_money))")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30)
