@@ -426,8 +426,8 @@ export default async function DashboardPage() {
             metrics.pnl === 0
               ? "R$ 0,00"
               : metrics.pnl > 0
-              ? `+R$ ${metrics.pnl.toFixed(2)}`
-              : `-R$ ${Math.abs(metrics.pnl).toFixed(2)}`
+              ? `+${formatCurrency(metrics.pnl)}`
+              : `-${formatCurrency(Math.abs(metrics.pnl))}`
           }
           sub="Conta ativa"
           accent={metrics.pnl > 0 ? "green" : metrics.pnl < 0 ? "red" : "slate"}
@@ -650,7 +650,6 @@ export default async function DashboardPage() {
             {motorOnline ? (
               <span className="text-slate-300">
                 Brain ativo · {robotInstance?.name ?? "instância"}
-                {motorLastSeenLabel ? ` · ${motorLastSeenLabel}` : ""}
               </span>
             ) : (
               <span className="text-slate-600">
