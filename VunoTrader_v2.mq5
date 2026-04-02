@@ -143,6 +143,18 @@ void OnTick()
    string response = SendToCloud("/api/mt5/signal", request);
    if(response == "") return;
 
+   // ── Sincronizar modo com o painel Vuno (user_mode retornado pelo backend) ──
+   string cloudMode = ExtractString(response, "user_mode");
+   if(cloudMode != "" && cloudMode != "null")
+   {
+      effMode = cloudMode;
+      static datetime lastModeLog = 0;
+      if(TimeCurrent() - lastModeLog > 300) {
+         Print("[Vuno] Modo sincronizado com painel: ", cloudMode);
+         lastModeLog = TimeCurrent();
+      }
+   }
+
    // Se o brain enviou um comando de FECHAMENTO (Smart Exit)
    string signal = ExtractString(response, "signal");
    if(signal == "CLOSE_BUY" || signal == "CLOSE_SELL")

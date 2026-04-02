@@ -99,14 +99,41 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function getOutcome(row: AuditRow) {
-  // Prioriza resultado real do MT5
-  if (row.outcome_status && row.outcome_status !== 'pending') {
+  // Prioridade 1: resultado real de executed_trades → trade_outcomes (Dual History)
+  const realOutcome = row.executed_trades?.[0]?.trade_outcomes?.[0];
+  if (realOutcome) {
+    return {
+      result: realOutcome.result,
+      pnl_money: realOutcome.pnl_money,
+      pnl_pips: null,
+      win_loss_reason: realOutcome.win_loss_reason,
+      post_analysis: realOutcome.post_analysis ?? row.post_analysis,
+    };
+  }
+  // Prioridade 2: se trade está em execução (trade aberto mas ainda sem outcome)
+  const openTrade = row.executed_trades?.[0];
+  if (openTrade && openTrade.status === "open") {
+    return {
+      result: "executing" as const,
+      pnl_money: null,
+      pnl_pips: null,
+      win_loss_reason: "Em execução no MT5",
+      post_analysis: null,
+    };
+  }
+  // Prioridade 3: colunas legadas de trade_decisions (compatibilidade retroativa)
+  if (row.outcome_status && row.outcome_status !== "pending") {
     return {
       result: row.outcome_status as "win" | "loss" | "breakeven" | "executing",
       pnl_money: row.outcome_profit,
       pnl_pips: row.outcome_pips,
-      win_loss_reason: row.outcome_status === "executing" ? "Em execução no MT5" : (row.outcome_profit != null ? "Finalizado" : "Resultado Virtual"),
-      post_analysis: row.post_analysis
+      win_loss_reason:
+        row.outcome_status === "executing"
+          ? "Em execução no MT5"
+          : row.outcome_profit != null
+          ? "Finalizado"
+          : "Resultado Virtual",
+      post_analysis: row.post_analysis,
     };
   }
   return null;
@@ -119,18 +146,6 @@ function getTrade(row: AuditRow) {
 function getSortablePnl(row: AuditRow) {
   const pnl = getOutcome(row)?.pnl_money;
   return pnl == null ? null : pnl;
-}
-
-function parseShadowFromRationale(rationale: string | null) {
-  if (!rationale) return null;
-  const m = rationale.match(/\|\s*SHADOW:(agree|diverge);global=(BUY|SELL);wr=([0-9]+(?:\.[0-9]+)?)%;n=(\d+)/i);
-  if (!m) return null;
-  return {
-    agreement: m[1].toLowerCase() === "agree",
-    globalSide: m[2].toUpperCase(),
-    winRatePct: Number(m[3]),
-    sampleSize: Number(m[4]),
-  };
 }
 
 function stripTechSuffix(rationale: string) {
@@ -255,7 +270,10 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
   const pageStart = (safePage - 1) * itemsPerPage;
   const paginatedRows = sorted.slice(pageStart, pageStart + itemsPerPage);
 
-  const withOutcome = sorted.filter((row) => (getTrade(row)?.trade_outcomes?.length ?? 0) > 0);
+  const withOutcome = sorted.filter((row) => {
+    const o = getOutcome(row);
+    return o !== null && o.result !== "executing";
+  });
   const wins = withOutcome.filter((row) => getOutcome(row)?.result === "win").length;
   const winRate = withOutcome.length > 0 ? (wins / withOutcome.length) * 100 : null;
 
@@ -567,7 +585,6 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
           {paginatedRows.map((row) => {
             const trade = getTrade(row);
             const outcome = getOutcome(row);
-            const shadow = parseShadowFromRationale(row.rationale);
             return (
               <div key={row.id} className={`rounded-xl border transition-all ${expanded === row.id ? "bg-slate-800/20 border-slate-700 shadow-inner" : "bg-slate-900 border-slate-800 hover:border-slate-700"}`}>
                 <button
@@ -600,11 +617,15 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                         </span>
                       )}
 
-                      {row.outcome_profit != null && (
-                        <span className={`text-[10px] font-bold ml-auto sm:ml-0 ${row.outcome_profit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                          {row.outcome_profit >= 0 ? "+" : ""}{row.outcome_profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                      )}
+                      {(() => {
+                        const pnl = getOutcome(row)?.pnl_money;
+                        if (pnl == null) return null;
+                        return (
+                          <span className={`text-[10px] font-bold ml-auto sm:ml-0 ${pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                            {pnl >= 0 ? "+" : ""}{pnl.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -614,11 +635,22 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                       <span className="text-[11px] text-slate-500 whitespace-nowrap italic">
                         {fmtDt(row.created_at)}
                       </span>
-                      {row.duration_seconds && (
-                         <span className="text-[11px] text-slate-500 whitespace-nowrap">
-                            <span className="opacity-60">Dur:</span> {fmtDuration(row.duration_seconds)}
-                         </span>
-                      )}
+                      {(() => {
+                        const secs = row.duration_seconds ?? (() => {
+                          const t = row.executed_trades?.[0];
+                          if (t?.closed_at && t?.opened_at) {
+                            const diff = new Date(t.closed_at).getTime() - new Date(t.opened_at).getTime();
+                            return isNaN(diff) ? null : Math.floor(diff / 1000);
+                          }
+                          return null;
+                        })();
+                        if (!secs) return null;
+                        return (
+                          <span className="text-[11px] text-slate-500 whitespace-nowrap">
+                            <span className="opacity-60">Dur:</span> {fmtDuration(secs)}
+                          </span>
+                        );
+                      })()}
                       {viewMode === "screener" && (
                         <span className="text-[11px] text-slate-400 font-medium px-1.5 rounded bg-slate-800/50">
                           {row.mode}
@@ -652,9 +684,11 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                         <p><span className="text-slate-500">Resultado:</span> {outcome?.result?.toUpperCase() ?? "PENDENTE"}</p>
                         <p>
                           <span className="text-slate-500">PnL Real:</span>{" "}
-                          {row.executed_trades?.[0]?.trade_outcomes?.[0]?.pnl_money == null
-                            ? "—"
-                            : `R$ ${row.executed_trades[0].trade_outcomes[0].pnl_money.toFixed(2)}`}
+                          {(() => {
+                            const pnl = getOutcome(row)?.pnl_money;
+                            if (pnl == null) return "—";
+                            return `${pnl >= 0 ? "+" : ""}R$ ${pnl.toFixed(2)}`;
+                          })()}
                         </p>
                         <p><span className="text-slate-500">Status MT5:</span> {trade?.status ?? "Análise"}</p>
                         <p className="leading-relaxed"><span className="text-slate-500">Obs:</span> {outcome?.win_loss_reason ?? "Aguardando desfecho..."}</p>

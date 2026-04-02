@@ -10,7 +10,19 @@ export async function createClient() {
               process.env.SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    console.error("Erro de Inicialização Supabase (Server):", { urlExists: !!url, keyExists: !!key });
+    console.error("[SupabaseServer] Erro de inicialização", {
+      urlExists: !!url,
+      keyExists: !!key,
+      urlSources: {
+        NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+      },
+      keySources: {
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+      },
+    });
     throw new Error(
       `Dados do projeto (URL e Key) são obrigatórios para o client server! Faltando: ${!url ? 'URL ' : ''}${!key ? 'KEY' : ''}`
     );

@@ -49,6 +49,8 @@ log = logging.getLogger("retrain_pipeline")
 _BASE_DIR  = Path(__file__).parent
 MODEL_RF   = _BASE_DIR / "brain_model_rf.pkl"
 MODEL_GB   = _BASE_DIR / "brain_model_gb.pkl"
+MODEL_SCALER = _BASE_DIR / "brain_model_scaler.pkl"
+LOCAL_CYCLE_LOG_CSV = _BASE_DIR / "scanner_cycle_logs.csv"
 
 # ────────────────────────────────────────────────────────────────
 # Constantes
@@ -62,8 +64,11 @@ FEATURE_COLS = [
     "dist_ema9", "dist_ema21", "dist_ema50",
 ]
 
-# Colunas presentes em anonymized_trade_events que mapeiam para features parciais
-EVENT_NUMERIC_COLS = ["confidence", "risk_pct", "pnl_points", "volatility"]
+# Colunas presentes em anonymized_trade_events / scanner_cycle_logs que mapeiam para features parciais
+EVENT_NUMERIC_COLS = [
+    "confidence", "risk_pct", "pnl_points", "volatility",
+    "score", "atr_pct", "volume_ratio", "rsi", "momentum_20",
+]
 
 LABEL_MAP = {"win": 1, "loss": 0, "breakeven": 0}
 
@@ -75,15 +80,15 @@ def _make_supabase_client():
     url = os.getenv("SUPABASE_URL", "").rstrip("/")
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
-        log.error("SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios.")
-        sys.exit(1)
+        log.warning("Supabase não configurado. Pipeline seguirá apenas com fontes locais, se existirem.")
+        return None
 
     try:
         from supabase import create_client  # type: ignore
         return create_client(url, key)
     except ImportError:
-        log.error("Instale 'supabase': pip install supabase")
-        sys.exit(1)
+        log.warning("Pacote supabase não instalado. Pipeline seguirá apenas com fontes locais.")
+        return None
 
 
 # ────────────────────────────────────────────────────────────────
@@ -94,6 +99,9 @@ def fetch_events(client, days: int = 30) -> pd.DataFrame:
     Busca anonymized_trade_events dos últimos `days` dias.
     Retorna DataFrame com todos os campos disponíveis.
     """
+    if client is None:
+        return pd.DataFrame()
+
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
     log.info(f"Buscando eventos desde {since[:10]} (últimos {days} dias)…")
@@ -123,6 +131,87 @@ def fetch_events(client, days: int = 30) -> pd.DataFrame:
     return df
 
 
+def fetch_cycle_logs(client, days: int = 30) -> pd.DataFrame:
+    """
+    Busca scanner_cycle_logs fechados dos últimos `days` dias.
+    Usa apenas ciclos executados e encerrados com outcome conhecido.
+    """
+    if client is None:
+        return pd.DataFrame()
+
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+    log.info(f"Buscando ciclos fechados desde {since[:10]} (últimos {days} dias)...")
+    try:
+        resp = (
+            client.table("scanner_cycle_logs")
+            .select(
+                "id, mode, symbol, timeframe, signal, confidence, risk_pct, result, "
+                "pnl_points, regime, score, atr_pct, volume_ratio, rsi, momentum_20, cycle_ts"
+            )
+            .gte("cycle_ts", since)
+            .eq("decision_status", "closed")
+            .eq("executed", True)
+            .order("cycle_ts")
+            .limit(50_000)
+            .execute()
+        )
+        rows = resp.data or []
+    except Exception as exc:
+        log.warning(f"scanner_cycle_logs indisponível ou não acessível: {exc}")
+        return pd.DataFrame()
+
+    if not rows:
+        log.info("Nenhum ciclo fechado encontrado no período.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    df = df.rename(columns={"signal": "side", "cycle_ts": "created_at"})
+    log.info(f"  → {len(df)} ciclos fechados carregados. Colunas: {list(df.columns)}")
+    return df
+
+
+def fetch_local_cycle_logs(days: int = 30) -> pd.DataFrame:
+    """
+    Busca ciclos fechados no CSV local gerado pelo CycleCollector.
+    Útil para aprendizagem shadow antes da persistência remota.
+    """
+    if not LOCAL_CYCLE_LOG_CSV.exists():
+        log.info("CSV local de ciclos não encontrado.")
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(LOCAL_CYCLE_LOG_CSV)
+    except Exception as exc:
+        log.warning(f"Falha ao ler CSV local de ciclos: {exc}")
+        return pd.DataFrame()
+
+    if df.empty:
+        return pd.DataFrame()
+
+    if "cycle_ts" not in df.columns:
+        log.warning("CSV local de ciclos sem coluna cycle_ts.")
+        return pd.DataFrame()
+
+    df["cycle_ts"] = pd.to_datetime(df["cycle_ts"], utc=True, errors="coerce")
+    since = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=days)
+    df = df[df["cycle_ts"] >= since].copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    if "decision_status" not in df.columns or "executed" not in df.columns:
+        log.warning("CSV local de ciclos sem colunas decision_status/executed.")
+        return pd.DataFrame()
+
+    df = df[(df["decision_status"] == "closed") & (df["executed"] == True)].copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    df = df.rename(columns={"signal": "side", "cycle_ts": "created_at", "risk": "risk_pct"})
+    log.info(f"  → {len(df)} ciclos fechados carregados do CSV local.")
+    return df
+
+
 # ────────────────────────────────────────────────────────────────
 # 2. Preparação de features
 # ────────────────────────────────────────────────────────────────
@@ -134,7 +223,7 @@ def _encode_categorical(df: pd.DataFrame) -> pd.DataFrame:
         ("side",      ["buy", "sell"]),
         ("regime",    ["tendencia", "lateral", "volatil"]),
         ("timeframe", ["M1", "M5", "M15", "M30", "H1", "H4"]),
-        ("mode",      ["demo", "real"]),
+        ("mode",      ["observer", "demo", "real"]),
     ]:
         if col in df.columns:
             for cat in categories:
@@ -193,6 +282,7 @@ def retrain(X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
     from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
     from sklearn.metrics import accuracy_score, classification_report
     from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
 
     log.info(f"Treinando com {len(X)} amostras ({y.sum()} wins / {(y == 0).sum()} losses)…")
 
@@ -209,15 +299,19 @@ def retrain(X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
         subsample=0.8, random_state=42
     )
 
-    rf.fit(X_tr, y_tr)
-    gb.fit(X_tr, y_tr)
+    scaler = StandardScaler()
+    X_tr_scaled = scaler.fit_transform(X_tr)
+    X_te_scaled = scaler.transform(X_te)
 
-    rf_preds = rf.predict(X_te)
-    gb_preds = gb.predict(X_te)
+    rf.fit(X_tr_scaled, y_tr)
+    gb.fit(X_tr_scaled, y_tr)
+
+    rf_preds = rf.predict(X_te_scaled)
+    gb_preds = gb.predict(X_te_scaled)
 
     # Ensemble simples: média das probabilidades
-    rf_proba = rf.predict_proba(X_te)[:, 1]
-    gb_proba = gb.predict_proba(X_te)[:, 1]
+    rf_proba = rf.predict_proba(X_te_scaled)[:, 1]
+    gb_proba = gb.predict_proba(X_te_scaled)[:, 1]
     ens_preds = ((rf_proba + gb_proba) / 2 >= 0.5).astype(int)
 
     metrics = {
@@ -239,7 +333,7 @@ def retrain(X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
 
     print(classification_report(y_te, ens_preds, target_names=["loss", "win"], zero_division=0))
 
-    return {"rf": rf, "gb": gb, "metrics": metrics}
+    return {"rf": rf, "gb": gb, "scaler": scaler, "metrics": metrics}
 
 
 # ────────────────────────────────────────────────────────────────
@@ -254,8 +348,10 @@ def save_models(result: dict[str, Any], dry_run: bool = False) -> None:
         pickle.dump(result["rf"], f)
     with open(MODEL_GB, "wb") as f:
         pickle.dump(result["gb"], f)
+    with open(MODEL_SCALER, "wb") as f:
+        pickle.dump(result["scaler"], f)
 
-    log.info(f"Modelos salvos: {MODEL_RF} | {MODEL_GB}")
+    log.info(f"Modelos salvos: {MODEL_RF} | {MODEL_GB} | {MODEL_SCALER}")
 
 
 def save_metrics_to_supabase(
@@ -265,6 +361,10 @@ def save_metrics_to_supabase(
     if dry_run:
         log.info("[dry-run] Métricas NÃO foram enviadas ao Supabase.")
         log.info("  %s", json.dumps({k: v for k, v in metrics.items() if k != "features"}, indent=2))
+        return
+
+    if client is None:
+        log.info("Métricas não enviadas: Supabase indisponível nesta execução.")
         return
 
     try:
@@ -293,10 +393,19 @@ def run_pipeline(days: int = 30, min_samples: int = 100, dry_run: bool = False) 
     """
     client = _make_supabase_client()
 
-    df = fetch_events(client, days=days)
-    if df.empty:
+    df_events = fetch_events(client, days=days)
+    df_cycles = fetch_cycle_logs(client, days=days)
+    df_local_cycles = fetch_local_cycle_logs(days=days)
+    frames = [df for df in [df_events, df_cycles, df_local_cycles] if not df.empty]
+    if not frames:
         log.warning("Pipeline abortado: nenhum evento disponível.")
         return None
+
+    df = pd.concat(frames, ignore_index=True)
+    dedupe_cols = [col for col in ["created_at", "symbol", "timeframe", "side", "result"] if col in df.columns]
+    if dedupe_cols:
+        df = df.drop_duplicates(subset=dedupe_cols, keep="last")
+    log.info(f"Dataset consolidado para treino: {len(df)} linhas.")
 
     X, y = build_features(df)
     if X.empty:

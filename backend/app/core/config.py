@@ -1,5 +1,7 @@
 
 
+from functools import lru_cache
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -31,5 +33,6 @@ class Settings(BaseSettings):
         return [host.strip() for host in self.app_trusted_hosts.split(",") if host.strip()]
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()

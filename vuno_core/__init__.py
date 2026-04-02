@@ -7,6 +7,7 @@ from .decision_engine import (
     load_model_weights,
     save_model_weights,
 )
+from .cycle_collector import CycleCollector
 from .trading_profiles import (
     PROFILE_AGGRESSIVE,
     PROFILE_CONSERVATIVE,
@@ -21,6 +22,7 @@ __all__ = [
     "DecisionRuntimeConfig",
     "FeatureBuilder",
     "TradingModel",
+    "CycleCollector",
     "generate_bootstrap_market_data",
     "load_model_weights",
     "save_model_weights",

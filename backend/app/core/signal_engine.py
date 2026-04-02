@@ -190,6 +190,11 @@ class SignalResult:
         price: float = 0.0,
         sl: float = 0.0,
         tp: float = 0.0,
+        score: float = 0.0,
+        atr_pct: float = 0.0,
+        volume_ratio: float = 0.0,
+        rsi: float = 50.0,
+        momentum_20: float = 0.0,
     ):
         self.signal     = signal        # "BUY" | "SELL" | "HOLD"
         self.confidence = confidence    # 0.0 – 1.0
@@ -199,6 +204,11 @@ class SignalResult:
         self.price      = price
         self.sl         = sl
         self.tp         = tp
+        self.score      = score
+        self.atr_pct    = atr_pct
+        self.volume_ratio = volume_ratio
+        self.rsi        = rsi
+        self.momentum_20 = momentum_20
 
 
 def analyse(
@@ -227,6 +237,7 @@ def analyse(
     bb_upper, bb_mid, bb_lower = _bollinger(closes)
     vol_ratio  = _volume_ratio(vols)
     mom10      = _momentum(closes, 10)
+    mom20      = _momentum(closes, 20)
     
     # ── Novos Indicadores de Inteligência ──────────────────────────────
     adx      = _adx(highs, lows, closes)
@@ -415,6 +426,11 @@ def analyse(
         price=price,
         sl=round(sl, 5),
         tp=round(tp, 5),
+        score=round(raw_score, 4),
+        atr_pct=round(atr_pct, 6),
+        volume_ratio=round(vol_ratio, 4),
+        rsi=round(rsi, 2),
+        momentum_20=round(mom20, 4),
     )
 
 

@@ -44,6 +44,8 @@ try:
 except ImportError:
     load_dotenv = None
 
+from vuno_core.cycle_collector import CycleCollector
+
 
 TIMEFRAME_MAP = {
     "M1": "TIMEFRAME_M1",
@@ -896,7 +898,9 @@ def compute_atr_pct(frame: pd.DataFrame, period: int = 14) -> float:
 def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace) -> None:
     engine = build_vuno_engine()
     audit = VunoAuditLogger()
+    collector = CycleCollector()
     open_audit_trades: dict[int, str] = {}
+    cycle_meta_by_ticket: dict[int, dict[str, object]] = {}
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     if not symbols:
         raise RuntimeError("Informe ao menos um simbolo em --symbols")
@@ -920,7 +924,36 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
                     result=str(close_info["result"]),
                     reason=str(close_info["reason"]),
                 )
+                ticket_meta = cycle_meta_by_ticket.get(ticket, {})
+                collector.log_cycle(
+                    {
+                        "cycle_ts": datetime.utcnow().isoformat(),
+                        "mode": args.mode,
+                        "symbol": str(ticket_meta.get("symbol", "")),
+                        "timeframe": args.timeframe,
+                        "signal": str(ticket_meta.get("signal", "HOLD")),
+                        "decision_status": "closed",
+                        "decision_reason": str(ticket_meta.get("rationale", "")),
+                        "confidence": float(ticket_meta.get("confidence", 0.0) or 0.0),
+                        "risk": float(ticket_meta.get("risk", 0.0) or 0.0),
+                        "regime": str(ticket_meta.get("regime", "lateral")),
+                        "score": float(ticket_meta.get("score", 0.0) or 0.0),
+                        "spread_points": float(ticket_meta.get("spread_points", 0.0) or 0.0),
+                        "atr_pct": float(ticket_meta.get("atr_pct", 0.0) or 0.0),
+                        "volume_ratio": float(ticket_meta.get("volume_ratio", 0.0) or 0.0),
+                        "rsi": float(ticket_meta.get("rsi", 0.0) or 0.0),
+                        "momentum_20": float(ticket_meta.get("momentum_20", 0.0) or 0.0),
+                        "decision_id": str(ticket_meta.get("decision_id", "")),
+                        "executed": True,
+                        "broker_ticket": str(ticket),
+                        "result": str(close_info["result"]),
+                        "pnl_money": float(close_info["pnl_money"]),
+                        "pnl_points": float(close_info["pnl_points"]),
+                    }
+                )
             del open_audit_trades[ticket]
+            if ticket in cycle_meta_by_ticket:
+                del cycle_meta_by_ticket[ticket]
 
         candidates: list[dict[str, object]] = []
         for symbol in symbols:
@@ -951,10 +984,76 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
                 atr_pct = compute_atr_pct(frame)
 
                 if spread_points > args.max_spread_points:
+                    collector.log_cycle(
+                        {
+                            "cycle_ts": datetime.utcnow().isoformat(),
+                            "mode": args.mode,
+                            "symbol": symbol,
+                            "timeframe": args.timeframe,
+                            "signal": signal,
+                            "decision_status": "blocked",
+                            "decision_reason": rationale,
+                            "block_reason": "spread_high",
+                            "confidence": confidence,
+                            "risk": risk,
+                            "regime": regime,
+                            "score": 0.0,
+                            "spread_points": spread_points,
+                            "atr_pct": atr_pct,
+                            "volume_ratio": float(features.get("volume_ratio", 1.0) or 1.0),
+                            "rsi": float(features.get("rsi", 50.0) or 50.0),
+                            "momentum_20": float(features.get("momentum_20", 0.0) or 0.0),
+                            "executed": False,
+                        }
+                    )
                     continue
                 if atr_pct < args.min_atr_pct:
+                    collector.log_cycle(
+                        {
+                            "cycle_ts": datetime.utcnow().isoformat(),
+                            "mode": args.mode,
+                            "symbol": symbol,
+                            "timeframe": args.timeframe,
+                            "signal": signal,
+                            "decision_status": "blocked",
+                            "decision_reason": rationale,
+                            "block_reason": "atr_low",
+                            "confidence": confidence,
+                            "risk": risk,
+                            "regime": regime,
+                            "score": 0.0,
+                            "spread_points": spread_points,
+                            "atr_pct": atr_pct,
+                            "volume_ratio": float(features.get("volume_ratio", 1.0) or 1.0),
+                            "rsi": float(features.get("rsi", 50.0) or 50.0),
+                            "momentum_20": float(features.get("momentum_20", 0.0) or 0.0),
+                            "executed": False,
+                        }
+                    )
                     continue
                 if signal == "HOLD":
+                    collector.log_cycle(
+                        {
+                            "cycle_ts": datetime.utcnow().isoformat(),
+                            "mode": args.mode,
+                            "symbol": symbol,
+                            "timeframe": args.timeframe,
+                            "signal": signal,
+                            "decision_status": "analyzed",
+                            "decision_reason": rationale,
+                            "block_reason": "hold_signal",
+                            "confidence": confidence,
+                            "risk": risk,
+                            "regime": regime,
+                            "score": 0.0,
+                            "spread_points": spread_points,
+                            "atr_pct": atr_pct,
+                            "volume_ratio": float(features.get("volume_ratio", 1.0) or 1.0),
+                            "rsi": float(features.get("rsi", 50.0) or 50.0),
+                            "momentum_20": float(features.get("momentum_20", 0.0) or 0.0),
+                            "executed": False,
+                        }
+                    )
                     continue
 
                 opportunity_score = (confidence * 100.0) + (atr_pct * 10000.0) - (spread_points * 0.35)
@@ -968,6 +1067,9 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
                         "regime": regime,
                         "spread_points": spread_points,
                         "atr_pct": atr_pct,
+                        "volume_ratio": float(features.get("volume_ratio", 1.0) or 1.0),
+                        "rsi": float(features.get("rsi", 50.0) or 50.0),
+                        "momentum_20": float(features.get("momentum_20", 0.0) or 0.0),
                         "score": opportunity_score,
                     }
                 )
@@ -995,6 +1097,28 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
 
         if len(all_positions) >= args.max_global_positions:
             print(f"[risk] Limite global atingido ({len(all_positions)}/{args.max_global_positions}).")
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "blocked",
+                    "decision_reason": best_rationale,
+                    "block_reason": "max_global_positions",
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
+            )
             time.sleep(args.interval_sec)
             continue
 
@@ -1002,6 +1126,28 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
             print(
                 f"[risk] Limite por simbolo atingido em {best_symbol} "
                 f"({len(symbol_positions)}/{args.max_positions_per_symbol})."
+            )
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "blocked",
+                    "decision_reason": best_rationale,
+                    "block_reason": "max_positions_per_symbol",
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
             )
             time.sleep(args.interval_sec)
             continue
@@ -1012,16 +1158,82 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
                 f"[risk] Limite de correlacao atingido para {best_symbol} "
                 f"({correlated}/{args.max_correlated_positions})."
             )
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "blocked",
+                    "decision_reason": best_rationale,
+                    "block_reason": "max_correlated_positions",
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
+            )
             time.sleep(args.interval_sec)
             continue
 
         if not args.allow_multiple and symbol_positions:
             print(f"[exec] Sinal ignorado para {best_symbol}: ja existe posicao aberta no simbolo.")
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "blocked",
+                    "decision_reason": best_rationale,
+                    "block_reason": "position_exists",
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
+            )
             time.sleep(args.interval_sec)
             continue
 
         if best_signal in symbol_sides:
             print(f"[exec] Sinal ignorado para {best_symbol}: ja existe posicao na mesma direcao.")
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "blocked",
+                    "decision_reason": best_rationale,
+                    "block_reason": "same_side_exists",
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
+            )
             time.sleep(args.interval_sec)
             continue
 
@@ -1052,6 +1264,27 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
 
         if args.dry_run:
             print(f"[dry-run] Motor dinamico enviaria ordem {best_signal} em {best_symbol}.")
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "picked",
+                    "decision_reason": best_rationale,
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "executed": False,
+                }
+            )
             time.sleep(args.interval_sec)
             continue
 
@@ -1079,6 +1312,44 @@ def run_vuno_engine_dynamic(controller: MT5Controller, args: argparse.Namespace)
             )
             if executed_trade_id:
                 open_audit_trades[broker_ticket] = executed_trade_id
+            cycle_meta_by_ticket[broker_ticket] = {
+                "symbol": best_symbol,
+                "signal": best_signal,
+                "rationale": best_rationale,
+                "confidence": best_confidence,
+                "risk": best_risk,
+                "regime": str(best.get("regime", "lateral")),
+                "score": float(best.get("score", 0.0) or 0.0),
+                "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                "rsi": float(best.get("rsi", 0.0) or 0.0),
+                "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                "decision_id": decision_id or "",
+            }
+            collector.log_cycle(
+                {
+                    "cycle_ts": datetime.utcnow().isoformat(),
+                    "mode": args.mode,
+                    "symbol": best_symbol,
+                    "timeframe": args.timeframe,
+                    "signal": best_signal,
+                    "decision_status": "executed",
+                    "decision_reason": best_rationale,
+                    "confidence": best_confidence,
+                    "risk": best_risk,
+                    "regime": str(best.get("regime", "lateral")),
+                    "score": float(best.get("score", 0.0) or 0.0),
+                    "spread_points": float(best.get("spread_points", 0.0) or 0.0),
+                    "atr_pct": float(best.get("atr_pct", 0.0) or 0.0),
+                    "volume_ratio": float(best.get("volume_ratio", 0.0) or 0.0),
+                    "rsi": float(best.get("rsi", 0.0) or 0.0),
+                    "momentum_20": float(best.get("momentum_20", 0.0) or 0.0),
+                    "decision_id": decision_id or "",
+                    "executed": True,
+                    "broker_ticket": str(broker_ticket),
+                }
+            )
 
         time.sleep(args.interval_sec)
 

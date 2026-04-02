@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -6,9 +8,24 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.security import SecurityHeadersMiddleware
 
+log = logging.getLogger("main")
+
 
 def create_app() -> FastAPI:
-    settings = get_settings()
+    try:
+        settings = get_settings()
+    except Exception as exc:
+        log.critical(
+            "[STARTUP] Falha ao carregar configurações — verifique variáveis de ambiente no Render: %s", exc
+        )
+        raise
+
+    log.info(
+        "[STARTUP] Ambiente: %s | Supabase URL configurada: %s",
+        settings.app_env,
+        bool(settings.supabase_url),
+    )
+
     app = FastAPI(title=settings.app_name, debug=settings.app_debug)
 
     app.add_middleware(SecurityHeadersMiddleware)
@@ -38,4 +55,4 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+app = create_app()
