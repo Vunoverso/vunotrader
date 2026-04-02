@@ -105,7 +105,7 @@ export default async function DashboardPage() {
   const { data: robotInstance } = user
     ? await supabase
         .from("robot_instances")
-        .select("id, name, status, last_seen_at, allowed_modes, real_trading_enabled")
+        .select("id, name, status, last_seen_at, allowed_modes, real_trading_enabled, current_balance")
         .eq("profile_id",
             (await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).limit(1).single())
               .data?.id ?? ""
@@ -385,7 +385,18 @@ export default async function DashboardPage() {
       )}
 
       {/* Métricas principais */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <MetricCard
+          label="Banca Atual"
+          value={
+            robotInstance?.current_balance
+              ? `R$ ${robotInstance.current_balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+              : "R$ --"
+          }
+          sub="Sincronizado"
+          accent="sky"
+          tooltip="Saldo total da conta MT5 sincronizado em tempo real pelo robô. Base para cálculo de risco."
+        />
         <MetricCard
           label="Hoje"
           value={metrics.totalTrades.toString()}
