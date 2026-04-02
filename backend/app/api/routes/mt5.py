@@ -59,6 +59,20 @@ class SignalResponse(BaseModel):
     rationale: str
 
 
+class TradeOutcomePayload(BaseModel):
+    robot_id: str
+    robot_token: str
+    user_id: str
+    organization_id: str
+    decision_id: str | None = None
+    ticket: str
+    symbol: str
+    side: str = ""
+    profit: float
+    points: int = 0
+    mode: str = "demo"
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _validate_robot(robot_id: str, robot_token: str, organization_id: str) -> dict:
@@ -247,3 +261,33 @@ async def get_signal(payload: SignalPayload):
         regime=result.regime,
         rationale=result.rationale,
     )
+
+
+@router.post("/trade-outcome", summary="Reportar resultado real da operação")
+async def trade_outcome(payload: TradeOutcomePayload):
+    """
+    Recebe o resultado financeiro final de uma operação fechada no MT5.
+    Atualiza trade_decisions para Auditoria fiel.
+    """
+    _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
+    
+    sb = get_service_supabase()
+    
+    # 1. Tenta localizar a decisão original pelo decision_id
+    if payload.decision_id:
+        try:
+            status = "win" if payload.profit > 0 else "loss" if payload.profit < 0 else "neutral"
+            
+            sb.table("trade_decisions").update({
+                "outcome_status": status,
+                "outcome_pips": payload.points,
+                "outcome_profit": payload.profit # Certifique-se de que esta coluna existe no banco
+            }).eq("id", payload.decision_id).execute()
+            
+            log.info(f"Resultado real processado: {payload.decision_id} -> {status} ({payload.profit})")
+            return {"status": "success", "message": "Outcome updated"}
+        except Exception as exc:
+            log.error("Failed to update trade outcome: %s", exc)
+            raise HTTPException(status_code=500, detail="Database update failed")
+    
+    return {"status": "ignored", "message": "No decision_id provided"}

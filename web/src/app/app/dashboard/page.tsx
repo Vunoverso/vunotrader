@@ -2,6 +2,20 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getSubscriptionAccess } from "@/lib/subscription-access";
 import { TerminalFeed } from "@/components/app/terminal-feed";
+import { DashboardRefresher } from "@/components/app/dashboard-refresher";
+
+// ── Tooltip Helper ───────────────────────────────────────────
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <div className="group relative inline-block ml-1 cursor-help">
+      <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-slate-600 text-[9px] text-slate-500 group-hover:border-sky-500 group-hover:text-sky-400">?</span>
+      <div className="absolute bottom-full left-1/2 mb-2 w-48 -translate-x-1/2 scale-0 rounded-lg bg-slate-800 p-2 text-[10px] leading-tight text-slate-200 shadow-xl transition-all group-hover:scale-100 z-50">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800" />
+      </div>
+    </div>
+  );
+}
 
 // ── Cards de métrica ─────────────────────────────────────────
 function MetricCard({
@@ -9,11 +23,13 @@ function MetricCard({
   value,
   sub,
   accent,
+  tooltip,
 }: {
   label: string;
   value: string;
   sub?: string;
   accent?: "green" | "red" | "sky" | "slate";
+  tooltip?: string;
 }) {
   const colors = {
     green: "text-emerald-400",
@@ -23,7 +39,10 @@ function MetricCard({
   };
   return (
     <div className="rounded-xl bg-slate-900 border border-slate-800 px-5 py-4">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs text-slate-500">{label}</p>
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </div>
       <p className={`text-2xl font-bold ${colors[accent ?? "slate"]}`}>{value}</p>
       {sub && <p className="text-xs text-slate-600 mt-1">{sub}</p>}
     </div>
@@ -342,7 +361,10 @@ export default async function DashboardPage() {
                 consistencyScore >= 45 ? "text-amber-400" : "text-red-400"
               }`}>{consistencyScore}%</span>
               <div>
-                <p className="text-xs font-semibold text-slate-300">Consistência</p>
+                <div className="flex items-center gap-1">
+                   <p className="text-xs font-semibold text-slate-300">Consistência</p>
+                   <InfoTooltip text="Frequência de acerto nos últimos 20 sinais. Indica a saúde da IA no curto prazo." />
+                </div>
                 <p className="text-[10px] text-slate-500">Últimos 20 trades ativos</p>
               </div>
             </div>
@@ -357,6 +379,7 @@ export default async function DashboardPage() {
           value={metrics.totalTrades.toString()}
           sub="Operações"
           accent="slate"
+          tooltip="Número de decisões que resultaram em abertura de ordens no MetaTrader nas últimas 24 horas."
         />
         <MetricCard
           label="Acerto IA"
@@ -367,6 +390,7 @@ export default async function DashboardPage() {
             : iaAccuracy >= 68 ? "green"
             : iaAccuracy >= 50 ? "sky" : "red"
           }
+          tooltip="Taxa de acerto global baseada nos últimos 100 sinais (Reais + Virtuais). Meta de consistência: 68%."
         />
         <MetricCard
           label="Resultado HOJE"
@@ -379,14 +403,18 @@ export default async function DashboardPage() {
           }
           sub="Conta ativa"
           accent={metrics.pnl > 0 ? "green" : metrics.pnl < 0 ? "red" : "slate"}
+          tooltip="Lucro ou prejuízo líquido (PnL) acumulado hoje com base nas operações encerradas."
         />
         <MetricCard
           label="Abertas"
           value={metrics.openTrades.toString()}
           sub="Agora"
           accent={metrics.openTrades > 0 ? "sky" : "slate"}
+          tooltip="Número de ordens que o robô está mantendo abertas no mercado neste exato momento."
         />
       </div>
+
+      <DashboardRefresher />
 
       {/* Terminal Hacker de Pensamentos do Motor */}
       {motorOnline && user?.id && (

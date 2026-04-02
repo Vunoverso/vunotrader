@@ -337,7 +337,7 @@ void OnTradeTransaction(const MqlTradeTransaction& trans,
          profit,
          _Symbol
       );
-      SendToCloud("/api/mt5/signal", msg);
+      SendToCloud("/api/mt5/trade-outcome", msg);
 
       Print("Resultado: ", (profit > 0 ? "WIN" : "LOSS"),
             " | P&L: ",    DoubleToString(profit, 2),
