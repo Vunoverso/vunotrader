@@ -120,7 +120,7 @@ async def get_signal(payload: SignalPayload):
     from app.core.signal_engine import analyse
     result = analyse(payload.candles)
 
-    # ── Salvar TODOS os sinais no Supabase (inclusive HOLD → alimenta terminal feed) ──
+    # ── Salvar TODOS os sinais no Supabase ──
     decision_id: str | None = None
     try:
         sb = get_service_supabase()
@@ -138,50 +138,60 @@ async def get_signal(payload: SignalPayload):
             "risk_pct":        result.risk_pct,
             "rationale":       result.rationale,
             "entry_price":     result.price,
+            "stop_loss":       result.sl,
+            "take_profit":     result.tp,
         }).execute()
         decision_id = resp.data[0]["id"] if resp.data else None
-        log.info("Decision saved: %s %s conf=%.2f", result.signal, payload.symbol, result.confidence)
     except Exception as exc:
-        log.error("Database insert failed (but continuing signal): %s", exc)
-        # Prosseguimos mesmo sem salvar no banco para não travar o robô
-        decision_id = None
+        log.error("Database insert failed: %s", exc)
 
-    # ── Tracking de Performance em Tempo Real (Self-Learning Loop) ──
+    # ── Tracking de Performance (Virtual Outcome Loop) ──
     try:
         current_price = payload.candles[-1][4]
-        # Busca decisões pendentes do mesmo símbolo (criadas a pelo menos 5 min e no máximo 4h atrás)
-        check_time = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
         pending = (
             sb.table("trade_decisions")
-            .select("id, side, entry_price")
+            .select("id, side, entry_price, stop_loss, take_profit, rationale")
             .eq("symbol", payload.symbol)
             .eq("outcome_status", "pending")
-            .lt("created_at", check_time)
             .execute()
         )
+        
+        from app.services.ai_analysis import analyze_loss
+        
         for dec in (pending.data or []):
-            if not dec.get("entry_price"): continue
+            if dec["id"] == decision_id: continue # ignora o que acabamos de criar
             
-            # Se já passou > 15 min, decidimos o resultado virtual
-            # Para fins de aprendizado rápido: se o preço foi na direção correta = win
             side = dec["side"]
             entry = dec["entry_price"]
-            diff = current_price - entry
+            sl = dec["stop_loss"]
+            tp = dec["take_profit"]
             
             outcome = None
+            diff = current_price - entry
+            
             if side == "buy":
-                outcome = "win" if diff > 0 else "loss"
+                if current_price >= tp and tp > 0: outcome = "win"
+                elif current_price <= sl and sl > 0: outcome = "loss"
             elif side == "sell":
-                outcome = "win" if diff < 0 else "loss"
+                if current_price <= tp and tp > 0: outcome = "win"
+                elif current_price >= sl and sl > 0: outcome = "loss"
             
             if outcome:
+                # Se for LOSS, pede aníse técnica da IA
+                post_analysis = None
+                if outcome == "loss":
+                    post_analysis = analyze_loss(
+                        payload.symbol, side, entry, sl, tp, current_price, dec["rationale"]
+                    )
+                
                 sb.table("trade_decisions").update({
                     "outcome_status": outcome,
-                    "outcome_pips": abs(diff) # simplificado
+                    "outcome_pips": abs(diff),
+                    "post_analysis": post_analysis # Salva a lição aprendida
                 }).eq("id", dec["id"]).execute()
                 
     except Exception as exc:
-        log.warning("Performance tracker failed: %s", exc)
+        log.warning("Tracking failed: %s", exc)
 
     return SignalResponse(
         signal=result.signal,

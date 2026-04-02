@@ -181,6 +181,8 @@ class SignalResult:
         rationale: str,
         regime: str,
         price: float = 0.0,
+        sl: float = 0.0,
+        tp: float = 0.0,
     ):
         self.signal     = signal        # "BUY" | "SELL" | "HOLD"
         self.confidence = confidence    # 0.0 – 1.0
@@ -188,6 +190,8 @@ class SignalResult:
         self.rationale  = rationale
         self.regime     = regime        # "tendencia" | "lateral" | "volatil"
         self.price      = price
+        self.sl         = sl
+        self.tp         = tp
 
 
 def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
@@ -363,6 +367,25 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
     rationale = f"[{vpe_struct.upper()}] {friendly_text} | tech:{tech_info}"
 
 
+    # ── Cálculo de SL e TP (Virtual) ──────────────────────────────────
+    sl, tp = 0.0, 0.0
+    if signal == "BUY":
+        # SL abaixo do suporte ou 1.5 ATR. TP em 2.5 ATR (R:R ~1.6)
+        sl = price - (atr * 1.5)
+        for z in vpe_zones:
+            if z["type"] == "support" and z["bottom"] < price:
+                sl = max(sl, z["bottom"])
+                break
+        tp = price + (atr * 2.5)
+    elif signal == "SELL":
+        # SL acima da resistência ou 1.5 ATR. TP em 2.5 ATR
+        sl = price + (atr * 1.5)
+        for z in vpe_zones:
+            if z["type"] == "resistance" and z["top"] > price:
+                sl = min(sl, z["top"])
+                break
+        tp = price - (atr * 2.5)
+
     return SignalResult(
         signal=signal,
         confidence=round(confidence, 4),
@@ -370,4 +393,6 @@ def analyse(candles: list[Candle], risk_base: float = 2.0) -> SignalResult:
         rationale=rationale,
         regime=regime,
         price=price,
+        sl=round(sl, 5),
+        tp=round(tp, 5),
     )

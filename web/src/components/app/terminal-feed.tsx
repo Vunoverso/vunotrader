@@ -28,7 +28,8 @@ export function TerminalFeed({
     Array.from(new Set((initialLogs ?? []).map((d) => d.symbol)))
   );
   const [time, setTime] = useState<string>("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
   // Tick clock
   useEffect(() => {
@@ -66,10 +67,28 @@ export function TerminalFeed({
     return () => clearInterval(interval);
   }, [userId, robotId]);
 
-  // Scroll para o fim quando chegar novos logs
+  // Monitora se o usuário subiu o scroll manualmente
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    // Se o usuário estiver a mais de 50px do fundo, desativamos o auto-scroll temporariamente
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    if (isAutoScrollEnabled !== isAtBottom) {
+      setIsAutoScrollEnabled(isAtBottom);
+    }
+  };
+
+  // Scroll suave apenas no container interno quando chegar novos logs
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+    const container = scrollContainerRef.current;
+    if (container && isAutoScrollEnabled) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [logs, isAutoScrollEnabled]);
 
   if (logs.length === 0) {
     return (
@@ -119,7 +138,11 @@ export function TerminalFeed({
       </div>
 
       {/* FEED */}
-      <div className="h-64 overflow-y-auto p-3 space-y-1 scroller">
+      <div 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="h-64 overflow-y-auto p-3 space-y-1 scroller"
+      >
         {logs.map((log) => {
           const isBuy = log.side.toLowerCase() === "buy";
           const isSell = log.side.toLowerCase() === "sell";
@@ -151,7 +174,7 @@ export function TerminalFeed({
             </div>
           );
         })}
-        <div ref={bottomRef} className="flex items-center gap-1 pt-1">
+        <div className="flex items-center gap-1 pt-1">
           <span className="animate-pulse text-cyan-500 text-sm">_</span>
           <span className="text-cyan-800 text-[10px]">aguardando próximo ciclo...</span>
         </div>

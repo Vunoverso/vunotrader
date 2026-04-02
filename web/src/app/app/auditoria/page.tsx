@@ -28,6 +28,11 @@ export default async function AuditoriaPage() {
       mode,
       rationale,
       created_at,
+      entry_price,
+      stop_loss,
+      take_profit,
+      outcome_status,
+      post_analysis,
       executed_trades (
         id,
         status,

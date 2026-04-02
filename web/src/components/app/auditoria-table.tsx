@@ -28,6 +28,11 @@ export type AuditRow = {
   mode: string;
   rationale: string | null;
   created_at: string;
+  entry_price: number | null;
+  stop_loss: number | null;
+  take_profit: number | null;
+  outcome_status: string | null;
+  post_analysis: string | null;
   executed_trades: AuditTrade[];
 };
 
@@ -75,7 +80,19 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function getOutcome(row: AuditRow) {
-  return row.executed_trades?.[0]?.trade_outcomes?.[0];
+  // Prioriza resultado real do MT5, senão usa o virtual calculado pelo backend
+  const realOutcome = row.executed_trades?.[0]?.trade_outcomes?.[0];
+  if (realOutcome) return realOutcome;
+
+  if (row.outcome_status && row.outcome_status !== 'pending') {
+    return {
+      result: row.outcome_status as "win" | "loss" | "breakeven",
+      pnl_money: null,
+      win_loss_reason: "Resultado Virtual (Screener)",
+      post_analysis: row.post_analysis
+    };
+  }
+  return null;
 }
 
 function getTrade(row: AuditRow) {
@@ -510,50 +527,42 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
 
                 {expanded === row.id && (
                   <div className="border-t border-slate-800 px-4 py-4">
-                    <div className="grid gap-4 sm:grid-cols-3 text-xs">
                       <div className="space-y-1 text-slate-400">
+                        <p><span className="text-slate-500">Preço Entrada:</span> {row.entry_price ? row.entry_price.toFixed(5) : "—"}</p>
+                        <p><span className="text-slate-500">Stop Loss:</span> <span className="text-rose-400">{row.stop_loss ? row.stop_loss.toFixed(5) : "—"}</span></p>
+                        <p><span className="text-slate-500">Take Profit:</span> <span className="text-emerald-400">{row.take_profit ? row.take_profit.toFixed(5) : "—"}</span></p>
                         <p><span className="text-slate-500">Confiança:</span> {row.confidence != null ? `${(row.confidence * 100).toFixed(1)}%` : "—"}</p>
-                        <p><span className="text-slate-500">Risco:</span> {row.risk_pct != null ? `${row.risk_pct}%` : "—"}</p>
-                        <p><span className="text-slate-500">Status trade:</span> {trade?.status ?? "—"}</p>
-                        <p><span className="text-slate-500">Fechado em:</span> {fmtDt(trade?.closed_at)}</p>
                       </div>
 
                       <div className="space-y-1 text-slate-400">
-                        <p><span className="text-slate-500">Resultado:</span> {outcome?.result ?? "—"}</p>
+                        <p><span className="text-slate-500">Resultado:</span> {outcome?.result?.toUpperCase() ?? "PENDENTE"}</p>
                         <p>
-                          <span className="text-slate-500">PnL:</span>{" "}
-                          {outcome?.pnl_money == null
+                          <span className="text-slate-500">PnL Real:</span>{" "}
+                          {row.executed_trades?.[0]?.trade_outcomes?.[0]?.pnl_money == null
                             ? "—"
-                            : `${outcome.pnl_money > 0 ? "+" : ""}R$ ${outcome.pnl_money.toFixed(2)}`}
+                            : `R$ ${row.executed_trades[0].trade_outcomes[0].pnl_money.toFixed(2)}`}
                         </p>
-                        <p className="leading-relaxed"><span className="text-slate-500">Motivo saída:</span> {outcome?.win_loss_reason ?? "—"}</p>
-                        {shadow && (
-                          <p className="leading-relaxed">
-                            <span className="text-slate-500">Shadow global:</span>{" "}
-                            {shadow.agreement ? "Alinhado" : "Divergente"}
-                            {` | Global ${shadow.globalSide} | WR ${shadow.winRatePct.toFixed(1)}% | n=${shadow.sampleSize}`}
-                          </p>
-                        )}
+                        <p><span className="text-slate-500">Status MT5:</span> {trade?.status ?? "Análise"}</p>
+                        <p className="leading-relaxed"><span className="text-slate-500">Obs:</span> {outcome?.win_loss_reason ?? "Aguardando desfecho..."}</p>
                       </div>
 
-                      <div className="space-y-1 text-slate-400">
-                        <p className="text-slate-500">Explicação do sinal</p>
-                        <p className="leading-relaxed text-slate-300">
-                          {row.rationale ? stripTechSuffix(row.rationale) : "Sem motivo registrado."}
-                        </p>
-                        {row.rationale && row.rationale.includes("|") && (
-                          <p className="mt-2 text-[9px] text-slate-600 break-all border-t border-slate-800/50 pt-1">
-                            Technical: {row.rationale}
+                      <div className="space-y-3 text-slate-400">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Explicação do sinal</p>
+                          <p className="mt-1 leading-relaxed text-slate-300">
+                            {row.rationale ? stripTechSuffix(row.rationale) : "Sem motivo registrado."}
                           </p>
-                        )}
-                        {outcome?.post_analysis && (
-                          <>
-                            <p className="pt-2 text-slate-500">Pós-análise</p>
-                            <p className="leading-relaxed">{outcome.post_analysis}</p>
-                          </>
+                        </div>
+                        
+                        {(outcome?.post_analysis || row.post_analysis) && (
+                          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">LIÇÃO APRENDIDA (IA)</p>
+                            <p className="mt-1 text-xs leading-relaxed text-amber-200/90">
+                              {outcome?.post_analysis || row.post_analysis}
+                            </p>
+                          </div>
                         )}
                       </div>
-                    </div>
                   </div>
                 )}
               </div>
