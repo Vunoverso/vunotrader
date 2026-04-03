@@ -168,6 +168,60 @@ def _sync_robot_data(sb, robot_id: str, balance: float) -> None:
         log.warning(f"Failed to sync robot data for {robot_id}: {exc}")
 
 
+def _heal_open_trade_from_heartbeat(sb, organization_id: str, robot_id: str, pos: OpenPosition) -> None:
+    if not pos.decision_id:
+        return
+
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        broker_ticket = str(pos.ticket) if pos.ticket else None
+
+        existing = (
+            sb.table("executed_trades")
+            .select("id")
+            .eq("trade_decision_id", pos.decision_id)
+            .maybeSingle()
+            .execute()
+        )
+
+        if not existing.data and broker_ticket:
+            existing = (
+                sb.table("executed_trades")
+                .select("id")
+                .eq("broker_ticket", broker_ticket)
+                .maybeSingle()
+                .execute()
+            )
+
+        payload = {
+            "broker_ticket": broker_ticket,
+            "entry_price": pos.price if pos.price > 0 else None,
+            "stop_loss": pos.sl if pos.sl > 0 else None,
+            "take_profit": pos.tp if pos.tp > 0 else None,
+            "lot": pos.volume if pos.volume > 0 else None,
+            "status": "open",
+        }
+
+        if existing.data:
+            sb.table("executed_trades").update(payload).eq("id", existing.data["id"]).execute()
+            return
+
+        sb.table("executed_trades").insert({
+            "organization_id": organization_id,
+            "robot_instance_id": robot_id,
+            "trade_decision_id": pos.decision_id,
+            "broker_ticket": broker_ticket,
+            "entry_price": pos.price if pos.price > 0 else None,
+            "stop_loss": pos.sl if pos.sl > 0 else None,
+            "take_profit": pos.tp if pos.tp > 0 else None,
+            "lot": pos.volume if pos.volume > 0 else None,
+            "status": "open",
+            "opened_at": now,
+        }).execute()
+    except Exception as exc:
+        log.warning("Heartbeat open trade healing failed for %s: %s", pos.decision_id, exc)
+
+
 def _stringify_time_field(value) -> str | None:
     if value is None:
         return None
@@ -320,6 +374,7 @@ async def heartbeat(payload: HeartbeatPayload):
                     "stop_loss": pos.sl if pos.sl > 0 else None,
                     "take_profit": pos.tp if pos.tp > 0 else None,
                 }).eq("id", pos.decision_id).neq("outcome_status", "executing").execute()
+                _heal_open_trade_from_heartbeat(sb, payload.organization_id, payload.robot_id, pos)
     
     return HeartbeatResponse(status="ok", timestamp=datetime.now(timezone.utc).isoformat())
 

@@ -1,51 +1,115 @@
-# Instrucoes do Agente para o Projeto Vuno Trader
+# Vuno Trader — Instruções do Agente (v2)
 
-## Objetivo do agente
+## Stack e contexto
 
-Este agente deve atuar como arquiteto, engenheiro e executor técnico do ecossistema Vuno Trader.
-O objetivo é desenvolver uma plataforma SaaS de robô trader com:
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS v4
+- **Backend**: FastAPI (Python 3.12), Supabase (Postgres + Auth + RLS)
+- **Broker**: MT5 via Python `MetaTrader5`
+- **Infra**: Railway (backend), Vercel (web), Supabase cloud
+- **Modelo**: SaaS multi-tenant com isolamento por `tenant_id`
 
-- execução no MT5
-- cérebro externo em Python
-- memória inteligente
-- dashboard web
-- autenticação
-- administração de contas
-- planos SaaS
-- ingestão de estudos, vídeos e PDFs
-- uso de IA com controle de custo e tokens
-- coleta de dados anonimizados para melhoria interna da IA
+---
 
 ## Regra principal de trabalho
 
-Antes de qualquer alteração em código, o agente deve revisar a pasta [evolucao](../evolucao).
+Antes de qualquer alteração, revisar a pasta `evolucao/`:
 
-Essa revisão é obrigatória para:
+- Entender o que já foi decidido
+- Identificar correções aplicadas
+- Detectar divergência entre plano e código
+- Sinalizar conflito antes de implementar
 
-- entender o que já foi decidido
-- identificar correções já aplicadas
-- evitar retrabalho
-- detectar divergência entre o plano e o código atual
-- sinalizar quando o código atual estiver diferente do que foi registrado
+**Fluxo obrigatório:**
+1. Ler arquivos relevantes em `evolucao/`
+2. Ler planejamento em `projeto/`
+3. Comparar plano × evolução × código
+4. Sinalizar conflito se houver
+5. Implementar
 
-## Fluxo obrigatório antes de codar
+---
 
-1. Ler os arquivos relevantes da pasta [evolucao](../evolucao).
-2. Ler os arquivos de planejamento em [projeto](../projeto).
-3. Comparar plano, evolução e código atual.
-4. Se encontrar conflito, sinalizar claramente antes de implementar.
-5. Só então propor ou aplicar alteração.
+## Padrões de código
 
-## Regra de registro de evolução
+### Geral
+- Máximo **200 linhas por arquivo**; extrair módulos se ultrapassar
+- Nomear arquivos em `kebab-case`; componentes em `PascalCase`
+- Sem comentários óbvios; comentar apenas decisões não triviais
+- Sem `any` em TypeScript; tipar tudo explicitamente
+- Sem `console.log` em produção; usar `logger` centralizado
 
-Toda evolução do projeto deve ser registrada na pasta [evolucao](../evolucao).
+### Semântica
+- HTML semântico: `<main>`, `<section>`, `<article>`, `<nav>`, `<aside>`, `<header>`, `<footer>`
+- `aria-label` obrigatório em ícones sem texto visível
+- Botões com `type="button"` explícito fora de formulários
+- `<button>` para ação, `<a>` apenas para navegação
 
-O agente deve:
+### Tailwind CSS v4
+- Usar classes utilitárias diretamente; evitar `@apply` exceto em bibliotecas de design
+- Tokens de cor: `bg-zinc-900`, `text-zinc-100`, `border-zinc-700/50` (dark-first)
+- Responsividade: mobile-first com `sm:`, `md:`, `lg:`
+- Animações: usar `transition-*` e `duration-200` como padrão
+- Evitar inline styles; tudo via Tailwind ou CSS variables
 
-- criar um novo arquivo quando surgir uma nova ideia, módulo, arquitetura, ajuste relevante ou decisão importante
-- atualizar um arquivo existente quando a mudança for continuação direta do mesmo assunto
-- registrar melhorias, correções, decisões, riscos, pendências e impactos
-- manter linguagem objetiva e técnica
+---
+
+## Segurança (OWASP Top 10)
+
+- **A01 — Controle de acesso**: toda query Supabase exige `tenant_id` do contexto autenticado; nunca confiar em parâmetro do cliente
+- **A02 — Falha criptográfica**: nunca expor chaves privadas (`SUPABASE_SERVICE_KEY`, `MT5_PASSWORD`) no frontend ou logs
+- **A03 — Injeção**: usar apenas queries parametrizadas; nunca interpolação de strings em SQL
+- **A05 — Misconfiguration**: variáveis de ambiente via `.env`; sem hardcode de URLs ou credenciais
+- **A07 — Autenticação**: sessão via `@supabase/ssr`; middleware valida token em todas as rotas `/app/*`
+- **A09 — Logging inseguro**: logs não devem conter tokens, senhas ou CPF; dados sensíveis devem ser mascarados
+
+---
+
+## Arquitetura SaaS
+
+- Isolamento por `tenant_id` em **todas** as tabelas; RLS ativo no Supabase
+- Nunca retornar dados de outro tenant, mesmo em admin queries
+- Planos SaaS controlam feature flags; verificar plano antes de liberar recurso
+- Dados anonimizados para IA: remover `user_id`, `account`, `name` antes de enviar ao modelo
+- API pública: rate limiting obrigatório; erros não expõem stack trace
+
+---
+
+## Componentes React
+
+- Componente = 1 responsabilidade; composição sobre herança
+- Props: tipar com `interface`; sem `type` para props de componente
+- Client components (`"use client"`) apenas quando necessário (interatividade, hooks)
+- Server components por padrão para fetch de dados
+- Loading states: usar `Suspense` + skeleton; nunca tela em branco
+- Erros: `error.tsx` por segmento de rota
+
+---
+
+## Registro de evolução
+
+Após mudança relevante, criar/atualizar arquivo em `evolucao/`:
+
+```
+AAAA-MM-DD-tema.md
+```
+
+Conteúdo mínimo:
+- **Data**: (preenchida automaticamente)
+- **Objetivo**: o que mudou e por quê
+- **Arquivos impactados**: lista
+- **Decisão**: o que foi feito
+- **Alternativas descartadas**: e por quê
+- **Próximos passos**: se houver
+
+---
+
+## Prioridades do projeto
+
+1. Arquitetura e estrutura correta
+2. Persistência e rastreabilidade de dados
+3. Segurança, isolamento por tenant, anonimização
+4. Fluxo demo antes do fluxo real
+5. Observabilidade, auditoria, explicabilidade
+6. Interface web e operação SaaS
 
 ## Regra para evitar retrabalho
 

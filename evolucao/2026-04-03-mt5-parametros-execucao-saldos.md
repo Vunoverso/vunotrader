@@ -23,6 +23,24 @@ A lacuna estava no trecho de execucao real e sincronismo de parametros:
 4. o screener e o EA single-asset falhavam ao enviar ordem sem logar retcode/descricao do erro do MT5
 5. o schema de referencia nao registrava `robot_instances.initial_balance` e `robot_instances.current_balance`, embora backend e dashboard dependam desses campos
 
+## Atualizacao - blindagem de execucao real
+
+Com a nova evidencia do log do MT5, o gargalo restante ficou objetivo:
+
+- `failed market buy XAUUSD [No prices]`
+
+Isso confirma que o problema residual nao era mais falta de persistencia no backend, e sim fragilidade na camada de execucao do cliente MT5 para simbolos multiativos.
+
+Foram tratados os seguintes pontos:
+
+- execucao com retry e recaptura de tick por simbolo
+- uso de `SymbolInfoTick` antes da ordem para evitar enviar market order sem preco valido
+- `SetTypeFillingBySymbol` em vez de assumir filling fixo
+- filtro de spread por ativo antes da execucao
+- clamp de risco local para nao confiar cegamente no backend
+- fallback local de sinal apenas para visibilidade quando a API falha, sem executar sem `decision_id`
+- healing adicional no endpoint `/heartbeat` para criar/atualizar `executed_trades` quando a ordem abriu no MT5 mas o POST `/trade-opened` falhou
+
 ## Arquivos impactados
 
 - `backend/app/api/routes/mt5.py`
@@ -69,6 +87,13 @@ Foram adicionados logs para:
 - falha de heartbeat
 - HTTP nao-200 com corpo de resposta
 
+Na etapa seguinte, a execucao passou a bloquear explicitamente casos como:
+
+- sem tick valido para o simbolo
+- mercado fechado ou lado indisponivel
+- spread acima do limite por ativo
+- lote calculado zero apos clamp de risco
+
 Isso reduz o ponto cego onde o painel recebia sinais mas nenhuma operacao real era persistida.
 
 ### 4. Schema oficial passa a refletir os saldos usados pelo produto
@@ -104,6 +129,7 @@ O projeto continua com validacao local no MT5 como camada defensiva, enquanto o 
 - O arquivo `VunoTrader_v2.ex5` estava atrasado em relacao ao `VunoTrader_v2.mq5`; recompilacao continua obrigatoria se esse cliente estiver em uso.
 - O ambiente Supabase remoto precisa receber a migration `20260403_000017_robot_instance_balances.sql`.
 - Sem acesso ao MetaEditor neste workspace, a validacao de MQL5 ficou limitada a analise estatica do editor.
+- O fallback local de sinal foi mantido sem execucao real propositalmente; executar sem `decision_id` quebraria auditoria, reconciliacao e persistencia de `executed_trades`.
 
 ## Proximos passos
 

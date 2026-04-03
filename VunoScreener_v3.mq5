@@ -71,6 +71,13 @@ double CalcSpreadPoints(string sym);
 double CalcAtrPct(int handleATR, string sym);
 int    CountPositionsBySymbol(string sym);
 bool   ExecuteTrade(string sym, int handleATR, string signal, double conf, double risk, string dId);
+bool   ExecuteOrder(string sym, string signal, double lot, double slDist, double tpDist, string comment, ulong &ticket, double &fillPrice, double &sl, double &tp);
+bool   LoadMarketTick(string sym, MqlTick &tick);
+bool   MarketOpen(string sym, string signal);
+bool   SpreadOK(string sym, double &spreadPts, string &blockReason);
+double SafeRisk(double risk);
+double MaxSpreadPointsForSymbol(string sym);
+string LocalFallbackSignal(string sym);
 void   ApplyRuntimeConfig(string response);
 bool   SymbolAllowedByRuntime(string sym);
 string NormalizeTimeWindowValue(string value);
@@ -226,8 +233,9 @@ void OnTimer()
          
          string response = SendToCloud("/api/mt5/signal", request);
          if(response == "") {
-            UpdateSymbolPanel(i, "ERRO", "HOLD", 0, 0, spreadPts, atrPct, "erro", "backend_sem_resposta", "Backend sem resposta");
-            g_lastEvent = sym + ": backend sem resposta.";
+            string fallbackSignal = LocalFallbackSignal(sym);
+            UpdateSymbolPanel(i, "LOCAL", fallbackSignal, 0.30, 0, spreadPts, atrPct, "fallback", "api_indisponivel", "Fallback local sem execucao");
+            g_lastEvent = sym + ": API indisponivel, fallback local ativo sem execucao.";
             continue;
          }
 
@@ -245,7 +253,7 @@ void OnTimer()
          
          string signal     = ExtractString(response, "signal");
          double confidence = ExtractDouble(response, "confidence");
-         double risk       = ExtractDouble(response, "risk");
+         double risk       = SafeRisk(ExtractDouble(response, "risk"));
          string decisionId = ExtractString(response, "decision_id");
          string regime     = ExtractString(response, "regime");
          string rationale  = ExtractString(response, "rationale");
@@ -276,6 +284,19 @@ void OnTimer()
          if(!SymbolAllowedByRuntime(sym)) {
             UpdateSymbolPanel(i, "BLOQUEADO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Ativo fora da lista permitida");
             g_lastEvent = sym + ": ativo fora da lista permitida.";
+            continue;
+         }
+
+         string executionGuardReason = "";
+         if(!MarketOpen(sym, signal)) {
+            UpdateSymbolPanel(i, "BLOQUEADO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Mercado fechado ou lado bloqueado");
+            g_lastEvent = sym + ": mercado fechado ou lado bloqueado.";
+            continue;
+         }
+
+         if(!SpreadOK(sym, spreadPts, executionGuardReason)) {
+            UpdateSymbolPanel(i, "BLOQUEADO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, executionGuardReason);
+            g_lastEvent = sym + ": " + executionGuardReason;
             continue;
          }
 
@@ -318,49 +339,193 @@ bool ExecuteTrade(string sym, int handleATR, string signal, double conf, double 
       return false;
    }
    
+   risk = SafeRisk(risk);
+   if(risk <= 0) {
+      Print("[Trade] Risco invalido apos clamp para ", sym, ". Ordem abortada.");
+      return false;
+   }
+
    double slDist = atr[1] * ATR_SL_Multi;
    double tpDist = slDist * 2.0;
    string cmt = StringFormat("VUNO|%s|%.0f%%", dId, conf * 100);
-   bool executed = false;
-   
-   if(signal == "BUY")
-   {
-      double ask = SymbolInfoDouble(sym, SYMBOL_ASK);
-      double sl  = ask - slDist;
-      double tp  = ask + tpDist;
-      double lot = CalcLotSymbol(sym, risk, slDist);
-      if(lot<=0) {
-         Print("[Trade] BUY bloqueado [", sym, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
-      } else {
-         if(Trade.Buy(lot, sym, 0, sl, tp, cmt)) {
-             Print("BUY Executado [", sym, "] conf:", conf*100, "%");
-             NotifyTradeOpened(dId, sym, "buy", Trade.ResultOrder(), Trade.ResultPrice(), sl, tp, lot);
-             executed = true;
-         } else {
-            LogTradeFailure(sym, "BUY", lot, ask, sl, tp);
-         }
-      }
-   }
-   else if(signal == "SELL")
-   {
-      double bid = SymbolInfoDouble(sym, SYMBOL_BID);
-      double sl  = bid + slDist;
-      double tp  = bid - tpDist;
-      double lot = CalcLotSymbol(sym, risk, slDist);
-      if(lot<=0) {
-         Print("[Trade] SELL bloqueado [", sym, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
-      } else {
-         if(Trade.Sell(lot, sym, 0, sl, tp, cmt)) {
-            Print("SELL Executado [", sym, "] conf:", conf*100, "%");
-            NotifyTradeOpened(dId, sym, "sell", Trade.ResultOrder(), Trade.ResultPrice(), sl, tp, lot);
-            executed = true;
-         } else {
-            LogTradeFailure(sym, "SELL", lot, bid, sl, tp);
-         }
-      }
+   double lot = CalcLotSymbol(sym, risk, slDist);
+   if(lot <= 0) {
+      Print("[Trade] ", signal, " bloqueado [", sym, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
+      return false;
    }
 
-   return executed;
+   ulong ticket = 0;
+   double fillPrice = 0;
+   double sl = 0;
+   double tp = 0;
+   if(!ExecuteOrder(sym, signal, lot, slDist, tpDist, cmt, ticket, fillPrice, sl, tp))
+      return false;
+
+   string side = signal == "BUY" ? "buy" : "sell";
+   Print(signal, " Executado [", sym, "] conf:", conf * 100, "% | ticket=", IntegerToString((int)ticket));
+   NotifyTradeOpened(dId, sym, side, ticket, fillPrice, sl, tp, lot);
+   return true;
+}
+
+bool ExecuteOrder(string sym, string signal, double lot, double slDist, double tpDist, string comment, ulong &ticket, double &fillPrice, double &sl, double &tp)
+{
+   int maxRetries = 3;
+   ticket = 0;
+   fillPrice = 0;
+   sl = 0;
+   tp = 0;
+
+   for(int i = 0; i < maxRetries; i++)
+   {
+      MqlTick tick;
+      if(!LoadMarketTick(sym, tick))
+      {
+         Sleep(300);
+         continue;
+      }
+
+      Trade.SetDeviationInPoints(20);
+      Trade.SetTypeFillingBySymbol(sym);
+      ResetLastError();
+
+      bool result = false;
+      if(signal == "BUY")
+      {
+         fillPrice = tick.ask;
+         sl = fillPrice - slDist;
+         tp = fillPrice + tpDist;
+         result = Trade.Buy(lot, sym, fillPrice, sl, tp, comment);
+      }
+      else if(signal == "SELL")
+      {
+         fillPrice = tick.bid;
+         sl = fillPrice + slDist;
+         tp = fillPrice - tpDist;
+         result = Trade.Sell(lot, sym, fillPrice, sl, tp, comment);
+      }
+
+      if(result)
+      {
+         ticket = Trade.ResultOrder();
+         double executedPrice = Trade.ResultPrice();
+         if(executedPrice > 0)
+            fillPrice = executedPrice;
+         return true;
+      }
+
+      LogTradeFailure(sym, signal, lot, fillPrice, sl, tp);
+      Sleep(300);
+   }
+
+   Print("[Trade] FALHA AO EXECUTAR ORDEM: ", sym, " | sinal=", signal);
+   return false;
+}
+
+bool LoadMarketTick(string sym, MqlTick &tick)
+{
+   ZeroMemory(tick);
+   if(!SymbolSelect(sym, true))
+   {
+      Print("[Market] SymbolSelect falhou para ", sym);
+      return false;
+   }
+
+   for(int i = 0; i < 3; i++)
+   {
+      if(SymbolInfoTick(sym, tick) && tick.ask > 0 && tick.bid > 0)
+         return true;
+      Sleep(300);
+   }
+
+   Print("[Market] Sem preco valido para ", sym, " | ask=", DoubleToString(tick.ask, 5), " | bid=", DoubleToString(tick.bid, 5));
+   return false;
+}
+
+bool MarketOpen(string sym, string signal)
+{
+   long mode = SymbolInfoInteger(sym, SYMBOL_TRADE_MODE);
+   if(mode == SYMBOL_TRADE_MODE_FULL)
+      return true;
+   if(signal == "BUY" && mode == SYMBOL_TRADE_MODE_LONGONLY)
+      return true;
+   if(signal == "SELL" && mode == SYMBOL_TRADE_MODE_SHORTONLY)
+      return true;
+   return false;
+}
+
+bool SpreadOK(string sym, double &spreadPts, string &blockReason)
+{
+   MqlTick tick;
+   if(!LoadMarketTick(sym, tick))
+   {
+      spreadPts = 0;
+      blockReason = "Sem preco/tick para " + sym;
+      return false;
+   }
+
+   double point = SymbolInfoDouble(sym, SYMBOL_POINT);
+   if(point <= 0)
+   {
+      spreadPts = 0;
+      blockReason = "Point invalido para " + sym;
+      return false;
+   }
+
+   spreadPts = (tick.ask - tick.bid) / point;
+   double maxSpread = MaxSpreadPointsForSymbol(sym);
+   if(spreadPts > maxSpread)
+   {
+      blockReason = "Spread alto: " + DoubleToString(spreadPts, 1) + " pts";
+      return false;
+   }
+
+   return true;
+}
+
+double SafeRisk(double risk)
+{
+   if(risk <= 0)
+      return 0;
+   if(risk > 1.0)
+      return 1.0;
+   return risk;
+}
+
+double MaxSpreadPointsForSymbol(string sym)
+{
+   if(StringFind(sym, "XAU") >= 0)
+      return 80.0;
+   if(StringFind(sym, "BTC") >= 0 || StringFind(sym, "ETH") >= 0)
+      return 3000.0;
+   return 30.0;
+}
+
+string LocalFallbackSignal(string sym)
+{
+   int fastHandle = iMA(sym, PERIOD_CURRENT, 9, 0, MODE_EMA, PRICE_CLOSE);
+   int slowHandle = iMA(sym, PERIOD_CURRENT, 21, 0, MODE_EMA, PRICE_CLOSE);
+   if(fastHandle == INVALID_HANDLE || slowHandle == INVALID_HANDLE)
+   {
+      if(fastHandle != INVALID_HANDLE) IndicatorRelease(fastHandle);
+      if(slowHandle != INVALID_HANDLE) IndicatorRelease(slowHandle);
+      return "HOLD";
+   }
+
+   double fast[];
+   double slow[];
+   ArraySetAsSeries(fast, true);
+   ArraySetAsSeries(slow, true);
+   bool ok = CopyBuffer(fastHandle, 0, 0, 1, fast) >= 1 && CopyBuffer(slowHandle, 0, 0, 1, slow) >= 1;
+   IndicatorRelease(fastHandle);
+   IndicatorRelease(slowHandle);
+
+   if(!ok)
+      return "HOLD";
+   if(fast[0] > slow[0])
+      return "BUY";
+   if(fast[0] < slow[0])
+      return "SELL";
+   return "HOLD";
 }
 
 //+------------------------------------------------------------------+
