@@ -80,19 +80,40 @@ export default async function DashboardPage() {
   const lastDecision = lastDecisionArr?.[0] ?? null;
 
   // Estado real do motor: última vez que enviou heartbeat (last_seen_at)
-  const { data: robotInstance } = user
+  const { data: profile } = user
+    ? await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+  const profileId = profile?.id ?? "";
+
+  const { data: robotInstance } = user && profileId
     ? await supabase
         .from("robot_instances")
         .select("id, name, status, last_seen_at, allowed_modes, real_trading_enabled, current_balance, initial_balance")
-        .eq("profile_id",
-            (await supabase.from("user_profiles").select("id").eq("auth_user_id", user.id).limit(1).single())
-              .data?.id ?? ""
-        )
+        .eq("profile_id", profileId)
         .eq("status", "active")
         .order("last_seen_at", { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle()
     : { data: null };
+
+  const { data: robotInstanceWithBalance } = user && profileId
+    ? await supabase
+        .from("robot_instances")
+        .select("initial_balance, current_balance")
+        .eq("profile_id", profileId)
+        .gt("current_balance", 0)
+        .order("last_seen_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const hasLiveBalance = (robotInstance?.initial_balance ?? 0) > 0 || (robotInstance?.current_balance ?? 0) > 0;
+  const balanceSource = hasLiveBalance ? robotInstance : (robotInstanceWithBalance ?? robotInstance);
 
   // Calcular minutosDesde o último heartbeat
   const nowMs = new Date().getTime();
@@ -237,7 +258,7 @@ export default async function DashboardPage() {
   }, 0);
 
   // Lucro total (Vitalício)
-  const totalProfit = (robotInstance?.current_balance ?? 0) - (robotInstance?.initial_balance ?? 0);
+  const totalProfit = (balanceSource?.current_balance ?? 0) - (balanceSource?.initial_balance ?? 0);
 
   // Win rate global para o card principal (prioriza Ciclo de Aprendizado)
   const winRateCalc = iaAccuracy ?? consistencyScore;
@@ -253,7 +274,30 @@ export default async function DashboardPage() {
     : { data: null };
 
   const recentClosed = ((recentClosedRaw as unknown as TradeDecRow[] | null) ?? [])
-    .filter(d => (d.executed_trades ?? []).length > 0 && d.executed_trades[0]?.status === "closed")
+    .map((d) => {
+      const et = d.executed_trades?.[0];
+      const outcomeStatus = (d as any).outcome_status as string | null | undefined;
+      const outcomeResult =
+        outcomeStatus === "neutral"
+          ? "breakeven"
+          : outcomeStatus === "win" || outcomeStatus === "loss" || outcomeStatus === "breakeven"
+          ? outcomeStatus
+          : null;
+
+      const out = et?.trade_outcomes?.[0] ?? (outcomeResult
+        ? {
+            result: outcomeResult,
+            pnl_money: (d as any).outcome_profit ?? null,
+          }
+        : null);
+
+      const hasClosedTrade = et?.status === "closed" || outcomeResult !== null;
+      const tradeId = et?.id ?? d.id;
+      const closedAt = et?.closed_at ?? (d as any).closed_at ?? null;
+
+      return { d, tradeId, out, closedAt, hasClosedTrade };
+    })
+    .filter((item) => item.hasClosedTrade)
     .slice(0, 5);
 
   const activeMode = ((robotInstance?.allowed_modes ?? []).includes("real") && robotInstance?.real_trading_enabled)
@@ -373,8 +417,8 @@ export default async function DashboardPage() {
         <PremiumMetricCard
           label="Banca Inicial"
           value={
-            robotInstance?.initial_balance != null
-              ? formatCurrency(robotInstance.initial_balance)
+            balanceSource?.initial_balance != null
+              ? formatCurrency(balanceSource.initial_balance)
               : "R$ 0,00"
           }
           subtitle="Capital de referência"
@@ -383,8 +427,8 @@ export default async function DashboardPage() {
         <PremiumMetricCard
           label="Banca Atual"
           value={
-            robotInstance?.current_balance != null
-              ? formatCurrency(robotInstance.current_balance)
+            balanceSource?.current_balance != null
+              ? formatCurrency(balanceSource.current_balance)
               : "R$ 0,00"
           }
           subtitle="Saldo em tempo real"
@@ -527,15 +571,15 @@ export default async function DashboardPage() {
           <EmptyState message="Ainda não recebemos operações fechadas. Finalize a conexão em Instalação para começar." />
         ) : (
           <div className="divide-y divide-slate-800">
-            {recentClosed.map((d) => {
-              const et = d.executed_trades[0];
-              const out = et?.trade_outcomes[0];
+            {recentClosed.map((item) => {
+              const d = item.d;
+              const out = item.out;
               const isWin = out?.result === "win";
               const isLoss = out?.result === "loss";
               return (
                 <Link
-                  key={d.id}
-                  href={`/app/operacoes/${et.id}`}
+                  key={item.tradeId}
+                  href={`/app/operacoes/${item.tradeId}`}
                   className="flex items-center justify-between px-5 py-3 hover:bg-slate-800/40 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -565,7 +609,7 @@ export default async function DashboardPage() {
                       </p>
                     )}
                     <p className="text-[10px] text-slate-600">
-                      {et.closed_at ? new Date(et.closed_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                      {item.closedAt ? new Date(item.closedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—"}
                     </p>
                   </div>
                 </Link>

@@ -583,7 +583,7 @@ async def trade_outcome(payload: TradeOutcomePayload):
         # 1. Busca dados da decisão para duração e preços de referência
         dec_res = sb.table("trade_decisions").select(
             "created_at, entry_price, stop_loss, take_profit, robot_instance_id"
-        ).eq("id", payload.decision_id).single().execute()
+        ).eq("id", decision_id).single().execute()
 
         now_utc = datetime.now(timezone.utc)
         duration_secs = 0
@@ -598,7 +598,7 @@ async def trade_outcome(payload: TradeOutcomePayload):
             stop_loss = dec_res.data.get("stop_loss")
             take_profit = dec_res.data.get("take_profit")
 
-        outcome_status = "win" if payload.profit > 0 else "loss" if payload.profit < 0 else "neutral"
+        outcome_status = "win" if payload.profit > 0 else "loss" if payload.profit < 0 else "breakeven"
         result_label  = "win" if payload.profit > 0 else "loss" if payload.profit < 0 else "breakeven"
 
         # 2. Atualiza trade_decisions com resultado final
@@ -608,11 +608,11 @@ async def trade_outcome(payload: TradeOutcomePayload):
             "outcome_profit":   payload.profit,
             "closed_at":        now_utc.isoformat(),
             "duration_seconds": duration_secs,
-        }).eq("id", payload.decision_id).execute()
+        }).eq("id", decision_id).execute()
 
         # 3. Busca ou cria executed_trade para este decision_id
         existing = sb.table("executed_trades").select("id").eq(
-            "trade_decision_id", payload.decision_id
+            "trade_decision_id", decision_id
         ).execute()
 
         if existing.data:
@@ -627,7 +627,7 @@ async def trade_outcome(payload: TradeOutcomePayload):
             ins = sb.table("executed_trades").insert({
                 "organization_id":   payload.organization_id,
                 "robot_instance_id": payload.robot_id,
-                "trade_decision_id": payload.decision_id,
+                "trade_decision_id": decision_id,
                 "broker_ticket":     payload.ticket or None,
                 "entry_price":       entry_price,
                 "stop_loss":         stop_loss,
@@ -654,11 +654,11 @@ async def trade_outcome(payload: TradeOutcomePayload):
                     "win_loss_reason":   f"MT5 ticket {payload.ticket}",
                 }).execute()
 
-        _mark_cycle_closed(sb, payload.decision_id, payload.profit, payload.points, result_label)
+        _mark_cycle_closed(sb, decision_id, payload.profit, payload.points, result_label)
 
         log.info(
             "Resultado real processado: %s -> %s (PnL: %.2f, Dur: %ds)",
-            payload.decision_id, outcome_status, payload.profit, duration_secs,
+            decision_id, outcome_status, payload.profit, duration_secs,
         )
         return {"status": "success", "message": "Outcome updated with performance data"}
     except Exception as exc:
