@@ -58,6 +58,11 @@ int            g_cycleCounter  = 0;
 string         g_panelStatus   = "INICIANDO";
 string         g_panelMode     = "demo";
 string         g_lastEvent     = "Aguardando primeiro ciclo";
+double         g_runtimeMaxDrawdownPct = 0;
+double         g_runtimeDailyLossMoney = -1;
+string         g_runtimeTradingStart = "";
+string         g_runtimeTradingEnd = "";
+string         g_runtimeAllowedSymbols = "";
 
 int    SymbolIndex(string sym);
 void   InitPanelBuffers(int count);
@@ -66,6 +71,10 @@ double CalcSpreadPoints(string sym);
 double CalcAtrPct(int handleATR, string sym);
 int    CountPositionsBySymbol(string sym);
 bool   ExecuteTrade(string sym, int handleATR, string signal, double conf, double risk, string dId);
+void   ApplyRuntimeConfig(string response);
+bool   SymbolAllowedByRuntime(string sym);
+string NormalizeTimeWindowValue(string value);
+void   LogTradeFailure(string sym, string side, double lot, double price, double sl, double tp);
 double CurrentDrawdownPct();
 string BuildMood();
 string Shorten(string value, int limit);
@@ -111,6 +120,9 @@ int OnInit()
 
    g_initialBal = AccountInfoDouble(ACCOUNT_BALANCE);
    g_peakBal    = g_initialBal;
+   g_runtimeMaxDrawdownPct = MaxDrawdown;
+   g_runtimeTradingStart = TradingStart;
+   g_runtimeTradingEnd = TradingEnd;
    
    // Screener de 5 segundos
    EventSetTimer(5);
@@ -219,10 +231,16 @@ void OnTimer()
             continue;
          }
 
+         ApplyRuntimeConfig(response);
+
          string userMode = ExtractString(response, "user_mode");
          if(userMode != "") {
             effMode = userMode;
             g_panelMode = userMode;
+         }
+
+         if(!SafetyOK() || !TradingHour()) {
+            effMode = "observer";
          }
          
          string signal     = ExtractString(response, "signal");
@@ -254,6 +272,13 @@ void OnTimer()
             g_lastEvent = sym + ": bloqueado por resposta invalida.";
             continue;
          }
+
+         if(!SymbolAllowedByRuntime(sym)) {
+            UpdateSymbolPanel(i, "BLOQUEADO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Ativo fora da lista permitida");
+            g_lastEvent = sym + ": ativo fora da lista permitida.";
+            continue;
+         }
+
           // Evitar ordens duplicadas no mesmo par
           if(CountPositionsBySymbol(sym) > 0) {
              UpdateSymbolPanel(i, "OPERANDO", signal, confidence, risk, spreadPts, atrPct, regime, rationale, "Ja existe posicao aberta para " + sym);
@@ -288,7 +313,10 @@ bool ExecuteTrade(string sym, int handleATR, string signal, double conf, double 
 {
    double atr[];
    ArraySetAsSeries(atr, true);
-   if(CopyBuffer(handleATR, 0, 0, 2, atr) < 2) return false;
+   if(CopyBuffer(handleATR, 0, 0, 2, atr) < 2) {
+      Print("[Trade] Falha ao copiar ATR para ", sym, ". Ordem abortada.");
+      return false;
+   }
    
    double slDist = atr[1] * ATR_SL_Multi;
    double tpDist = slDist * 2.0;
@@ -301,11 +329,15 @@ bool ExecuteTrade(string sym, int handleATR, string signal, double conf, double 
       double sl  = ask - slDist;
       double tp  = ask + tpDist;
       double lot = CalcLotSymbol(sym, risk, slDist);
-      if(lot>0) {
+      if(lot<=0) {
+         Print("[Trade] BUY bloqueado [", sym, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
+      } else {
          if(Trade.Buy(lot, sym, 0, sl, tp, cmt)) {
              Print("BUY Executado [", sym, "] conf:", conf*100, "%");
              NotifyTradeOpened(dId, sym, "buy", Trade.ResultOrder(), Trade.ResultPrice(), sl, tp, lot);
              executed = true;
+         } else {
+            LogTradeFailure(sym, "BUY", lot, ask, sl, tp);
          }
       }
    }
@@ -315,11 +347,15 @@ bool ExecuteTrade(string sym, int handleATR, string signal, double conf, double 
       double sl  = bid + slDist;
       double tp  = bid - tpDist;
       double lot = CalcLotSymbol(sym, risk, slDist);
-      if(lot>0) {
+      if(lot<=0) {
+         Print("[Trade] SELL bloqueado [", sym, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
+      } else {
          if(Trade.Sell(lot, sym, 0, sl, tp, cmt)) {
             Print("SELL Executado [", sym, "] conf:", conf*100, "%");
             NotifyTradeOpened(dId, sym, "sell", Trade.ResultOrder(), Trade.ResultPrice(), sl, tp, lot);
             executed = true;
+         } else {
+            LogTradeFailure(sym, "SELL", lot, bid, sl, tp);
          }
       }
    }
@@ -435,10 +471,17 @@ double CalcLotSymbol(string sym, double rPct, double slPts)
 bool SafetyOK()
 {
    double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double maxDrawdownPct = g_runtimeMaxDrawdownPct > 0 ? g_runtimeMaxDrawdownPct : MaxDrawdown;
    if(g_peakBal > 0) {
       double dd = (g_peakBal - equity) / g_peakBal * 100;
-      if(dd >= MaxDrawdown) return false;
+      if(dd >= maxDrawdownPct) return false;
    }
+
+   if(g_runtimeDailyLossMoney > 0) {
+      if(g_dailyPnL < -g_runtimeDailyLossMoney) return false;
+      return true;
+   }
+
    double dLimit = g_initialBal * MaxDailyLoss / 100;
    if(g_dailyPnL < -dLimit) return false;
    return true;
@@ -449,7 +492,10 @@ bool TradingHour()
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
    string t = StringFormat("%02d:%02d", dt.hour, dt.min);
-   return (t >= TradingStart && t <= TradingEnd);
+   string start = NormalizeTimeWindowValue(g_runtimeTradingStart);
+   string end = NormalizeTimeWindowValue(g_runtimeTradingEnd);
+   if(start == "" || end == "") return true;
+   return (t >= start && t <= end);
 }
 
 void ResetDaily()
@@ -677,13 +723,14 @@ string SendToCloud(string path, string body)
    StringToCharArray(body, bodyArr, 0, StringLen(body));
 
    int code = WebRequest("POST", url, headers, 8000, bodyArr, resArr, resHeaders);
+   string responseText = CharArrayToString(resArr);
    if(code == 200)
-      return CharArrayToString(resArr);
+      return responseText;
 
    if(code == -1)
-      Print("[Cloud] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+      Print("[Cloud] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas | rota=", path);
    else
-      Print("[Cloud] Erro HTTP ", code, " ao contactar Render");
+      Print("[Cloud] Erro HTTP ", code, " ao contactar Render | rota=", path, " | resposta=", Shorten(responseText, 160));
 
    return "";
 }
@@ -700,7 +747,9 @@ void NotifyTradeOpened(string decisionId, string sym, string side, ulong ticket,
       decisionId, ticket, sym, side,
       price, sl, tp, lot, AccountInfoDouble(ACCOUNT_BALANCE)
    );
-   SendToCloud("/api/mt5/trade-opened", body);
+   string response = SendToCloud("/api/mt5/trade-opened", body);
+   if(response == "")
+      Print("[Cloud] trade-opened sem confirmação | decision_id=", decisionId, " | ticket=", IntegerToString((int)ticket));
 }
 
 void NotifyTradeOutcome(string decisionId, long ticket, string sym, string side, double profit, int points)
@@ -715,7 +764,9 @@ void NotifyTradeOutcome(string decisionId, long ticket, string sym, string side,
       decisionId, ticket, sym, side,
       profit, points, TradingMode, AccountInfoDouble(ACCOUNT_BALANCE)
    );
-   SendToCloud("/api/mt5/trade-outcome", body);
+   string response = SendToCloud("/api/mt5/trade-outcome", body);
+   if(response == "")
+      Print("[Cloud] trade-outcome sem confirmação | decision_id=", decisionId, " | ticket=", IntegerToString((int)ticket));
 }
 
 string CollectPositionsJson()
@@ -772,7 +823,59 @@ void SendHeartbeat()
    if(code == 200) {
       // heart beat ok
       g_lastHeartbeat = TimeCurrent();
+   } else if(code == -1) {
+      Print("[HB] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+   } else {
+      Print("[HB] HTTP ", code, " no heartbeat | resposta=", Shorten(CharArrayToString(resArr), 160));
    }
+}
+
+void ApplyRuntimeConfig(string response)
+{
+   double remoteMaxDrawdown = ExtractDouble(response, "max_drawdown_pct");
+   double remoteDailyLoss = ExtractDouble(response, "daily_loss_limit");
+   string remoteStart = NormalizeTimeWindowValue(ExtractString(response, "trading_start"));
+   string remoteEnd = NormalizeTimeWindowValue(ExtractString(response, "trading_end"));
+   string remoteAllowed = ExtractString(response, "allowed_symbols");
+
+   g_runtimeMaxDrawdownPct = remoteMaxDrawdown > 0 ? remoteMaxDrawdown : MaxDrawdown;
+   g_runtimeDailyLossMoney = remoteDailyLoss > 0 ? remoteDailyLoss : -1;
+   g_runtimeTradingStart = remoteStart != "" ? remoteStart : TradingStart;
+   g_runtimeTradingEnd = remoteEnd != "" ? remoteEnd : TradingEnd;
+
+   if(remoteAllowed != "" && remoteAllowed != "null") {
+      StringReplace(remoteAllowed, " ", "");
+      g_runtimeAllowedSymbols = remoteAllowed;
+   } else {
+      g_runtimeAllowedSymbols = "";
+   }
+}
+
+bool SymbolAllowedByRuntime(string sym)
+{
+   if(g_runtimeAllowedSymbols == "") return true;
+   string haystack = "," + g_runtimeAllowedSymbols + ",";
+   string needle = "," + sym + ",";
+   return StringFind(haystack, needle) >= 0;
+}
+
+string NormalizeTimeWindowValue(string value)
+{
+   if(value == "" || value == "null") return "";
+   if(StringLen(value) >= 5) return StringSubstr(value, 0, 5);
+   return value;
+}
+
+void LogTradeFailure(string sym, string side, double lot, double price, double sl, double tp)
+{
+   Print(
+      "[Trade] ", side, " falhou [", sym, "] lot=", DoubleToString(lot, 2),
+      " | price=", DoubleToString(price, 5),
+      " | sl=", DoubleToString(sl, 5),
+      " | tp=", DoubleToString(tp, 5),
+      " | retcode=", IntegerToString((int)Trade.ResultRetcode()),
+      " | desc=", Trade.ResultRetcodeDescription()
+   );
 }
 
 string ExtractString(string json, string key) {

@@ -130,6 +130,8 @@ create table if not exists robot_instances (
   real_trading_enabled boolean not null default false,
   max_risk_real numeric(7,3) not null default 1.500,
   last_seen_at timestamptz,
+  initial_balance numeric(14,2) not null default 0,
+  current_balance numeric(14,2) not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (organization_id, profile_id, name)

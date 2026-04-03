@@ -168,6 +168,67 @@ def _sync_robot_data(sb, robot_id: str, balance: float) -> None:
         log.warning(f"Failed to sync robot data for {robot_id}: {exc}")
 
 
+def _stringify_time_field(value) -> str | None:
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+def _stringify_allowed_symbols(value) -> str | None:
+    if not value:
+        return None
+    if isinstance(value, (list, tuple, set)):
+        items = [str(item).strip().upper() for item in value if str(item).strip()]
+        return ",".join(items) if items else None
+    raw = str(value).strip()
+    return raw or None
+
+
+def _load_user_parameters(sb, user_id: str) -> dict:
+    preferred_fields = (
+        "per_trade_stop_loss_mode, per_trade_stop_loss_value, per_trade_take_profit_rr,"
+        "mode, daily_loss_limit, max_drawdown_pct, max_trades_per_day,"
+        "trading_start_time, trading_end_time, allowed_symbols"
+    )
+    legacy_fields = (
+        "per_trade_stop_loss_mode, per_trade_stop_loss_value, per_trade_take_profit_rr,"
+        "mode, daily_loss_limit, max_drawdown_pct, max_trades_per_day,"
+        "trading_start, trading_end, allowed_symbols"
+    )
+
+    try:
+        result = (
+            sb.table("user_parameters")
+            .select(preferred_fields)
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+        )
+        return result.data or {}
+    except Exception as exc:
+        log.warning("Failed to fetch user parameters with current schema: %s", exc)
+
+    try:
+        result = (
+            sb.table("user_parameters")
+            .select(legacy_fields)
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+        )
+        data = result.data or {}
+        if data.get("trading_start") is not None and data.get("trading_start_time") is None:
+            data["trading_start_time"] = data.get("trading_start")
+        if data.get("trading_end") is not None and data.get("trading_end_time") is None:
+            data["trading_end_time"] = data.get("trading_end")
+        return data
+    except Exception as exc:
+        log.warning("Failed to fetch user parameters with legacy schema: %s", exc)
+        return {}
+
+
 def _log_cycle_signal(
     sb,
     *,
@@ -303,23 +364,7 @@ async def get_signal(payload: SignalPayload):
         return result
 
     # ── Buscar parâmetros do usuário p/ personalizar o sinal ─────────────
-    user_params = {}
-    try:
-        params_res = (
-            sb.table("user_parameters")
-            .select(
-                "per_trade_stop_loss_mode, per_trade_stop_loss_value, per_trade_take_profit_rr,"
-                "mode, daily_loss_limit, max_drawdown_pct, max_trades_per_day,"
-                "trading_start, trading_end, allowed_symbols"
-            )
-            .eq("user_id", payload.user_id)
-            .single()
-            .execute()
-        )
-        if params_res.data:
-            user_params = params_res.data
-    except Exception as exc:
-        log.warning("Failed to fetch user parameters: %s. Using defaults.", exc)
+    user_params = _load_user_parameters(sb, payload.user_id)
 
     # ── Análise técnica p/ Novo Sinal ─────────────────────────────────────────
     from app.core.signal_engine import analyse, check_smart_exit
@@ -435,6 +480,7 @@ async def get_signal(payload: SignalPayload):
 
     # Extrair os parâmetros do usuário para enviar ao EA
     _max_trades = user_params.get("max_trades_per_day")
+    _allowed_symbols = _stringify_allowed_symbols(user_params.get("allowed_symbols"))
     return SignalResponse(
         signal=result.signal,
         confidence=result.confidence,
@@ -446,9 +492,9 @@ async def get_signal(payload: SignalPayload):
         daily_loss_limit=float(user_params["daily_loss_limit"]) if user_params.get("daily_loss_limit") is not None else None,
         max_drawdown_pct=float(user_params["max_drawdown_pct"]) if user_params.get("max_drawdown_pct") is not None else None,
         max_trades_day=int(_max_trades) if _max_trades is not None else None,
-        trading_start=user_params.get("trading_start") or None,
-        trading_end=user_params.get("trading_end") or None,
-        allowed_symbols=user_params.get("allowed_symbols") or None,
+        trading_start=_stringify_time_field(user_params.get("trading_start_time")),
+        trading_end=_stringify_time_field(user_params.get("trading_end_time")),
+        allowed_symbols=_allowed_symbols,
     )
 
 

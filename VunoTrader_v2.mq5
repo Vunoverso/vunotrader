@@ -38,6 +38,11 @@ datetime       g_lastReset     = 0;
 datetime       g_lastSignal    = 0;
 int            g_signalDelay   = 30; // segundos entre sinais
 bool           g_identityWarned = false;
+double         g_runtimeMaxDrawdownPct = 0;
+double         g_runtimeDailyLossMoney = -1;
+string         g_runtimeTradingStart = "";
+string         g_runtimeTradingEnd = "";
+string         g_runtimeAllowedSymbols = "";
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -54,6 +59,9 @@ int OnInit()
 
    g_initialBal = AccountInfoDouble(ACCOUNT_BALANCE);
    g_peakBal    = g_initialBal;
+   g_runtimeMaxDrawdownPct = MaxDrawdown;
+   g_runtimeTradingStart = TradingStart;
+   g_runtimeTradingEnd = TradingEnd;
 
    EventSetTimer(30); // Heartbeat a cada 30 segundos
 
@@ -143,6 +151,8 @@ void OnTick()
    string response = SendToCloud("/api/mt5/signal", request);
    if(response == "") return;
 
+   ApplyRuntimeConfig(response);
+
    // ── Sincronizar modo com o painel Vuno (user_mode retornado pelo backend) ──
    string cloudMode = ExtractString(response, "user_mode");
    if(cloudMode != "" && cloudMode != "null")
@@ -154,6 +164,9 @@ void OnTick()
          lastModeLog = TimeCurrent();
       }
    }
+
+   if(!SafetyOK() || !TradingHour())
+      effMode = "observer";
 
    // Se o brain enviou um comando de FECHAMENTO (Smart Exit)
    string signal = ExtractString(response, "signal");
@@ -183,6 +196,12 @@ void OnTick()
 
    if(signal == "HOLD" || risk <= 0) return;
 
+   if(!SymbolAllowedByRuntime(_Symbol))
+   {
+      Print("[Vuno] Ativo fora da lista permitida no painel: ", _Symbol);
+      return;
+   }
+
    // ── TRAVA DIRECIONAL (Anti-Hedge) ──
    // Se já houver posição, não abre outra (mesmo que seja na mesma direção, para evitar overtrading)
    if(CountPositions() > 0)
@@ -208,7 +227,11 @@ void OnTick()
    //--- Calcular SL/TP com ATR
    double atr[];
    ArraySetAsSeries(atr, true);
-   if(CopyBuffer(hATR, 0, 0, 2, atr) < 2) return;
+   if(CopyBuffer(hATR, 0, 0, 2, atr) < 2)
+   {
+      Print("[Trade] Falha ao copiar ATR para ", _Symbol, ". Ordem abortada.");
+      return;
+   }
 
    double slDist = atr[1] * ATR_SL_Multi;
    double tpDist = slDist * 2.0; // RR 1:2 default (agora customizável via Cloud)
@@ -224,7 +247,11 @@ void OnTick()
       double tp  = ask + tpDist;
       double lot = CalcLot(risk, slDist);
 
-      if(lot > 0)
+      if(lot <= 0)
+      {
+         Print("[Trade] BUY bloqueado [", _Symbol, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
+      }
+      else
       {
          if(Trade.Buy(lot, _Symbol, 0, sl, tp, tradeComment))
          {
@@ -243,6 +270,10 @@ void OnTick()
             Print("BUY executado | Conf: ", DoubleToString(confidence * 100, 1),
                   "% | Ticket: ", tkt);
          }
+         else
+         {
+            LogTradeFailure("BUY", lot, ask, sl, tp);
+         }
       }
    }
    else if(signal == "SELL")
@@ -252,7 +283,11 @@ void OnTick()
       double tp  = bid - tpDist;
       double lot = CalcLot(risk, slDist);
 
-      if(lot > 0)
+      if(lot <= 0)
+      {
+         Print("[Trade] SELL bloqueado [", _Symbol, "] lote calculado zero | risk=", DoubleToString(risk, 3), " | slDist=", DoubleToString(slDist, 5));
+      }
+      else
       {
          if(Trade.Sell(lot, _Symbol, 0, sl, tp, tradeComment))
          {
@@ -270,6 +305,10 @@ void OnTick()
 
             Print("SELL executado | Conf: ", DoubleToString(confidence * 100, 1),
                   "% | Ticket: ", tkt);
+         }
+         else
+         {
+            LogTradeFailure("SELL", lot, bid, sl, tp);
          }
       }
    }
@@ -467,15 +506,67 @@ string SendToCloud(string path, string body)
    StringToCharArray(body, bodyArr, 0, StringLen(body));
 
    int code = WebRequest("POST", url, headers, 8000, bodyArr, resArr, resHeaders);
+   string responseText = CharArrayToString(resArr);
    if(code == 200)
-      return CharArrayToString(resArr);
+      return responseText;
 
    if(code == -1)
-      Print("[Cloud] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
+      Print("[Cloud] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas | rota=", path);
    else
-      Print("[Cloud] Erro HTTP ", code, " ao contactar Render");
+      Print("[Cloud] Erro HTTP ", code, " ao contactar Render | rota=", path, " | resposta=", responseText);
 
    return "";
+}
+
+void ApplyRuntimeConfig(string response)
+{
+   double remoteMaxDrawdown = ExtractDouble(response, "max_drawdown_pct");
+   double remoteDailyLoss = ExtractDouble(response, "daily_loss_limit");
+   string remoteStart = NormalizeTimeWindowValue(ExtractString(response, "trading_start"));
+   string remoteEnd = NormalizeTimeWindowValue(ExtractString(response, "trading_end"));
+   string remoteAllowed = ExtractString(response, "allowed_symbols");
+
+   g_runtimeMaxDrawdownPct = remoteMaxDrawdown > 0 ? remoteMaxDrawdown : MaxDrawdown;
+   g_runtimeDailyLossMoney = remoteDailyLoss > 0 ? remoteDailyLoss : -1;
+   g_runtimeTradingStart = remoteStart != "" ? remoteStart : TradingStart;
+   g_runtimeTradingEnd = remoteEnd != "" ? remoteEnd : TradingEnd;
+
+   if(remoteAllowed != "" && remoteAllowed != "null")
+   {
+      StringReplace(remoteAllowed, " ", "");
+      g_runtimeAllowedSymbols = remoteAllowed;
+   }
+   else
+   {
+      g_runtimeAllowedSymbols = "";
+   }
+}
+
+bool SymbolAllowedByRuntime(string sym)
+{
+   if(g_runtimeAllowedSymbols == "") return true;
+   string haystack = "," + g_runtimeAllowedSymbols + ",";
+   string needle = "," + sym + ",";
+   return StringFind(haystack, needle) >= 0;
+}
+
+string NormalizeTimeWindowValue(string value)
+{
+   if(value == "" || value == "null") return "";
+   if(StringLen(value) >= 5) return StringSubstr(value, 0, 5);
+   return value;
+}
+
+void LogTradeFailure(string side, double lot, double price, double sl, double tp)
+{
+   Print(
+      "[Trade] ", side, " falhou [", _Symbol, "] lot=", DoubleToString(lot, 2),
+      " | price=", DoubleToString(price, 5),
+      " | sl=", DoubleToString(sl, 5),
+      " | tp=", DoubleToString(tp, 5),
+      " | retcode=", IntegerToString((int)Trade.ResultRetcode()),
+      " | desc=", Trade.ResultRetcodeDescription()
+   );
 }
 
 //+------------------------------------------------------------------+
@@ -506,15 +597,26 @@ double CalcLot(double riskPct, double slPoints)
 bool SafetyOK()
 {
    double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+   double maxDrawdownPct = g_runtimeMaxDrawdownPct > 0 ? g_runtimeMaxDrawdownPct : MaxDrawdown;
 
    if(g_peakBal > 0)
    {
       double dd = (g_peakBal - equity) / g_peakBal * 100;
-      if(dd >= MaxDrawdown)
+      if(dd >= maxDrawdownPct)
       {
          Print("STOP: Drawdown ", DoubleToString(dd, 1), "%");
          return false;
       }
+   }
+
+   if(g_runtimeDailyLossMoney > 0)
+   {
+      if(g_dailyPnL < -g_runtimeDailyLossMoney)
+      {
+         Print("STOP: Perda diária ", DoubleToString(g_dailyPnL, 2), " | limite remoto: ", DoubleToString(g_runtimeDailyLossMoney, 2));
+         return false;
+      }
+      return true;
    }
 
    double dailyLimit = g_initialBal * MaxDailyLoss / 100;
@@ -532,7 +634,10 @@ bool TradingHour()
    MqlDateTime dt;
    TimeToStruct(TimeCurrent(), dt);
    string t = StringFormat("%02d:%02d", dt.hour, dt.min);
-   return (t >= TradingStart && t <= TradingEnd);
+   string start = NormalizeTimeWindowValue(g_runtimeTradingStart);
+   string end = NormalizeTimeWindowValue(g_runtimeTradingEnd);
+   if(start == "" || end == "") return true;
+   return (t >= start && t <= end);
 }
 
 void ResetDaily()
@@ -694,7 +799,7 @@ void SendHeartbeat()
       if(r != "") Print("[HB] Fallback Python local OK");
       else Print("[HB] ERRO: adicione '", url, "' em Ferramentas > Opções > Expert Advisors > URLs permitidas");
    } else {
-      Print("[HB] Erro HTTP ", code, " ao contactar Render");
+      Print("[HB] Erro HTTP ", code, " ao contactar Render | resposta=", CharArrayToString(resArr));
    }
 }
 
@@ -737,21 +842,5 @@ string CollectPositionsJson()
    }
    json += "]";
    return json;
-}
-
-//+------------------------------------------------------------------+
-// Extrai o decision_id (UUID) do comentário da posição/ordem
-//+------------------------------------------------------------------+
-string ExtractDecisionIdFromComment(string comment)
-{
-   // Esperado: "VUNO|uuid|conf%"
-   int firstPipe = StringFind(comment, "|");
-   if(firstPipe < 0) return "";
-   
-   int secondPipe = StringFind(comment, "|", firstPipe + 1);
-   if(secondPipe < 0) return "";
-   
-   string uuid = StringSubstr(comment, firstPipe + 1, secondPipe - firstPipe - 1);
-   return uuid;
 }
 
