@@ -17,3 +17,15 @@ web/.env.local
 .playwright-mcp/
 .tmp/
 test_git_visibility.txt
+
+# Generated test artifacts
+brain_model_*.pkl
+phase1_*.txt
+phase2_*.txt
+py_ok.txt
+testout.txt
+readmeeooutros/brain_model_*.pkl
+readmeeooutros/phase1_*.txt
+readmeeooutros/phase2_*.txt
+readmeeooutros/py_ok.txt
+readmeeooutros/testout.txt

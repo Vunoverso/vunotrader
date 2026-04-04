@@ -17,3 +17,13 @@ agent-local/runtime/memory.db
 agent-local/build/
 agent-local/dist/
 agent-local/*.spec
+**/agent-local/runtime/
+**/agent-local/build/
+**/agent-local/dist/
+backend/runtime-operational-test.txt
+pytest-lote-ui-runtime.txt
+runtime-e2e-last.json
+projeto/CURSO_PRICE_ACTION.pdf
+projeto/Ebook-Price-Action.pdf
+projeto/VPE_Especificacao_Completa_v2 (2).docx
+projeto/price_action_completo_vpe (1).pdf
