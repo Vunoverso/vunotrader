@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     supabase_url: str = Field(alias="SUPABASE_URL")
     supabase_anon_key: str = Field(alias="SUPABASE_ANON_KEY")
     supabase_service_role_key: str = Field(alias="SUPABASE_SERVICE_ROLE_KEY")
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    visual_storage_bucket: str = Field(default="mt5-visual-captures", alias="MT5_VISUAL_BUCKET")
+    visual_shadow_model: str = Field(default="gpt-4o-mini", alias="VISUAL_SHADOW_MODEL")
+    visual_shadow_kill_switch: bool = Field(default=False, alias="VISUAL_SHADOW_KILL_SWITCH")
+    computer_use_kill_switch: bool = Field(default=True, alias="COMPUTER_USE_KILL_SWITCH")
 
     @property
     def allowed_origins(self) -> list[str]:

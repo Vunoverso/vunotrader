@@ -27,6 +27,22 @@ type AuditTrade = {
   trade_outcomes: AuditOutcome[];
 };
 
+export type AuditVisualContext = {
+  cycle_id: string;
+  chart_image_storage_path: string | null;
+  chart_image_url?: string | null;
+  visual_shadow_status: string;
+  visual_alignment: string;
+  visual_conflict_reason: string | null;
+  visual_context: {
+    summary?: string;
+    signal_bias?: string;
+    quality?: { score?: number };
+    rationale?: string;
+  } | null;
+  created_at: string;
+};
+
 export type AuditRow = {
   id: string;
   symbol: string;
@@ -47,6 +63,7 @@ export type AuditRow = {
   duration_seconds: number | null;
   post_analysis: string | null;
   executed_trades: AuditTrade[];
+  trade_visual_contexts: AuditVisualContext[];
 };
 
 type ResultFilter = "all" | "win" | "loss" | "breakeven" | "pending" | "alta_conv_loss";
@@ -145,6 +162,32 @@ function getOutcome(row: AuditRow) {
 
 function getTrade(row: AuditRow) {
   return row.executed_trades?.[0];
+}
+
+function getVisualContext(row: AuditRow) {
+  return row.trade_visual_contexts?.[0] ?? null;
+}
+
+function visualBadge(visual: AuditVisualContext | null) {
+  if (!visual) {
+    return { label: "Sem shadow", cls: "bg-slate-700 text-slate-400" };
+  }
+  if (visual.visual_shadow_status === "skipped_non_chart_symbol") {
+    return { label: "Fora do grafico", cls: "bg-slate-700 text-slate-300" };
+  }
+  if (visual.visual_alignment === "aligned") {
+    return { label: "Shadow alinhado", cls: "bg-emerald-500/20 text-emerald-300" };
+  }
+  if (visual.visual_alignment === "divergent_high") {
+    return { label: "Divergencia alta", cls: "bg-rose-500/20 text-rose-300" };
+  }
+  if (visual.visual_alignment === "divergent_low") {
+    return { label: "Divergencia baixa", cls: "bg-amber-500/20 text-amber-300" };
+  }
+  if (visual.visual_shadow_status === "error") {
+    return { label: "Shadow com erro", cls: "bg-rose-500/20 text-rose-300" };
+  }
+  return { label: "Shadow pendente", cls: "bg-sky-500/20 text-sky-300" };
 }
 
 function getSortablePnl(row: AuditRow) {
@@ -293,6 +336,8 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
       "status_trade",
       "resultado",
       "pnl_money",
+      "shadow_status",
+      "shadow_alignment",
       "motivo_entrada",
       "motivo_saida",
       "pos_analise",
@@ -301,6 +346,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
     const lines = sorted.map((row) => {
       const trade = getTrade(row);
       const outcome = getOutcome(row);
+      const visual = getVisualContext(row);
       return [
         csvEscape(row.created_at),
         csvEscape(row.symbol),
@@ -312,6 +358,8 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
         csvEscape(trade?.status ?? ""),
         csvEscape(outcome?.result ?? ""),
         csvEscape(outcome?.pnl_money),
+        csvEscape(visual?.visual_shadow_status ?? ""),
+        csvEscape(visual?.visual_alignment ?? ""),
         csvEscape(row.rationale ?? ""),
         csvEscape(outcome?.win_loss_reason ?? ""),
         csvEscape(outcome?.post_analysis ?? ""),
@@ -332,6 +380,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
     const data = sorted.map((row) => {
       const trade = getTrade(row);
       const outcome = getOutcome(row);
+      const visual = getVisualContext(row);
 
       return {
         data_decisao: row.created_at,
@@ -344,6 +393,8 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
         status_trade: trade?.status ?? null,
         resultado: outcome?.result ?? null,
         pnl_money: outcome?.pnl_money ?? null,
+        shadow_status: visual?.visual_shadow_status ?? null,
+        shadow_alignment: visual?.visual_alignment ?? null,
         motivo_entrada: row.rationale ?? null,
         motivo_saida: outcome?.win_loss_reason ?? null,
         pos_analise: outcome?.post_analysis ?? null,
@@ -589,6 +640,8 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
           {paginatedRows.map((row) => {
             const trade = getTrade(row);
             const outcome = getOutcome(row);
+            const visual = getVisualContext(row);
+            const visualMeta = visualBadge(visual);
             return (
               <div key={row.id} className={`rounded-xl border transition-all ${expanded === row.id ? "bg-slate-800/20 border-slate-700 shadow-inner" : "bg-slate-900 border-slate-800 hover:border-slate-700"}`}>
                 <button
@@ -620,6 +673,9 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                           {outcome?.result || "PENDENTE"}
                         </span>
                       )}
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${visualMeta.cls}`}>
+                        {visualMeta.label}
+                      </span>
 
                       {(() => {
                         const pnl = getOutcome(row)?.pnl_money;
@@ -677,6 +733,7 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
 
                 {expanded === row.id && (
                   <div className="border-t border-slate-800 px-4 py-4">
+                    <div className="grid gap-4 lg:grid-cols-3">
                       <div className="space-y-1 text-slate-400">
                         <p><span className="text-slate-500">Preço Entrada:</span> {row.entry_price ? row.entry_price.toFixed(5) : "—"}</p>
                         <p><span className="text-slate-500">Stop Loss:</span> <span className="text-rose-400">{row.stop_loss ? row.stop_loss.toFixed(5) : "—"}</span></p>
@@ -715,6 +772,68 @@ export default function AuditoriaTable({ rows, currentDateIso }: { rows: AuditRo
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+                      <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/70">
+                        {visual?.chart_image_url ? (
+                          <a href={visual.chart_image_url} target="_blank" rel="noreferrer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={visual.chart_image_url} alt={`Screenshot ${row.symbol}`} className="h-52 w-full object-cover" />
+                          </a>
+                        ) : (
+                          <div className="flex h-52 items-center justify-center px-4 text-center text-xs uppercase tracking-widest text-slate-500">
+                            Sem screenshot correlacionado
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 text-sm text-slate-300">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${visualMeta.cls}`}>
+                            {visualMeta.label}
+                          </span>
+                          {visual?.cycle_id && (
+                            <span className="rounded-full border border-slate-700 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                              {visual.cycle_id}
+                            </span>
+                          )}
+                          {visual?.visual_context?.signal_bias && (
+                            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-sky-300">
+                              Viés visual: {visual.visual_context.signal_bias}
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Resumo visual</p>
+                          <p className="mt-1 leading-relaxed text-slate-200">
+                            {visual?.visual_context?.summary ?? "Shadow visual nao disponivel para este ciclo."}
+                          </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status do shadow</p>
+                            <p className="mt-1 text-slate-300">{visual?.visual_shadow_status ?? "not_applicable"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Qualidade</p>
+                            <p className="mt-1 text-slate-300">
+                              {visual?.visual_context?.quality?.score != null
+                                ? `${Math.round(visual.visual_context.quality.score * 100)}%`
+                                : "—"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {visual?.visual_conflict_reason && (
+                          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs leading-relaxed text-amber-200">
+                            {visual.visual_conflict_reason}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

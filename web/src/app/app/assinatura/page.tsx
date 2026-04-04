@@ -38,7 +38,7 @@ export default async function AssinaturaPage() {
         )}
         {!access.hasActivePlan && (
           <p className="mt-1 text-slate-400">
-            Operações, Parâmetros, Auditoria e Estudos permanecem bloqueados até ativação do plano.
+            Operações, Auditoria e Estudos permanecem bloqueados até ativação do plano.
           </p>
         )}
       </div>

@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { PremiumMetricCard } from "@/components/app/premium-metric-card";
+
+type LiveVisual = {
+  cycle_id: string;
+  visual_shadow_status: string;
+  visual_alignment: string;
+  visual_conflict_reason: string | null;
+  summary: string | null;
+  signal_bias: string | null;
+  chart_image_url: string | null;
+};
 
 type LiveTrade = {
   id: string;
@@ -16,9 +25,44 @@ type LiveTrade = {
   timeframe: string;
   robot_instance_id: string;
   robot_instances?: {
-      name: string;
-  }
+    name: string;
+  };
+  visual: LiveVisual | null;
 };
+
+type LiveTradesApiResponse = {
+  ok: boolean;
+  error?: string;
+  trades?: LiveTrade[];
+};
+
+function visualBadge(visual: LiveVisual | null) {
+  if (!visual) {
+    return { label: "Sem shadow", cls: "border-slate-700 bg-slate-900 text-slate-500" };
+  }
+
+  if (visual.visual_shadow_status === "skipped_non_chart_symbol") {
+    return { label: "Fora do grafico", cls: "border-slate-700 bg-slate-900 text-slate-300" };
+  }
+
+  if (visual.visual_alignment === "aligned") {
+    return { label: "Shadow alinhado", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" };
+  }
+
+  if (visual.visual_alignment === "divergent_high") {
+    return { label: "Divergencia alta", cls: "border-rose-500/30 bg-rose-500/10 text-rose-300" };
+  }
+
+  if (visual.visual_alignment === "divergent_low") {
+    return { label: "Divergencia baixa", cls: "border-amber-500/30 bg-amber-500/10 text-amber-300" };
+  }
+
+  if (visual.visual_shadow_status === "error") {
+    return { label: "Shadow com erro", cls: "border-rose-500/30 bg-rose-500/10 text-rose-300" };
+  }
+
+  return { label: "Shadow pendente", cls: "border-sky-500/30 bg-sky-500/10 text-sky-300" };
+}
 
 export default function AoVivoPage() {
   const [trades, setTrades] = useState<LiveTrade[]>([]);
@@ -26,19 +70,16 @@ export default function AoVivoPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
 
-  const supabase = createClient();
-
   async function fetchLiveTrades() {
-    const { data, error } = await supabase
-      .from("trade_decisions")
-      .select("*, robot_instances(name)")
-      .eq("outcome_status", "executing")
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
-      setTrades(data as any);
+    try {
+      const response = await fetch("/api/mt5/live-trades", { cache: "no-store" });
+      const data = (await response.json()) as LiveTradesApiResponse;
+      if (response.ok && data.ok) {
+        setTrades(data.trades ?? []);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -53,6 +94,7 @@ export default function AoVivoPage() {
   }, []);
 
   const totalPositions = trades.length;
+  const shadowCount = trades.filter((trade) => trade.visual !== null).length;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -90,10 +132,10 @@ export default function AoVivoPage() {
           accent="slate"
         />
         <PremiumMetricCard 
-          label="Status do Motor"
-          value="Sincronizado"
-          subtitle="Latência < 200ms"
-          accent="emerald"
+          label="Shadow Visual"
+          value={`${shadowCount}/${totalPositions}`}
+          subtitle="Ciclos com screenshot"
+          accent={shadowCount > 0 ? "sky" : "slate"}
         />
       </div>
 
@@ -120,6 +162,8 @@ export default function AoVivoPage() {
                   <th className="px-6 py-4">Início</th>
                   <th className="px-6 py-4">Ativo</th>
                   <th className="px-6 py-4">Tipo</th>
+                  <th className="px-6 py-4">Shadow</th>
+                  <th className="px-6 py-4">Screenshot</th>
                   <th className="px-6 py-4 text-right">Entrada</th>
                   <th className="px-6 py-4 text-right">SL / TP</th>
                   <th className="px-6 py-4 text-right">Duração</th>
@@ -130,6 +174,7 @@ export default function AoVivoPage() {
                   const duration = Math.floor((new Date().getTime() - new Date(trade.created_at).getTime()) / 1000);
                   const mins = Math.floor(duration / 60);
                   const secs = duration % 60;
+                  const badge = visualBadge(trade.visual);
                   
                   return (
                     <tr key={trade.id} className="hover:bg-white/5 transition-colors group">
@@ -138,7 +183,10 @@ export default function AoVivoPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-white font-black">{trade.symbol}</span>
-                        <p className="text-[9px] text-slate-500">{trade.timeframe}</p>
+                        <p className="text-[9px] text-slate-500">
+                          {trade.timeframe}
+                          {trade.robot_instances?.name ? ` · ${trade.robot_instances.name}` : ""}
+                        </p>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
@@ -146,6 +194,28 @@ export default function AoVivoPage() {
                         }`}>
                           {trade.side}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${badge.cls}`}>
+                          {badge.label}
+                        </div>
+                        {trade.visual?.summary && (
+                          <p className="mt-1 max-w-[180px] text-[10px] leading-relaxed text-slate-500">
+                            {trade.visual.summary}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {trade.visual?.chart_image_url ? (
+                          <a href={trade.visual.chart_image_url} target="_blank" rel="noreferrer" className="block w-28 overflow-hidden rounded-lg border border-slate-700 bg-slate-900/80">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={trade.visual.chart_image_url} alt={`Screenshot ${trade.symbol}`} className="h-16 w-full object-cover" />
+                          </a>
+                        ) : (
+                          <div className="flex h-16 w-28 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-950/50 text-[10px] uppercase tracking-widest text-slate-500">
+                            Sem imagem
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right text-slate-300 font-bold tabular-nums">
                         {trade.entry_price.toFixed(5)}

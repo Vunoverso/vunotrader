@@ -18,6 +18,13 @@ router = APIRouter()
 log = logging.getLogger("mt5")
 
 
+def _select_first(builder):
+    result = builder.limit(1).execute()
+    if isinstance(result.data, list):
+        result.data = result.data[0] if result.data else None
+    return result
+
+
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class OpenPosition(BaseModel):
@@ -63,6 +70,7 @@ class SignalPayload(BaseModel):
     open_sl: float | None = None
     open_tp: float | None = None
     balance: float = 0.0
+    cycle_id: str | None = None
 
 
 class SignalResponse(BaseModel):
@@ -70,8 +78,14 @@ class SignalResponse(BaseModel):
     confidence: float
     risk: float
     decision_id: str | None = None
+    cycle_id: str | None = None
     regime: str
     rationale: str
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    visual_shadow_status: str | None = None
+    visual_alignment: str | None = None
+    visual_conflict_reason: str | None = None
     # Parâmetros do usuário retornados para o EA aplicar
     user_mode: str | None = None          # "observer" | "demo" | "real"
     daily_loss_limit: float | None = None # R$ limite de perda diária
@@ -177,20 +191,20 @@ def _heal_open_trade_from_heartbeat(sb, organization_id: str, robot_id: str, pos
         broker_ticket = str(pos.ticket) if pos.ticket else None
 
         existing = (
-            sb.table("executed_trades")
-            .select("id")
-            .eq("trade_decision_id", pos.decision_id)
-            .maybeSingle()
-            .execute()
+            _select_first(
+                sb.table("executed_trades")
+                .select("id")
+                .eq("trade_decision_id", pos.decision_id)
+            )
         )
 
         if not existing.data and broker_ticket:
             existing = (
-                sb.table("executed_trades")
-                .select("id")
-                .eq("broker_ticket", broker_ticket)
-                .maybeSingle()
-                .execute()
+                _select_first(
+                    sb.table("executed_trades")
+                    .select("id")
+                    .eq("broker_ticket", broker_ticket)
+                )
             )
 
         payload = {
@@ -293,7 +307,7 @@ def _log_cycle_signal(
     decision_status: str,
 ) -> None:
     try:
-        sb.table("scanner_cycle_logs").insert({
+        sb.table("scanner_cycle_logs").upsert({
             "cycle_id": cycle_id,
             "cycle_ts": datetime.now(timezone.utc).isoformat(),
             "mode": payload.mode,
@@ -320,7 +334,7 @@ def _log_cycle_signal(
             "feature_hash": hashlib.sha256(
                 f"{payload.symbol}|{payload.timeframe}|{getattr(result, 'score', 0.0)}|{getattr(result, 'atr_pct', 0.0)}|{getattr(result, 'volume_ratio', 0.0)}|{getattr(result, 'rsi', 0.0)}|{getattr(result, 'momentum_20', 0.0)}".encode("utf-8")
             ).hexdigest(),
-        }).execute()
+        }, on_conflict="cycle_id,symbol,timeframe").execute()
     except Exception as exc:
         log.warning("Cycle log insert failed: %s", exc)
 
@@ -351,6 +365,13 @@ def _mark_cycle_closed(sb, decision_id: str, profit: float, points: int, result_
         }).eq("decision_id", decision_id).execute()
     except Exception as exc:
         log.warning("Cycle log close update failed: %s", exc)
+
+
+def _resolve_cycle_id(payload: SignalPayload) -> str:
+    explicit_cycle_id = str(payload.cycle_id or "").strip()
+    if explicit_cycle_id:
+        return explicit_cycle_id
+    return f"{payload.symbol}-{int(time.time() * 1000)}"
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -385,6 +406,7 @@ async def get_signal(payload: SignalPayload):
     _validate_robot(payload.robot_id, payload.robot_token, payload.organization_id)
     sb = get_service_supabase()
     _sync_robot_data(sb, payload.robot_id, payload.balance)
+    cycle_id = _resolve_cycle_id(payload)
 
     if len(payload.candles) < 60:
         result = SignalResponse(
@@ -392,12 +414,13 @@ async def get_signal(payload: SignalPayload):
             confidence=0.0,
             risk=0.0,
             decision_id=None,
+            cycle_id=cycle_id,
             regime="lateral",
             rationale="insufficient_candles",
         )
         try:
-            sb.table("scanner_cycle_logs").insert({
-                "cycle_id": f"{payload.symbol}-{int(time.time() * 1000)}",
+            sb.table("scanner_cycle_logs").upsert({
+                "cycle_id": cycle_id,
                 "cycle_ts": datetime.now(timezone.utc).isoformat(),
                 "mode": payload.mode,
                 "symbol": payload.symbol,
@@ -413,7 +436,7 @@ async def get_signal(payload: SignalPayload):
                 "user_id": payload.user_id,
                 "organization_id": payload.organization_id,
                 "robot_instance_id": payload.robot_id,
-            }).execute()
+            }, on_conflict="cycle_id,symbol,timeframe").execute()
         except Exception as exc:
             log.warning("Cycle log insert failed for insufficient candles: %s", exc)
         return result
@@ -447,13 +470,14 @@ async def get_signal(payload: SignalPayload):
                 confidence=1.0,
                 risk=0.0,
                 decision_id=None,
+                cycle_id=cycle_id,
                 regime="lateral",
                 rationale=f"Smart Exit: {exit_reason}",
             )
 
     # ── Salvar TODOS os sinais no Supabase ──
     decision_id: str | None = None
-    trade_id = f"{payload.symbol}-{int(time.time() * 1000)}"
+    trade_id = cycle_id
     try:
         resp = sb.table("trade_decisions").insert({
             "trade_id":        trade_id,
@@ -474,6 +498,18 @@ async def get_signal(payload: SignalPayload):
         decision_id = resp.data[0]["id"] if resp.data else None
     except Exception as exc:
         log.error("Database insert failed: %s", exc)
+        try:
+            existing = (
+                _select_first(
+                    sb.table("trade_decisions")
+                    .select("id")
+                    .eq("trade_id", trade_id)
+                )
+            )
+            if existing.data:
+                decision_id = existing.data["id"]
+        except Exception as lookup_exc:
+            log.warning("Failed to resolve existing trade_decision for %s: %s", trade_id, lookup_exc)
 
     cycle_status = "picked" if result.signal in {"BUY", "SELL"} else "analyzed"
     _log_cycle_signal(
@@ -541,8 +577,11 @@ async def get_signal(payload: SignalPayload):
         confidence=result.confidence,
         risk=result.risk_pct,
         decision_id=decision_id,
+        cycle_id=trade_id,
         regime=result.regime,
         rationale=result.rationale,
+        stop_loss=result.sl if result.sl > 0 else None,
+        take_profit=result.tp if result.tp > 0 else None,
         user_mode=user_params.get("mode") or None,
         daily_loss_limit=float(user_params["daily_loss_limit"]) if user_params.get("daily_loss_limit") is not None else None,
         max_drawdown_pct=float(user_params["max_drawdown_pct"]) if user_params.get("max_drawdown_pct") is not None else None,
@@ -566,7 +605,9 @@ async def trade_outcome(payload: TradeOutcomePayload):
     if not decision_id:
         try:
             # 1. Tenta pelo ticket já registrado em executed_trades
-            find_exec = sb.table("executed_trades").select("trade_decision_id").eq("broker_ticket", payload.ticket).maybeSingle().execute()
+            find_exec = _select_first(
+                sb.table("executed_trades").select("trade_decision_id").eq("broker_ticket", payload.ticket)
+            )
             if find_exec.data:
                 decision_id = find_exec.data["trade_decision_id"]
             else:

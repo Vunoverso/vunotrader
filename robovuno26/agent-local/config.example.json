@@ -1,0 +1,19 @@
+{
+  "backend_url": "http://127.0.0.1:8000",
+  "robot_token": "COLE_AQUI_O_TOKEN_GERADO_NO_SITE",
+  "bridge_name": "VunoBridge-1",
+  "broker_profile": "CUSTOM",
+  "primary_symbol": "EURUSD.a",
+  "chart_timeframe": "M5",
+  "selected_symbols": [],
+  "poll_interval_seconds": 2,
+  "heartbeat_interval_seconds": 15,
+  "runtime_config_interval_seconds": 30,
+  "max_snapshot_age_seconds": 45,
+  "request_timeout_seconds": 12,
+  "snapshot_dir": "runtime/bridge/in",
+  "command_dir": "runtime/bridge/out",
+  "feedback_dir": "runtime/bridge/feedback",
+  "metadata_dir": "runtime/bridge/metadata",
+  "archive_dir": "runtime/archive"
+}

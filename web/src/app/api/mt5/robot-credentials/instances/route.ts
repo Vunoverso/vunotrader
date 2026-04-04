@@ -56,7 +56,7 @@ export async function GET(): Promise<NextResponse> {
 
   const { data, error } = await supabase
     .from("robot_instances")
-    .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, created_at")
+    .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, created_at, robot_product_type, visual_shadow_enabled, computer_use_enabled, human_approval_required")
     .eq("organization_id", organizationId)
     .eq("profile_id", profileId)
     .order("created_at", { ascending: false })
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     .eq("id", robotId)
     .eq("organization_id", organizationId)
     .eq("profile_id", profileId)
-    .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, created_at")
+    .select("id, name, status, allowed_modes, real_trading_enabled, last_seen_at, created_at, robot_product_type, visual_shadow_enabled, computer_use_enabled, human_approval_required")
     .single();
 
   if (error || !data) {

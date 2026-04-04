@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "robo_trader"
+version = "0.1.0"
+description = "Sistema de automação de trading"
+authors = ["Seu Nome <seu.email@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "*"
+numpy = "*"
+requests = "*"
+matplotlib = "*"
+websocket-client = "*"
+python-dotenv = "*"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

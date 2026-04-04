@@ -81,10 +81,10 @@ export default function Mt5ConnectionChecker({ userId }: { userId: string }) {
             📡
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-200">Validar conexão com o MT5</h3>
+            <h3 className="text-sm font-semibold text-slate-200">Validar conexão do Robo Integrado</h3>
             <p className="mt-1 text-xs text-slate-400">
-              Clique em &quot;Iniciar verificação&quot; após configurar o EA no MT5.
-              O painel detectará automaticamente quando o robô conectar.
+              Clique em &quot;Iniciar verificação&quot; depois de iniciar o pacote da instância e anexar o conector no MT5.
+              O painel detecta automaticamente quando a bridge começar a enviar heartbeat.
             </p>
             <button
               type="button"
@@ -132,10 +132,10 @@ export default function Mt5ConnectionChecker({ userId }: { userId: string }) {
           </div>
         </div>
         <ul className="space-y-1.5 text-xs text-slate-300 pl-2">
-          <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O campo <strong>RobotToken</strong> no EA está preenchido com seu token do painel?</li>
+          <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O campo <strong>InpBridgeRoot</strong> no EA está igual ao bridge informado no pacote?</li>
           <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O AutoTrading está habilitado no MT5?</li>
           <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O EA aparece no gráfico (não foi removido)?</li>
-          <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O brain Python está rodando na sua máquina ou servidor?</li>
+          <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">·</span> O agent-local da instância foi iniciado por iniciar-vuno-robo.cmd na máquina ou VPS?</li>
         </ul>
         <button
           type="button"
@@ -159,7 +159,7 @@ export default function Mt5ConnectionChecker({ userId }: { userId: string }) {
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-slate-200">Aguardando conexão do MT5…</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Verificando a cada 5 segundos. Certifique-se de que o EA está configurado no gráfico com AutoTrading ativo.
+            Verificando a cada 5 segundos. Confirme o InpBridgeRoot do pacote no gráfico e mantenha o AutoTrading ativo.
           </p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
             <div

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vuno Trader | SaaS MT5</title>
+  <style>
+    :root {
+      --sand: #f7efe2;
+      --paper: rgba(255, 250, 243, 0.84);
+      --ink: #132327;
+      --ink-soft: #54696d;
+      --teal: #0d8b86;
+      --teal-deep: #0a585d;
+      --amber: #d98c2b;
+      --line: rgba(19, 35, 39, 0.12);
+      --line-strong: rgba(19, 35, 39, 0.2);
+      --ok: #0f8a55;
+      --err: #a53a2d;
+      --shadow: rgba(24, 31, 33, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Segoe UI Variable Display", "Bahnschrift", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(13, 139, 134, 0.16), transparent 24%),
+        radial-gradient(circle at 88% 12%, rgba(217, 140, 43, 0.18), transparent 22%),
+        linear-gradient(180deg, #fbf5ea 0%, #f2e5d2 44%, #efe7da 100%);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(1240px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 18px 0 42px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 12px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: rgba(255, 248, 238, 0.78);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 40px var(--shadow);
+    }
+
+    .brand {
+      display: grid;
+      gap: 3px;
+    }
+
+    .brand strong {
+      font-size: 18px;
+      letter-spacing: 0.04em;
+    }
+
+    .brand span {
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .nav a,
+    .nav button,
+    .cta,
+    button {
+      font: inherit;
+    }
+
+    .nav a,
+    .cta,
+    button {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .nav a {
+      color: var(--ink-soft);
+      background: rgba(255, 255, 255, 0.36);
+    }
+
+    .nav a:hover,
+    .nav a.is-active {
+      color: var(--ink);
+      border-color: var(--line-strong);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .cta,
+    button {
+      color: #fff8ef;
+      background: linear-gradient(135deg, var(--teal), var(--teal-deep));
+      box-shadow: 0 12px 24px rgba(10, 88, 93, 0.16);
+    }
+
+    .cta.alt,
+    button.alt {
+      color: var(--ink);
+      background: linear-gradient(135deg, #f4d49d, #ebb25d);
+      box-shadow: 0 12px 24px rgba(217, 140, 43, 0.15);
+    }
+
+    .cta.ghost,
+    button.ghost {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.74);
+      border-color: var(--line-strong);
+      box-shadow: none;
+    }
+
+    .cta:hover,
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 36px;
+      background:
+        linear-gradient(140deg, rgba(255, 251, 245, 0.96), rgba(245, 235, 219, 0.88)),
+        linear-gradient(120deg, rgba(13, 139, 134, 0.08), rgba(217, 140, 43, 0.08));
+      box-shadow: 0 30px 60px var(--shadow);
+      padding: 34px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .hero::before {
+      width: 280px;
+      height: 280px;
+      right: -92px;
+      top: -92px;
+      background: rgba(13, 139, 134, 0.08);
+    }
+
+    .hero::after {
+      width: 220px;
+      height: 220px;
+      left: -100px;
+      bottom: -120px;
+      background: rgba(217, 140, 43, 0.08);
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(13, 139, 134, 0.18);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(13, 139, 134, 0.08);
+      color: var(--teal-deep);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 11ch;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 60ch;
+      color: var(--ink-soft);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat,
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 34px rgba(24, 31, 33, 0.08);
+    }
+
+    .stat {
+      padding: 18px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .stat .value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .stat .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+    }
+
+    .stat p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 42px);
+      letter-spacing: -0.04em;
+    }
+
+    .section-head p {
+      margin: 6px 0 0;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      max-width: 56ch;
+    }
+
+    .plans {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .plan-card {
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .plan-card.is-featured {
+      border-color: rgba(13, 139, 134, 0.24);
+      background: linear-gradient(180deg, rgba(240, 252, 251, 0.96), rgba(227, 245, 242, 0.88));
+    }
+
+    .plan-card .badge {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(217, 140, 43, 0.12);
+      color: #8f5204;
+    }
+
+    .plan-card h3,
+    .auth-card h3,
+    .trial-card h3 {
+      margin: 0;
+      font-size: 23px;
+      letter-spacing: -0.03em;
+    }
+
+    .plan-price {
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .plan-price strong {
+      font-size: 38px;
+      letter-spacing: -0.05em;
+    }
+
+    .plan-meta,
+    .muted {
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .plan-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .plan-list li {
+      padding-left: 16px;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .plan-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--amber);
+    }
+
+    .trial-card {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      background: linear-gradient(130deg, rgba(255, 249, 240, 0.98), rgba(255, 240, 214, 0.92));
+    }
+
+    .auth-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .auth-card {
+      padding: 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid rgba(19, 35, 39, 0.18);
+      border-radius: 14px;
+      padding: 13px 14px;
+      font: inherit;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    input:focus {
+      border-color: rgba(13, 139, 134, 0.45);
+      box-shadow: 0 0 0 4px rgba(13, 139, 134, 0.12);
+    }
+
+    .status {
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      padding: 16px 18px;
+      background: rgba(255, 250, 243, 0.82);
+      min-height: 62px;
+      display: flex;
+      align-items: center;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: rgba(15, 138, 85, 0.24);
+    }
+
+    .status.error {
+      color: var(--err);
+      border-color: rgba(165, 58, 45, 0.24);
+    }
+
+    .status.warn {
+      color: #8f5204;
+      border-color: rgba(217, 140, 43, 0.24);
+    }
+
+    .session-card {
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .session-copy {
+      display: grid;
+      gap: 5px;
+    }
+
+    .session-copy strong {
+      font-size: 16px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--ink-soft);
+      font-size: 13px;
+      padding: 0 4px;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .trial-card,
+      .auth-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .plans {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100%, calc(100% - 20px));
+      }
+
+      .topbar,
+      .hero,
+      .auth-card,
+      .trial-card,
+      .session-card {
+        border-radius: 20px;
+      }
+
+      .hero {
+        padding: 22px;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <strong>Vuno Trader</strong>
+        <span>SaaS de automação MT5 com cérebro externo, governança e camada comercial.</span>
+      </div>
+      <nav class="nav" id="publicNav">
+        <a href="#home" data-nav="home">Home</a>
+        <a href="#planos" data-nav="planos">Planos</a>
+        <a href="#trial" data-nav="trial">Trial</a>
+        <a href="#auth" data-nav="login">Login</a>
+        <a href="#auth" data-nav="cadastro">Cadastro</a>
+        <a id="opsLink" class="cta ghost" href="/ops">Área Ops</a>
+      </nav>
+    </header>
+
+    <section class="session-card panel" id="sessionCard" hidden>
+      <div class="session-copy">
+        <strong id="sessionGreeting">Sessão ativa</strong>
+        <span id="sessionMeta" class="muted">Sua conta já está autenticada. Você pode seguir para a operação interna.</span>
+      </div>
+      <div>
+        <a class="cta" href="/ops">Abrir Ops</a>
+      </div>
+    </section>
+
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">MT5 + cérebro externo + SaaS</div>
+        <h1 id="heroTitle">Seu robô de trading com operação rastreável e entrada mais segura.</h1>
+        <p id="heroCopy">O Vuno separa a camada comercial da operação. A superfície pública vende, autentica e converte. A área de Ops fica isolada para gestão real dos tenants, parâmetros, robôs e auditoria.</p>
+        <div class="hero-actions">
+          <a class="cta" href="#auth" id="heroPrimaryAction">Começar trial</a>
+          <a class="cta alt" href="#planos">Ver planos</a>
+          <a class="cta ghost" href="/ops">Já tenho acesso</a>
+        </div>
+      </div>
+
+      <div class="hero-grid">
+        <article class="stat">
+          <div class="label">Operação</div>
+          <div class="value">Tenant por tenant</div>
+          <p>Isolamento por conta, auditoria por robô e guardrails antes de liberar DEMO ou REAL.</p>
+        </article>
+        <article class="stat">
+          <div class="label">Entrega</div>
+          <div class="value">Pacote pronto</div>
+          <p>Download direto do agente com ponte MT5, token e configuração local já montados.</p>
+        </article>
+        <article class="stat">
+          <div class="label">Admin</div>
+          <div class="value">Catálogo + billing</div>
+          <p>Planos, assinaturas, histórico de mudanças e feed comercial na mesma base operacional.</p>
+        </article>
+        <article class="stat">
+          <div class="label">Evolução</div>
+          <div class="value">Surface pública</div>
+          <p>Home, Login, Cadastro, Planos e Trial separados da área interna para um produto SaaS de fato.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="planos" class="section-grid">
+      <div class="section-head">
+        <div>
+          <h2>Planos que já controlam limite técnico</h2>
+          <p>O catálogo comercial agora conversa com a operação. Limite de robôs e acesso ao histórico deixam de ser só uma trava visual e passam a ser enforcement real no backend.</p>
+        </div>
+        <a class="cta ghost" href="#auth">Criar conta</a>
+      </div>
+      <div id="plansGrid" class="plans">
+        <article class="plan-card panel">
+          <span class="badge">Carregando</span>
+          <h3>Buscando catálogo</h3>
+          <div class="plan-meta">Os planos ativos do backend aparecem aqui.</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="trial" class="trial-card panel">
+      <div>
+        <h3>Trial orientado a ativação real</h3>
+        <p class="muted">O cadastro já nasce com assinatura trial e fica pronto para login. Durante o trial você opera o básico, mas módulos pagos como histórico detalhado seguem protegidos até a ativação do plano.</p>
+      </div>
+      <div>
+        <a class="cta alt" href="#auth" id="trialAction">Abrir cadastro</a>
+      </div>
+    </section>
+
+    <section id="auth" class="section-grid">
+      <div class="section-head">
+        <div>
+          <h2 id="authTitle">Entre ou crie sua conta</h2>
+          <p id="authCopy">A autenticação pública usa a mesma base do backend operacional. Depois do login, o fluxo segue para a área interna em /ops.</p>
+        </div>
+      </div>
+      <div class="auth-grid">
+        <article class="auth-card panel" id="loginCard">
+          <h3>Login</h3>
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" placeholder="voce@empresa.com">
+          </div>
+          <div class="field">
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" type="password" placeholder="Sua senha">
+          </div>
+          <button id="loginBtn" type="button">Entrar e abrir Ops</button>
+          <div class="muted">Se a sessão já existir, você cai direto na área interna.</div>
+        </article>
+
+        <article class="auth-card panel" id="registerCard">
+          <h3>Cadastro</h3>
+          <div class="field">
+            <label for="registerEmail">Email</label>
+            <input id="registerEmail" type="email" placeholder="time@empresa.com">
+          </div>
+          <div class="field">
+            <label for="registerPassword">Senha</label>
+            <input id="registerPassword" type="password" placeholder="Mínimo 6 caracteres">
+          </div>
+          <div class="field">
+            <label for="registerTenant">Nome da conta</label>
+            <input id="registerTenant" type="text" placeholder="Ex: Mesa Alpha Demo">
+          </div>
+          <button id="registerBtn" type="button">Criar conta e iniciar trial</button>
+          <div class="muted">O cadastro já provisiona tenant, perfil padrão e assinatura trial.</div>
+        </article>
+      </div>
+      <div id="authStatus" class="status">Tudo pronto. Se quiser, veja os planos acima e depois entre para seguir para a área de Ops.</div>
+    </section>
+
+    <footer class="footer">
+      <span>Vuno Trader separa superfície pública, administração comercial e operação técnica no mesmo backend.</span>
+      <span>Área interna: /ops</span>
+    </footer>
+  </div>
+
+  <script src="/static/js/public.js"></script>
+</body>
+</html>

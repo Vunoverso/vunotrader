@@ -5,6 +5,8 @@ import { TerminalFeed } from "@/components/app/terminal-feed";
 import { DashboardRefresher } from "@/components/app/dashboard-refresher";
 import { PremiumMetricCard } from "@/components/app/premium-metric-card";
 import { DashboardQuickActions } from "@/components/app/dashboard-quick-actions";
+import { signVisualStoragePaths } from "@/lib/mt5/visual-shadow";
+import RobotProductDashboardLanes from "@/components/app/robot-product-dashboard-lanes";
 
 // ── Tooltip Helper ───────────────────────────────────────────
 function InfoTooltip({ text }: { text: string }) {
@@ -61,6 +63,55 @@ function RobotStatusBadge({ mode }: { mode: "observer" | "demo" | "real" | "inac
     </span>
   );
 }
+
+type DecisionOutcomeStatus = "pending" | "executing" | "win" | "loss" | "neutral" | "breakeven" | null;
+
+type TradeOutcomeResult = "win" | "loss" | "breakeven" | null;
+
+type ExecutedTradeRow = {
+  id: string;
+  status: string;
+  opened_at: string | null;
+  closed_at: string | null;
+  trade_outcomes: Array<{ result: TradeOutcomeResult; pnl_money: number | null }>;
+};
+
+type TradeDecisionRow = {
+  id: string;
+  symbol: string;
+  timeframe: string;
+  side: string;
+  mode: string;
+  created_at: string;
+  outcome_status?: DecisionOutcomeStatus;
+  outcome_profit?: number | null;
+  closed_at?: string | null;
+  executed_trades: ExecutedTradeRow[];
+};
+
+type LearningStatRow = {
+  outcome_status: DecisionOutcomeStatus;
+};
+
+type RecentOutcomeRow = {
+  side: string;
+  outcome_status: DecisionOutcomeStatus;
+  executed_trades?: Array<{
+    trade_outcomes?: Array<{ result?: TradeOutcomeResult }>;
+  }>;
+};
+
+type LatestVisualRow = {
+  cycle_id: string;
+  chart_image_storage_path: string | null;
+  visual_shadow_status: string;
+  visual_alignment: string;
+  visual_conflict_reason: string | null;
+  visual_context: {
+    summary?: string;
+  } | null;
+  created_at: string;
+};
 
 // ── Página ────────────────────────────────────────────────────
 export default async function DashboardPage() {
@@ -131,6 +182,29 @@ export default async function DashboardPage() {
     return `há ${h}h`;
   })();
 
+  const { data: latestVisualRaw } = user && robotInstance?.id
+    ? await supabase
+        .from("trade_visual_contexts")
+        .select("cycle_id, chart_image_storage_path, visual_shadow_status, visual_alignment, visual_conflict_reason, visual_context, created_at")
+        .eq("robot_instance_id", robotInstance.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const latestVisualUrlMap = latestVisualRaw
+    ? await signVisualStoragePaths([latestVisualRaw.chart_image_storage_path])
+    : {};
+
+  const latestVisual = latestVisualRaw
+    ? {
+        ...(latestVisualRaw as LatestVisualRow),
+        chart_image_url: latestVisualRaw.chart_image_storage_path
+          ? latestVisualUrlMap[latestVisualRaw.chart_image_storage_path] ?? null
+          : null,
+      }
+    : null;
+
   // Custo de IA acumulado hoje
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -159,7 +233,7 @@ export default async function DashboardPage() {
     : { data: null };
 
   const iaAccuracy = (() => {
-    const rows = (learningStats ?? []) as any[];
+    const rows = (learningStats ?? []) as LearningStatRow[];
     if (rows.length < 5) return null;
     const wins = rows.filter(r => r.outcome_status === "win").length;
     return Math.round((wins / rows.length) * 100);
@@ -177,7 +251,7 @@ export default async function DashboardPage() {
     : { data: null };
 
   const consistencyScore = (() => {
-    const rows = (recentOutcomes ?? []) as any[];
+    const rows = (recentOutcomes ?? []) as RecentOutcomeRow[];
     const withResult = rows.filter(r => r.outcome_status !== "pending" || r.executed_trades?.[0]?.trade_outcomes?.[0]?.result);
     if (withResult.length < 5) return null;
     const wins = withResult.filter(r => 
@@ -220,14 +294,6 @@ export default async function DashboardPage() {
   const showComparativo = modeStats.demo.total >= 3 || modeStats.real.total >= 3;
 
   // ── KPIs de hoje ─────────────────────────────────────────────
-  type TradeDecRow = {
-    id: string; symbol: string; timeframe: string; side: string; mode: string; created_at: string;
-    executed_trades: Array<{
-      id: string; status: string; opened_at: string | null; closed_at: string | null;
-      trade_outcomes: Array<{ result: string | null; pnl_money: number | null }>;
-    }>;
-  };
-
   const { data: todayDecRaw } = user
     ? await supabase
         .from("trade_decisions")
@@ -237,22 +303,22 @@ export default async function DashboardPage() {
         .order("created_at", { ascending: false })
     : { data: null };
 
-  const todayDec = (todayDecRaw as unknown as TradeDecRow[] | null) ?? [];
+  const todayDec = (todayDecRaw as TradeDecisionRow[] | null) ?? [];
   
   // Mudar contagem para usar a nova estrutura simplificada de Auditoria
   const todayExecuted = todayDec.filter(d => 
     d.executed_trades?.length > 0 || 
-    (d as any).outcome_status === "executing" || 
-    (d as any).outcome_status === "win" || 
-    (d as any).outcome_status === "loss"
+    d.outcome_status === "executing" || 
+    d.outcome_status === "win" || 
+    d.outcome_status === "loss"
   );
   
   const todayTotalTrades = todayExecuted.length;
-  const todayOpenTrades  = todayDec.filter(d => (d as any).outcome_status === "executing").length;
+  const todayOpenTrades  = todayDec.filter(d => d.outcome_status === "executing").length;
   
   // PnL: Prioriza outcome_profit (novo) e cai para trade_outcomes (antigo)
   const todayPnl = todayDec.reduce((sum, d) => {
-    const realProfit = (d as any).outcome_profit ?? 0;
+    const realProfit = d.outcome_profit ?? 0;
     const oldProfit = d.executed_trades?.[0]?.trade_outcomes?.[0]?.pnl_money ?? 0;
     return sum + (realProfit !== 0 ? realProfit : oldProfit);
   }, 0);
@@ -273,11 +339,11 @@ export default async function DashboardPage() {
         .limit(30)
     : { data: null };
 
-  const recentClosed = ((recentClosedRaw as unknown as TradeDecRow[] | null) ?? [])
+  const recentClosed = ((recentClosedRaw as TradeDecisionRow[] | null) ?? [])
     .map((d) => {
       const et = d.executed_trades?.[0];
-      const outcomeStatus = (d as any).outcome_status as string | null | undefined;
-      const outcomeResult =
+      const outcomeStatus = d.outcome_status;
+      const outcomeResult: TradeOutcomeResult =
         outcomeStatus === "neutral"
           ? "breakeven"
           : outcomeStatus === "win" || outcomeStatus === "loss" || outcomeStatus === "breakeven"
@@ -287,13 +353,13 @@ export default async function DashboardPage() {
       const out = et?.trade_outcomes?.[0] ?? (outcomeResult
         ? {
             result: outcomeResult,
-            pnl_money: (d as any).outcome_profit ?? null,
+            pnl_money: d.outcome_profit ?? null,
           }
         : null);
 
       const hasClosedTrade = et?.status === "closed" || outcomeResult !== null;
       const tradeId = et?.id ?? d.id;
-      const closedAt = et?.closed_at ?? (d as any).closed_at ?? null;
+      const closedAt = et?.closed_at ?? d.closed_at ?? null;
 
       return { d, tradeId, out, closedAt, hasClosedTrade };
     })
@@ -352,7 +418,7 @@ export default async function DashboardPage() {
 
       {!motorOnline && (
         <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 px-4 py-3 text-sm text-sky-200">
-          Motor desconectado. Inicie o brain Python e configure o EA para ativar.
+          Motor desconectado. Inicie o agent-local da instância e valide a bridge no MT5 para ativar.
           <a href="/app/instalacao" className="ml-2 font-semibold text-sky-300 hover:underline">Abrir instalação</a>
         </div>
       )}
@@ -488,7 +554,7 @@ export default async function DashboardPage() {
 
       <DashboardRefresher />
 
-      {/* Terminal Hacker de Pensamentos do Motor */}
+      {/* Terminal do motor */}
       {motorOnline && user?.id && (
         <TerminalFeed userId={user.id} robotId={robotInstance?.id} initialLogs={terminalLogs} />
       )}
@@ -678,7 +744,7 @@ export default async function DashboardPage() {
 
       {/* Seção de status do sistema */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Brain Python */}
+        {/* Motor do robo */}
         <div className="rounded-xl bg-slate-900 border border-slate-800 px-5 py-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-slate-400">Motor de decisão</p>
@@ -693,11 +759,11 @@ export default async function DashboardPage() {
           <p className="text-xs leading-relaxed">
             {motorOnline ? (
               <span className="text-slate-300">
-                Brain ativo · {robotInstance?.name ?? "instância"}
+                Motor ativo · {robotInstance?.name ?? "instância"}
               </span>
             ) : (
               <span className="text-slate-600">
-                Motor desconectado. Conecte em modo demo para ativar.
+                Motor desconectado. Conecte a instância pelo fluxo bridge para ativar.
                 {" "}<a href="/app/instalacao" className="text-sky-500 hover:underline">Ver passo a passo</a>
               </span>
             )}
@@ -738,14 +804,14 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-600 leading-relaxed">
             {access?.hasActivePlan ? (
               <>
-                Ajuste metas e risco em{" "}
-                <a href="/app/parametros" className="text-sky-500 hover:underline">
-                  Parâmetros
+                Gerencie pacote, bridge e validação operacional em{" "}
+                <a href="/app/instalacao" className="text-sky-500 hover:underline">
+                  Instalação
                 </a>.
               </>
             ) : (
               <>
-                Ative um plano para liberar Operações, Parâmetros, Auditoria e Estudos em{" "}
+                Ative um plano para liberar Operações, Auditoria e Estudos em{" "}
                 <a href="/app/assinatura" className="text-sky-500 hover:underline">
                   Assinatura
                 </a>.
@@ -754,6 +820,14 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
+
+      <RobotProductDashboardLanes
+        hasActivePlan={access?.hasActivePlan ?? false}
+        features={access?.features ?? {}}
+        motorOnline={motorOnline}
+        instanceName={robotInstance?.name ?? null}
+        latestVisual={latestVisual}
+      />
     </div>
   );
 }

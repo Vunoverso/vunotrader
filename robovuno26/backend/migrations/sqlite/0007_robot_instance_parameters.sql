@@ -1,0 +1,36 @@
+CREATE TABLE IF NOT EXISTS robot_instance_parameters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,
+    robot_instance_id INTEGER NOT NULL UNIQUE,
+    risk_per_trade REAL NOT NULL DEFAULT 0.5,
+    max_spread_points REAL NOT NULL DEFAULT 30,
+    default_lot REAL NOT NULL DEFAULT 0.01,
+    stop_loss_points INTEGER NOT NULL DEFAULT 180,
+    take_profit_points INTEGER NOT NULL DEFAULT 360,
+    max_positions_per_symbol INTEGER NOT NULL DEFAULT 1,
+    reentry_cooldown_seconds INTEGER NOT NULL DEFAULT 60,
+    max_command_age_seconds INTEGER NOT NULL DEFAULT 45,
+    deviation_points INTEGER NOT NULL DEFAULT 20,
+    execution_retries INTEGER NOT NULL DEFAULT 3,
+    pause_new_orders INTEGER NOT NULL DEFAULT 0,
+    use_local_fallback INTEGER NOT NULL DEFAULT 1,
+    operational_timeframe TEXT NOT NULL DEFAULT 'M5',
+    confirmation_timeframe TEXT NOT NULL DEFAULT 'H1',
+    news_pause_enabled INTEGER NOT NULL DEFAULT 1,
+    news_pause_symbols TEXT NOT NULL DEFAULT 'XAUUSD',
+    news_pause_countries TEXT NOT NULL DEFAULT 'USD',
+    news_pause_before_minutes INTEGER NOT NULL DEFAULT 30,
+    news_pause_after_minutes INTEGER NOT NULL DEFAULT 30,
+    news_pause_impact TEXT NOT NULL DEFAULT 'HIGH',
+    performance_gate_enabled INTEGER NOT NULL DEFAULT 1,
+    performance_gate_min_profit_factor REAL NOT NULL DEFAULT 1.3,
+    performance_gate_min_trades INTEGER NOT NULL DEFAULT 100,
+    validated_backtest_profit_factor REAL NOT NULL DEFAULT 0,
+    validated_backtest_trades INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(robot_instance_id) REFERENCES robot_instances(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_robot_instance_parameters_tenant
+ON robot_instance_parameters(tenant_id, robot_instance_id);

@@ -441,7 +441,7 @@ export default async function AdminPage() {
             <p className="text-xs text-slate-500">Status</p>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-300">
               <StatusDot active={false} />
-              Brain offline
+              Motor offline
             </p>
           </div>
         </div>
@@ -452,16 +452,16 @@ export default async function AdminPage() {
         <SectionTitle>Status do sistema</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-3">
           <SystemCard
-            title="Brain Python"
+            title="Motor bridge"
             connected={false}
-            description="Serviço de inteligência externo. Inicie o vunotrader_brain.py para conectar a plataforma."
-            detail="vunotrader_brain.py · port 8000"
+            description="Camada operacional local da instância. Inicie o agent-local e mantenha a bridge ativa para o painel receber heartbeat e decisões."
+            detail="agent-local · bridge local"
           />
           <SystemCard
             title="MT5 / Expert Advisor"
             connected={false}
-            description="Nenhum EA reportando. Compile VunoTrader_v2.mq5 e abra em conta demo no MetaTrader 5."
-            detail="VunoTrader_v2.mq5 · WebSocket"
+            description="Nenhum EA reportando. Compile VunoRemoteBridge.mq5 e anexe no gráfico correto do MetaTrader 5."
+            detail="VunoRemoteBridge.mq5 · bridge local"
           />
           <SystemCard
             title="Supabase"

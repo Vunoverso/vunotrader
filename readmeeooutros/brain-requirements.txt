@@ -1,0 +1,10 @@
+pandas>=2.2.0
+numpy>=2.1.0
+scikit-learn>=1.5.0
+supabase>=2.15.0
+python-dotenv>=1.0.0
+MetaTrader5>=5.0.45
+
+# Opcional: brain-py. Em Python 3.12 no Windows pode falhar por compatibilidade de jax/jaxlib.
+# Para usar brain-py, prefira ambiente com Python 3.10/3.11.
+brain-py>=2.1.20

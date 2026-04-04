@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { signVisualStoragePaths } from "@/lib/mt5/visual-shadow";
 import { getSubscriptionAccess } from "@/lib/subscription-access";
 import PlanGateCard from "@/components/app/plan-gate-card";
 import AuditoriaTable, { type AuditRow } from "@/components/app/auditoria-table";
@@ -76,6 +77,15 @@ export default async function AuditoriaPage() {
         closed_at,
         duration_seconds,
         post_analysis,
+        trade_visual_contexts (
+          cycle_id,
+          chart_image_storage_path,
+          visual_shadow_status,
+          visual_alignment,
+          visual_conflict_reason,
+          visual_context,
+          created_at
+        ),
         executed_trades (
           id,
           status,
@@ -96,7 +106,20 @@ export default async function AuditoriaPage() {
     if (error) {
       console.error("[AuditoriaPage] Erro na query Supabase:", error.message, error.code);
     } else {
-      rows = (decisions ?? []) as unknown as AuditRow[];
+      const rawRows = (decisions ?? []) as unknown as AuditRow[];
+      const visualUrlMap = await signVisualStoragePaths(
+        rawRows.flatMap((row) => row.trade_visual_contexts?.map((visual) => visual.chart_image_storage_path) ?? [])
+      );
+
+      rows = rawRows.map((row) => ({
+        ...row,
+        trade_visual_contexts: (row.trade_visual_contexts ?? []).map((visual) => ({
+          ...visual,
+          chart_image_url: visual.chart_image_storage_path
+            ? visualUrlMap[visual.chart_image_storage_path] ?? null
+            : null,
+        })),
+      }));
     }
   } catch (err) {
     if (isDynamicServerError(err)) {

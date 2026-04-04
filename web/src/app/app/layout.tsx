@@ -51,12 +51,14 @@ export default async function AppLayout({
     console.error("[AppLayout] Falha ao carregar assinatura:", err);
     access = {
       organizationId: null,
+      planId: null,
       hasActivePlan: false,
       isTrialing: false,
       trialDaysLeft: 0,
       status: "none",
       planCode: null,
       planName: null,
+      features: {},
     };
   }
 

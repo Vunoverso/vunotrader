@@ -10,6 +10,10 @@ type RobotInstance = {
   real_trading_enabled: boolean;
   last_seen_at: string | null;
   created_at: string;
+  robot_product_type: "robo_integrado" | "robo_hibrido_visual" | "python_laboratorio";
+  visual_shadow_enabled: boolean;
+  computer_use_enabled: boolean;
+  human_approval_required: boolean;
 };
 
 type ApiResponse = {
@@ -33,6 +37,12 @@ function heartbeatLabel(lastSeen: string | null) {
   if (min < 60) return `há ${min} min`;
   const h = Math.floor(min / 60);
   return `há ${h}h`;
+}
+
+function productTypeLabel(productType: RobotInstance["robot_product_type"]) {
+  if (productType === "robo_hibrido_visual") return "Robo Hibrido Visual";
+  if (productType === "python_laboratorio") return "Laboratorio Python";
+  return "Robo Integrado";
 }
 
 export default function Mt5RobotInstancesPanel() {
@@ -60,7 +70,14 @@ export default function Mt5RobotInstancesPanel() {
   }
 
   useEffect(() => {
-    load();
+    void load();
+
+    function handlePackageCreated() {
+      void load();
+    }
+
+    window.addEventListener("vuno:robot-package-created", handlePackageCreated);
+    return () => window.removeEventListener("vuno:robot-package-created", handlePackageCreated);
   }, []);
 
   async function changeStatus(robotId: string, action: "pause" | "revoke" | "activate") {
@@ -130,6 +147,12 @@ export default function Mt5RobotInstancesPanel() {
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
                     {item.id} · modos: {(item.allowed_modes ?? []).join(", ") || "demo"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {productTypeLabel(item.robot_product_type)}
+                    {item.visual_shadow_enabled ? " · shadow visual ativo" : ""}
+                    {item.computer_use_enabled ? " · computer use assistido" : ""}
+                    {item.human_approval_required ? " · aprovacao humana" : ""}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     Último heartbeat: {heartbeatLabel(item.last_seen_at)}

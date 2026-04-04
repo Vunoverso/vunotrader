@@ -1,0 +1,2141 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vuno Trader | Ops</title>
+  <style>
+    :root {
+      --bg-0: #060d11;
+      --bg-1: #09151b;
+      --bg-2: #0f2229;
+      --panel: rgba(8, 22, 27, 0.78);
+      --panel-solid: #0d2027;
+      --line: rgba(110, 236, 218, 0.18);
+      --line-strong: rgba(110, 236, 218, 0.34);
+      --text: #eafff8;
+      --muted: #8ab6af;
+      --accent: #6ee3d3;
+      --accent-2: #ffcb75;
+      --ok: #66e3ad;
+      --warn: #ffd080;
+      --err: #ff8282;
+      --shadow: rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Segoe UI Variable", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(circle at 8% 10%, rgba(110, 227, 211, 0.13), transparent 24%),
+        radial-gradient(circle at 90% 84%, rgba(255, 203, 117, 0.11), transparent 28%),
+        linear-gradient(150deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .app {
+      width: min(1320px, 100%);
+      min-height: min(900px, calc(100vh - 40px));
+      border: 1px solid var(--line-strong);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 64px var(--shadow);
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-width: 0;
+      position: relative;
+      background: linear-gradient(145deg, rgba(9, 23, 28, 0.9), rgba(7, 18, 22, 0.95));
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar-overlay {
+      display: none;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(9, 23, 28, 0.95), rgba(5, 14, 18, 0.98));
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .sidebar-header .brand {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .brand {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(7, 18, 23, 0.74);
+      padding: 14px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .sidebar-dismiss,
+    .mobile-nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(8, 20, 25, 0.88);
+      box-shadow: none;
+    }
+
+    .sidebar-dismiss:hover,
+    .mobile-nav-toggle:hover {
+      transform: none;
+      border-color: var(--line-strong);
+    }
+
+    .sidebar-dismiss {
+      font-size: 26px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .mobile-nav-toggle {
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .mobile-nav-toggle span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--text);
+      background: rgba(8, 21, 26, 0.56);
+      cursor: pointer;
+      transition: 160ms ease;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .nav button:hover {
+      border-color: var(--line);
+      background: rgba(11, 28, 33, 0.84);
+    }
+
+    .nav button.active {
+      background: linear-gradient(135deg, rgba(110, 227, 211, 0.16), rgba(255, 203, 117, 0.14));
+      border-color: var(--line-strong);
+    }
+
+    .nav button.is-locked {
+      border-color: rgba(255, 208, 128, 0.24);
+      background: rgba(54, 34, 8, 0.28);
+      color: #fff0cf;
+    }
+
+    .nav button[aria-disabled="true"] {
+      cursor: not-allowed;
+    }
+
+    .nav button[data-lock-label]::after {
+      content: attr(data-lock-label);
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(255, 208, 128, 0.24);
+      border-radius: 999px;
+      padding: 3px 7px;
+      font-size: 10px;
+      line-height: 1;
+      color: #fff0cf;
+      background: rgba(255, 208, 128, 0.1);
+      flex-shrink: 0;
+    }
+
+    .sidebar-meta {
+      margin-top: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(7, 18, 22, 0.75);
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .content {
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 16px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .topbar-main {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .headline {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      padding: 14px 16px;
+      min-width: 0;
+    }
+
+    .headline h2 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: 0.02em;
+    }
+
+    .headline p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .session-pill {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 20, 25, 0.72);
+      padding: 12px 14px;
+      min-width: 280px;
+      max-width: 100%;
+    }
+
+    .session-pill strong,
+    .session-pill .row span:last-child {
+      overflow-wrap: anywhere;
+    }
+
+    .session-pill .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      padding: 14px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .auth {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(110, 227, 211, 0.24);
+      border-radius: 10px;
+      background: rgba(5, 15, 19, 0.92);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      transition: 150ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 3px rgba(110, 227, 211, 0.15);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #032128;
+      background: linear-gradient(135deg, var(--accent), #8bf0c8);
+      transition: 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button.ghost {
+      color: var(--text);
+      background: rgba(9, 24, 29, 0.82);
+      border-color: var(--line);
+    }
+
+    button.warn {
+      color: #291400;
+      background: linear-gradient(135deg, #ffd080, #ffbc5f);
+    }
+
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(6, 18, 23, 0.78);
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: rgba(102, 227, 173, 0.34);
+    }
+
+    .status.error {
+      color: var(--err);
+      border-color: rgba(255, 130, 130, 0.45);
+    }
+
+    .status.warn {
+      color: var(--warn);
+      border-color: rgba(255, 208, 128, 0.45);
+    }
+
+    .sync-pill {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(6, 18, 23, 0.78);
+      padding: 10px 12px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1 1 320px;
+    }
+
+    .sync-pill strong {
+      display: block;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .sync-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .sync-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--muted);
+      flex-shrink: 0;
+      animation: syncPulse 1.8s ease-out infinite;
+      box-shadow: 0 0 0 0 rgba(110, 227, 211, 0.44);
+    }
+
+    .sync-pill.live {
+      border-color: rgba(102, 227, 173, 0.34);
+    }
+
+    .sync-pill.live .sync-dot {
+      background: var(--ok);
+    }
+
+    .sync-pill.syncing {
+      border-color: rgba(255, 203, 117, 0.4);
+    }
+
+    .sync-pill.syncing .sync-dot {
+      background: var(--accent-2);
+    }
+
+    .sync-pill.warn {
+      border-color: rgba(255, 208, 128, 0.45);
+    }
+
+    .sync-pill.warn .sync-dot {
+      background: var(--warn);
+    }
+
+    .sync-pill.off .sync-dot {
+      animation: none;
+      background: var(--muted);
+      box-shadow: none;
+    }
+
+    @keyframes syncPulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(110, 227, 211, 0.4);
+      }
+      70% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 12px rgba(110, 227, 211, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(110, 227, 211, 0);
+      }
+    }
+
+    .views {
+      overflow: auto;
+      overflow-x: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(8, 20, 25, 0.74);
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .view {
+      display: none;
+      gap: 14px;
+      animation: reveal 220ms ease;
+      min-width: 0;
+    }
+
+    .view.active {
+      display: grid;
+    }
+
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-solid);
+      padding: 12px;
+    }
+
+    .metric-card .label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-card .value {
+      font-size: 22px;
+      margin-top: 6px;
+      font-weight: 700;
+      color: var(--accent-2);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      min-width: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 0;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(110, 227, 211, 0.14);
+      font-size: 13px;
+      vertical-align: top;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(11, 27, 33, 0.85);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:hover {
+      background: rgba(11, 27, 34, 0.68);
+    }
+
+    .token-box,
+    .json-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(5, 14, 18, 0.9);
+      padding: 12px;
+      font-family: "Consolas", "JetBrains Mono", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #bffef4;
+      min-height: 78px;
+    }
+
+    .story-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(5, 14, 18, 0.9);
+      padding: 12px;
+      min-height: 78px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .token-inline {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(4, 13, 17, 0.9);
+      padding: 8px 10px;
+      font-family: "Consolas", "JetBrains Mono", monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #bffef4;
+      word-break: break-all;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 21, 27, 0.72);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary-card .eyebrow {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-card strong {
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: #b9dfd8;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .summary-note {
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .events-feed {
+      display: grid;
+      gap: 10px;
+    }
+
+    .event-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 21, 27, 0.72);
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .event-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .event-title {
+      font-size: 14px;
+      color: #edfff9;
+    }
+
+    .event-time {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .event-text {
+      margin: 0;
+      color: #b9dfd8;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .event-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .tag.info {
+      color: #dffef8;
+      background: rgba(110, 227, 211, 0.12);
+    }
+
+    .tag.buy {
+      color: #d8fff0;
+      background: rgba(102, 227, 173, 0.16);
+      border-color: rgba(102, 227, 173, 0.36);
+    }
+
+    .tag.sell {
+      color: #ffe7e7;
+      background: rgba(255, 130, 130, 0.16);
+      border-color: rgba(255, 130, 130, 0.36);
+    }
+
+    .tag.hold {
+      color: #fff0cf;
+      background: rgba(255, 208, 128, 0.16);
+      border-color: rgba(255, 208, 128, 0.36);
+    }
+    .session-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .subscription-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      background: rgba(8, 21, 27, 0.72);
+      color: var(--text);
+    }
+    .subscription-chip.active {
+      border-color: rgba(102, 227, 173, 0.36);
+      background: rgba(102, 227, 173, 0.14);
+      color: #d8fff0;
+    }
+    .subscription-chip.trialing {
+      border-color: rgba(255, 208, 128, 0.36);
+      background: rgba(255, 208, 128, 0.14);
+      color: #fff1d1;
+    }
+    .subscription-chip.none,
+    .subscription-chip.paused,
+    .subscription-chip.canceled,
+    .subscription-chip.past_due {
+      border-color: rgba(255, 130, 130, 0.34);
+      background: rgba(255, 130, 130, 0.14);
+      color: #ffe7e7;
+    }
+    .plan-gate {
+      border: 1px solid rgba(255, 208, 128, 0.36);
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(54, 34, 8, 0.5), rgba(20, 14, 6, 0.92));
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .plan-gate strong {
+      font-size: 16px;
+      color: #fff0cf;
+    }
+    .plan-gate p {
+      margin: 0;
+      color: #f3e0b1;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: normal;
+    }
+    .admin-layout {
+      display: grid;
+      gap: 14px;
+    }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .admin-plan-list {
+      display: grid;
+      gap: 12px;
+    }
+    .admin-section-grid {
+      display: grid;
+      gap: 14px;
+    }
+    .admin-plan-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 21, 27, 0.72);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .admin-plan-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .admin-plan-title {
+      display: grid;
+      gap: 4px;
+    }
+    .admin-plan-title strong {
+      font-size: 15px;
+    }
+    .admin-plan-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .admin-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .admin-form-grid .field {
+      min-width: 0;
+    }
+    .admin-form-grid .field.full {
+      grid-column: 1 / -1;
+    }
+    .pill-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      background: rgba(8, 20, 25, 0.72);
+      color: var(--muted);
+    }
+    .pill-inline.live {
+      color: #d8fff0;
+      border-color: rgba(102, 227, 173, 0.36);
+    }
+    .pill-inline.warn {
+      color: #fff0cf;
+      border-color: rgba(255, 208, 128, 0.36);
+    }
+    .pill-inline.off {
+      color: #ffe7e7;
+      border-color: rgba(255, 130, 130, 0.34);
+    }
+    .admin-table {
+      min-width: 760px;
+    }
+    .admin-table td,
+    .admin-table th {
+      white-space: nowrap;
+      vertical-align: top;
+    }
+    .admin-table td .muted,
+    .admin-table th .muted {
+      white-space: normal;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .inline-controls {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .inline-controls > * {
+      min-width: 0;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tutorial-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 11px 14px;
+      color: #032128;
+      background: linear-gradient(135deg, var(--accent), #8bf0c8);
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      background: rgba(1, 8, 10, 0.7);
+      backdrop-filter: blur(3px);
+      padding: 18px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .tutorial-overlay.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .tutorial-modal {
+      width: min(860px, 100%);
+      max-height: min(82vh, 900px);
+      overflow: auto;
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(8, 23, 28, 0.98), rgba(6, 18, 22, 0.98));
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .tutorial-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tutorial-head h3 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .tutorial-close {
+      min-width: 40px;
+      min-height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(8, 21, 27, 0.8);
+    }
+
+    .tutorial-content {
+      display: grid;
+      gap: 10px;
+      color: #d7f7f0;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .tutorial-steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tutorial-step {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 21, 27, 0.7);
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .tutorial-step strong {
+      color: #edfff9;
+      font-size: 14px;
+    }
+
+    .tutorial-step .text {
+      color: #b9dfd8;
+      font-size: 13px;
+    }
+
+    .tutorial-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tutorial-actions button {
+      color: var(--text);
+      background: rgba(9, 24, 29, 0.82);
+      border-color: var(--line);
+    }
+
+    .tutorial-content code {
+      font-family: "Consolas", "JetBrains Mono", monospace;
+      font-size: 12px;
+      color: #bffef4;
+      background: rgba(4, 13, 17, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 5px;
+    }
+
+    .tutorial-action-status {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: rgba(7, 18, 22, 0.8);
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    .tutorial-action-status.ok {
+      color: var(--ok);
+      border-color: rgba(102, 227, 173, 0.34);
+    }
+
+    .tutorial-action-status.warn {
+      color: var(--warn);
+      border-color: rgba(255, 208, 128, 0.45);
+    }
+
+    @media (max-width: 1120px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        bottom: 12px;
+        width: min(320px, calc(100vw - 24px));
+        border-right: 1px solid var(--line);
+        border-radius: 18px;
+        z-index: 60;
+        overflow: auto;
+        transform: translateX(calc(-100% - 22px));
+        transition: transform 180ms ease;
+        box-shadow: 0 26px 60px rgba(0, 0, 0, 0.36);
+      }
+
+      .app.sidebar-open .sidebar {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        border: 0;
+        padding: 0;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        background: rgba(1, 10, 12, 0.62);
+        backdrop-filter: blur(2px);
+        transition: opacity 180ms ease, visibility 180ms ease;
+      }
+
+      .app.sidebar-open .sidebar-overlay {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      .sidebar-dismiss,
+      .mobile-nav-toggle {
+        display: inline-flex;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+      .admin-grid,
+      .admin-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav button {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .inline-controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        align-items: stretch;
+      }
+
+      .inline-controls > button,
+      .inline-controls .button-row,
+      .inline-controls .field {
+        width: 100%;
+      }
+
+      .table-wrap {
+        border: 0;
+        overflow: visible;
+      }
+
+      table.responsive-table,
+      table.responsive-table tbody,
+      table.responsive-table tr,
+      table.responsive-table td {
+        display: block;
+        width: 100%;
+      }
+
+      table.responsive-table thead {
+        display: none;
+      }
+
+      table.responsive-table tbody {
+        display: grid;
+        gap: 12px;
+      }
+
+      table.responsive-table tr {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(8, 21, 27, 0.72);
+        padding: 12px;
+      }
+
+      table.responsive-table td {
+        display: grid;
+        grid-template-columns: minmax(96px, 116px) minmax(0, 1fr);
+        gap: 10px;
+        margin-top: 8px;
+        padding: 0;
+        border: 0;
+      }
+
+      table.responsive-table td:first-child {
+        margin-top: 0;
+      }
+
+      table.responsive-table td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      table.responsive-table td[data-label="Ações"] .button-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 0;
+      }
+
+      .app {
+        min-height: 100vh;
+        border-radius: 0;
+        border: 0;
+      }
+
+      .content {
+        padding: 12px;
+      }
+
+      .auth {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-main {
+        align-items: flex-start;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .session-pill {
+        min-width: 0;
+      }
+
+      .tutorial-fab {
+        right: 10px;
+        bottom: 10px;
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      table.responsive-table td {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appShell">
+    <button id="sidebarOverlay" class="sidebar-overlay" type="button" aria-label="Fechar menu lateral" aria-hidden="true"></button>
+    <aside class="sidebar" id="sidebarNav" aria-label="Menu principal">
+      <div class="sidebar-header">
+        <div class="brand">
+          <h1>Vuno Trader Ops</h1>
+          <p>Área interna para operar tenants, acompanhar robôs e ajustar a camada técnica com rastreabilidade.</p>
+        </div>
+        <button id="sidebarCloseBtn" class="sidebar-dismiss" type="button" aria-label="Fechar menu">×</button>
+      </div>
+
+      <nav class="nav" aria-label="Navegação principal">
+        <button class="active" data-view-target="dashboard" type="button">Visão geral</button>
+        <button data-view-target="instances" type="button">Meus robôs</button>
+        <button data-view-target="parameters" type="button">Proteções</button>
+        <button id="navAudit" data-view-target="audit" data-plan-required="active" type="button">Histórico</button>
+        <button id="navAdminSaas" data-view-target="admin" type="button" hidden>Admin SaaS</button>
+      </nav>
+
+      <div class="sidebar-meta">
+        <div><strong>Área interna de Ops</strong></div>
+        <div>Use esta área para operação, suporte e acompanhamento dos tenants autenticados.</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div class="topbar-main">
+          <button id="sidebarToggleBtn" class="mobile-nav-toggle" type="button" aria-label="Abrir menu">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </button>
+          <section class="headline">
+            <h2>Ops do tenant</h2>
+            <p>Veja se os robôs estão ligados, acompanhe a auditoria operacional e ajuste as proteções sem sair desta área interna.</p>
+          </section>
+        </div>
+
+        <section class="session-pill" aria-live="polite">
+          <strong id="sessionUser">Conta desconectada</strong>
+          <div class="row"><span>Conta</span><span id="sessionTenant">-</span></div>
+          <div class="row"><span>Sessão até</span><span id="sessionExpiry">-</span></div>
+          <div class="row"><span>Plano</span><span id="sessionPlan">-</span></div>
+          <div class="row"><span>Status SaaS</span><span id="sessionPlanStatus">-</span></div>
+          <div id="sessionPlanNote" class="session-note">O painel mostra seu trial, plano e o que já está liberado.</div>
+        </section>
+      </div>
+
+      <section class="panel stack" aria-label="Autenticação e sessão">
+        <div class="auth">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="voce@dominio.com">
+          </div>
+
+          <div class="field">
+            <label for="password">Senha</label>
+            <input id="password" type="password" placeholder="mínimo 6 caracteres">
+          </div>
+
+          <div class="button-row">
+            <button id="registerBtn" type="button">Criar conta</button>
+            <button id="loginBtn" type="button" class="ghost">Entrar</button>
+            <button id="logoutBtn" type="button" class="warn">Sair</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="tenantName">Nome da conta (opcional no cadastro)</label>
+          <input id="tenantName" type="text" placeholder="Ex: Minha mesa demo">
+        </div>
+
+        <div class="inline-controls">
+          <button id="refreshAllBtn" type="button" class="ghost">Sincronizar agora</button>
+          <div id="autoRefreshBadge" class="sync-pill off" aria-live="polite">
+            <span class="sync-dot" aria-hidden="true"></span>
+            <div>
+              <strong id="autoRefreshLabel">Atualização automática em espera</strong>
+              <div id="autoRefreshMeta" class="sync-meta">Entre na sua conta e a tela começa a se atualizar sozinha.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="status">Tudo pronto. Entre com sua conta para começar.</div>
+      </section>
+
+      <section class="views" aria-live="polite">
+        <section id="view-dashboard" class="view active" data-view="dashboard">
+          <div class="metrics">
+            <article class="metric-card">
+              <div class="label">Sinais gerados</div>
+              <div id="metricDecisions" class="value">0</div>
+            </article>
+            <article class="metric-card">
+              <div class="label">Resultados</div>
+              <div id="metricResults" class="value">0</div>
+            </article>
+            <article class="metric-card">
+              <div class="label">Percentual de acerto</div>
+              <div id="metricWinRate" class="value">0%</div>
+            </article>
+            <article class="metric-card">
+              <div class="label">Saldo acumulado</div>
+              <div id="metricPnlTotal" class="value">0.00</div>
+            </article>
+            <article class="metric-card">
+              <div class="label">Ganho x perda</div>
+              <div id="metricProfitFactor" class="value">0.00</div>
+            </article>
+            <article class="metric-card">
+              <div class="label">Robôs ligados</div>
+              <div id="metricInstancesOnline" class="value">0/0</div>
+            </article>
+          </div>
+          <article class="panel stack">
+            <h3 style="margin:0;">Assinatura e acesso</h3>
+            <div id="subscriptionCard" class="story-box">Assim que você entrar, o plano, o status e o restante do trial aparecem aqui.</div>
+          </article>
+
+          <div class="split">
+            <article class="panel stack">
+              <h3 style="margin:0;">Resumo rápido</h3>
+              <div id="dashboardSummary" class="story-box">Sem dados por enquanto.</div>
+            </article>
+            <article class="panel stack">
+              <h3 style="margin:0;">O que acabou de acontecer</h3>
+              <div id="dashboardEvents" class="story-box">Nada novo por enquanto.</div>
+            </article>
+          </div>
+        </section>
+
+        <section id="view-instances" class="view" data-view="instances">
+          <div class="split">
+            <article class="panel stack">
+              <h3 id="instanceFormTitle" style="margin:0;">Criar novo robô</h3>
+              <div class="field">
+                <label for="instanceName">Nome</label>
+                <input id="instanceName" type="text" placeholder="Ex: Robô da conta demo">
+              </div>
+              <div class="field">
+                <label for="instanceMode">Conta</label>
+                <select id="instanceMode">
+                  <option value="DEMO">Teste</option>
+                  <option value="REAL">Real</option>
+                </select>
+              </div>
+                <div class="field">
+                  <label for="instanceBrokerProfile">Perfil de mercado</label>
+                  <select id="instanceBrokerProfile">
+                    <option value="CUSTOM">Personalizado</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="instancePrimarySymbol">Ativo principal no MT5</label>
+                  <input id="instancePrimarySymbol" list="instanceSymbolOptions" type="text" placeholder="Ex: EURUSD.a ou WINJ26">
+                  <datalist id="instanceSymbolOptions"></datalist>
+                </div>
+                <div class="field">
+                  <label for="instanceChartTimeframe">Timeframe do gráfico</label>
+                  <select id="instanceChartTimeframe">
+                    <option value="M1">M1</option>
+                    <option value="M5" selected>M5</option>
+                    <option value="M15">M15</option>
+                    <option value="M30">M30</option>
+                    <option value="H1">H1</option>
+                    <option value="H4">H4</option>
+                    <option value="D1">D1</option>
+                    <option value="W1">W1</option>
+                    <option value="MN1">MN1</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="instanceSymbols">Ativos monitorados por esta instancia</label>
+                  <textarea id="instanceSymbols" placeholder="Ex: EURUSD, GBPUSD ou WINJ26, WDOJ26"></textarea>
+                </div>
+                <div id="instanceProfileHint" class="muted">Use os nomes exatos exibidos pelo MT5 da sua corretora.</div>
+              <div id="instanceDetectedSymbols" class="story-box">Quando o MT5 ligar e mandar o catálogo, os símbolos detectados aparecem aqui.</div>
+              <div class="button-row">
+                <button id="createInstanceBtn" type="button">Criar robô</button>
+                <button id="cancelInstanceEditBtn" type="button" class="ghost" hidden>Cancelar edição</button>
+                <button id="refreshInstancesBtn" type="button" class="ghost">Atualizar lista</button>
+              </div>
+                <div class="muted">Uma instância representa uma conta ou terminal MT5. O ativo principal e o timeframe mostram em qual gráfico o EA deve ficar anexado.</div>
+                <div class="muted">Depois que o MT5 ligar, o painel passa a detectar automaticamente os símbolos disponíveis e os ativos realmente monitorados.</div>
+            </article>
+
+            <article class="panel stack">
+              <h3 style="margin:0;">Download rápido</h3>
+              <div class="button-row">
+                <button id="downloadAgentPackageBtn" type="button">Baixar robô pronto</button>
+              </div>
+              <div class="muted">O arquivo já sai pronto para ligar esse robô sem depender de terminal.</div>
+              <div id="newTokenBox" class="story-box">Quando você criar um robô, o resumo dele aparece aqui.</div>
+            </article>
+          </div>
+
+          <article class="panel stack">
+            <h3 style="margin:0;">Robôs cadastrados</h3>
+            <div class="inline-controls">
+              <div class="field" style="min-width:220px;">
+                <label for="instanceSearch">Buscar pelo nome</label>
+                <input id="instanceSearch" type="text" placeholder="Ex: Conta demo principal">
+              </div>
+              <div class="field" style="min-width:140px;">
+                <label for="instanceFilterMode">Conta</label>
+                <select id="instanceFilterMode">
+                  <option value="">Todos</option>
+                  <option value="DEMO">Teste</option>
+                  <option value="REAL">Real</option>
+                </select>
+              </div>
+              <div class="field" style="min-width:140px;">
+                <label for="instanceFilterStatus">Ao vivo</label>
+                <select id="instanceFilterStatus">
+                  <option value="all">Todos</option>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+              <button id="applyInstanceFiltersBtn" type="button" class="ghost">Aplicar filtros</button>
+            </div>
+            <div id="instancesEmpty" class="empty" hidden>Nenhum robô encontrado nesta conta.</div>
+            <div class="table-wrap" id="instancesTableWrap">
+              <table class="responsive-table instances-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Robô</th>
+                    <th>Conta</th>
+                    <th>Situação</th>
+                    <th>Ao vivo</th>
+                    <th>Último contato</th>
+                    <th>Setup / leitura</th>
+                    <th>Pacote</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="instancesTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section id="view-parameters" class="view" data-view="parameters">
+          <div id="parametersPlanGate" class="plan-gate" hidden></div>
+          <article id="parametersPanel" class="panel stack">
+            <h3 style="margin:0;">Proteções do robô</h3>
+            <div class="split">
+              <div class="field">
+                <label for="riskPerTrade">Risco por operação (0 a 1)</label>
+                <input id="riskPerTrade" type="number" step="0.01" min="0" max="1">
+              </div>
+              <div class="field">
+                <label for="maxSpread">Spread máximo</label>
+                <input id="maxSpread" type="number" step="0.1" min="0">
+              </div>
+              <div class="field">
+                <label for="defaultLot">Lote padrão</label>
+                <input id="defaultLot" type="number" step="0.01" min="0.01">
+              </div>
+              <div class="field">
+                <label for="stopLoss">Stop loss</label>
+                <input id="stopLoss" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="takeProfit">Take profit</label>
+                <input id="takeProfit" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="maxPositions">Máximo de posições por ativo</label>
+                <input id="maxPositions" type="number" min="1">
+              </div>
+              <div class="field">
+                <label for="reentryCooldown">Respiro entre entradas no mesmo ativo (s)</label>
+                <input id="reentryCooldown" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="maxCommandAge">Tempo máximo do comando (s)</label>
+                <input id="maxCommandAge" type="number" min="5">
+              </div>
+              <div class="field">
+                <label for="deviation">Desvio aceito</label>
+                <input id="deviation" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="retries">Tentativas de execução</label>
+                <input id="retries" type="number" min="1" max="10">
+              </div>
+              <div class="field">
+                <label for="pauseNewOrders">Pausar novas entradas</label>
+                <select id="pauseNewOrders">
+                  <option value="false">Não</option>
+                  <option value="true">Sim</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="localFallback">Usar plano B local</label>
+                <select id="localFallback">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="decisionEngineMode">Motor de decisão</label>
+                <select id="decisionEngineMode">
+                  <option value="HYBRID">Híbrido: Price Action com fallback legado</option>
+                  <option value="PRICE_ACTION_ONLY">Só Price Action</option>
+                  <option value="LEGACY_ONLY">Só legado</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="operationalTimeframe">Timeframe operacional</label>
+                <select id="operationalTimeframe">
+                  <option value="M1">M1</option>
+                  <option value="M5">M5</option>
+                  <option value="M15">M15</option>
+                  <option value="M30">M30</option>
+                  <option value="H1">H1</option>
+                  <option value="H4">H4</option>
+                  <option value="D1">D1</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="confirmationTimeframe">Timeframe de confirmação</label>
+                <select id="confirmationTimeframe">
+                  <option value="M5">M5</option>
+                  <option value="M15">M15</option>
+                  <option value="M30">M30</option>
+                  <option value="H1">H1</option>
+                  <option value="H4">H4</option>
+                  <option value="D1">D1</option>
+                  <option value="W1">W1</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="marketSessionGuardEnabled">Respeitar sessão do ativo</label>
+                <select id="marketSessionGuardEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="newsPauseEnabled">Pausa por notícia</label>
+                <select id="newsPauseEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="newsPauseSymbols">Ativos protegidos por notícia</label>
+                <input id="newsPauseSymbols" type="text" placeholder="Ex: * ou XAUUSD, EURUSD">
+              </div>
+              <div class="field">
+                <label for="newsPauseCountries">Países da notícia</label>
+                <input id="newsPauseCountries" type="text" placeholder="Ex: USD, EUR">
+              </div>
+              <div class="field">
+                <label for="newsPauseImpact">Impacto mínimo</label>
+                <select id="newsPauseImpact">
+                  <option value="HIGH">Alto</option>
+                  <option value="MEDIUM">Médio</option>
+                  <option value="LOW">Baixo</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="newsPauseBefore">Bloquear antes da notícia (min)</label>
+                <input id="newsPauseBefore" type="number" min="0" max="240">
+              </div>
+              <div class="field">
+                <label for="newsPauseAfter">Bloquear depois da notícia (min)</label>
+                <input id="newsPauseAfter" type="number" min="0" max="240">
+              </div>
+              <div class="field">
+                <label for="performanceGateEnabled">Exigir edge mínimo antes de DEMO/REAL</label>
+                <select id="performanceGateEnabled">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="performanceGateMinPf">Profit factor mínimo</label>
+                <input id="performanceGateMinPf" type="number" step="0.01" min="0">
+              </div>
+              <div class="field">
+                <label for="performanceGateMinTrades">Trades simulados mínimos</label>
+                <input id="performanceGateMinTrades" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="validatedBacktestPf">Profit factor validado</label>
+                <input id="validatedBacktestPf" type="number" step="0.01" min="0">
+              </div>
+              <div class="field">
+                <label for="validatedBacktestTrades">Trades simulados validados</label>
+                <input id="validatedBacktestTrades" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="dailyLossLimit">Corte diário por PnL fechado</label>
+                <input id="dailyLossLimit" type="number" step="0.01" min="0">
+              </div>
+              <div class="field">
+                <label for="maxEquityDrawdownPct">Corte por drawdown da equity (%)</label>
+                <input id="maxEquityDrawdownPct" type="number" step="0.1" min="0" max="100">
+              </div>
+              <div class="field">
+                <label for="breakEvenTriggerPoints">Breakeven a partir de (pts)</label>
+                <input id="breakEvenTriggerPoints" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="trailingTriggerPoints">Trailing estrutural a partir de (pts)</label>
+                <input id="trailingTriggerPoints" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="positionTimeStopMinutes">Time stop da posição (min)</label>
+                <input id="positionTimeStopMinutes" type="number" min="0">
+              </div>
+              <div class="field">
+                <label for="positionStagnationWindowCandles">Janela de estagnação (candles)</label>
+                <input id="positionStagnationWindowCandles" type="number" min="3">
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="loadParametersBtn" type="button" class="ghost">Atualizar proteções</button>
+              <button id="saveParametersBtn" type="button">Salvar proteções</button>
+            </div>
+
+            <div id="parametersMeta" class="muted">Última atualização: -</div>
+            <div id="parametersStory" class="story-box">Quando você carregar as proteções, a situação do edge, das notícias e dos timeframes aparece aqui.</div>
+          </article>
+        </section>
+
+        <section id="view-audit" class="view" data-view="audit">
+          <div id="auditPlanGate" class="plan-gate" hidden></div>
+          <article id="auditPanel" class="panel stack">
+            <div class="inline-controls">
+              <div class="field" style="max-width:140px;">
+                <label for="auditLimit">Quantidade</label>
+                <input id="auditLimit" type="number" min="1" max="200" value="50">
+              </div>
+              <div class="field" style="min-width:180px;">
+                <label for="auditEventType">Buscar por tipo</label>
+                <input id="auditEventType" type="text" placeholder="Ex: decisao ou login">
+              </div>
+              <div class="field" style="max-width:140px;">
+                <label for="auditRobotId">ID do robô</label>
+                <input id="auditRobotId" type="number" min="1" placeholder="Opcional">
+              </div>
+              <div class="field" style="min-width:170px;">
+                <label for="auditPositionAction">Ação da posição</label>
+                <select id="auditPositionAction">
+                  <option value="">Todas</option>
+                  <option value="NONE">Gestão ativa</option>
+                  <option value="PROTECT">Proteger lucro</option>
+                  <option value="CLOSE">Fechar posição</option>
+                </select>
+              </div>
+              <div class="field" style="min-width:190px;">
+                <label for="auditDateFrom">De</label>
+                <input id="auditDateFrom" type="datetime-local">
+              </div>
+              <div class="field" style="min-width:190px;">
+                <label for="auditDateTo">Ate</label>
+                <input id="auditDateTo" type="datetime-local">
+              </div>
+              <button id="refreshAuditBtn" type="button" class="ghost">Atualizar histórico</button>
+            </div>
+
+            <div id="auditEmpty" class="empty" hidden>Nada encontrado neste período.</div>
+            <div class="table-wrap" id="auditTableWrap">
+              <table class="responsive-table audit-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>O que aconteceu</th>
+                    <th>Usuário</th>
+                    <th>Robô</th>
+                    <th>Detalhe</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section id="view-admin" class="view" data-view="admin">
+          <div id="adminAccessGate" class="plan-gate" hidden></div>
+
+          <article id="adminBootstrapPanel" class="panel stack" hidden>
+            <h3 style="margin:0;">Ativar admin SaaS local</h3>
+            <div class="muted">Este bootstrap só aparece em ambiente de desenvolvimento e apenas enquanto ainda não existir um admin SaaS na base.</div>
+            <div id="adminBootstrapMeta" class="story-box">Aguardando validação do acesso admin.</div>
+            <div class="button-row">
+              <button id="adminBootstrapBtn" type="button">Assumir admin SaaS</button>
+            </div>
+          </article>
+
+          <div id="adminPanel" class="admin-layout" hidden>
+            <div class="admin-grid metrics">
+              <article class="metric-card">
+                <div class="label">Tenants</div>
+                <div id="adminMetricTenants" class="value">0</div>
+              </article>
+              <article class="metric-card">
+                <div class="label">Planos ativos</div>
+                <div id="adminMetricPlans" class="value">0</div>
+              </article>
+              <article class="metric-card">
+                <div class="label">Assinaturas</div>
+                <div id="adminMetricSubscriptions" class="value">0</div>
+              </article>
+              <article class="metric-card">
+                <div class="label">Trials</div>
+                <div id="adminMetricTrials" class="value">0</div>
+              </article>
+              <article class="metric-card">
+                <div class="label">Planos no catálogo</div>
+                <div id="adminMetricCatalog" class="value">0</div>
+              </article>
+              <article class="metric-card">
+                <div class="label">MRR estimado</div>
+                <div id="adminMetricMrr" class="value">0.00</div>
+              </article>
+            </div>
+
+            <div class="split">
+              <article class="panel stack">
+                <h3 style="margin:0;">Novo plano</h3>
+                <div class="admin-form-grid">
+                  <div class="field">
+                    <label for="adminPlanCode">Código</label>
+                    <input id="adminPlanCode" type="text" placeholder="Ex: enterprise">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanName">Nome</label>
+                    <input id="adminPlanName" type="text" placeholder="Ex: Enterprise">
+                  </div>
+                  <div class="field full">
+                    <label for="adminPlanDescription">Descrição</label>
+                    <input id="adminPlanDescription" type="text" placeholder="Resumo do plano e do público alvo">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanMonthly">Preço mensal</label>
+                    <input id="adminPlanMonthly" type="number" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanYearly">Preço anual</label>
+                    <input id="adminPlanYearly" type="number" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanUsers">Max. usuários</label>
+                    <input id="adminPlanUsers" type="number" min="1" placeholder="1">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanBots">Max. robôs</label>
+                    <input id="adminPlanBots" type="number" min="1" placeholder="1">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanTrades">Trades por mês</label>
+                    <input id="adminPlanTrades" type="number" min="1" placeholder="200">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanTokens">Tokens IA por dia</label>
+                    <input id="adminPlanTokens" type="number" min="1" placeholder="50000">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanStorage">Storage (GB)</label>
+                    <input id="adminPlanStorage" type="number" min="0.1" step="0.1" placeholder="1.0">
+                  </div>
+                  <div class="field">
+                    <label for="adminPlanActive">Status</label>
+                    <select id="adminPlanActive">
+                      <option value="true">Ativo</option>
+                      <option value="false">Inativo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="button-row">
+                  <button id="adminCreatePlanBtn" type="button">Criar plano</button>
+                </div>
+                <div id="adminCreatePlanMeta" class="muted">Monte o catálogo com limites técnicos e ajuste os tickets depois.</div>
+              </article>
+
+              <article class="panel stack">
+                <h3 style="margin:0;">Catálogo de planos</h3>
+                <div id="adminPlanCatalog" class="admin-plan-list">
+                  <div class="empty">Assim que o admin carregar, os planos aparecem aqui.</div>
+                </div>
+              </article>
+            </div>
+
+            <article class="panel stack">
+              <h3 style="margin:0;">Assinaturas recentes</h3>
+              <div id="adminSubscriptionsEmpty" class="empty" hidden>Nenhuma assinatura registrada ainda.</div>
+              <div class="table-wrap" id="adminSubscriptionsWrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Tenant</th>
+                      <th>Plano</th>
+                      <th>Status</th>
+                      <th>Ciclo</th>
+                      <th>Fim atual</th>
+                      <th>Trial</th>
+                      <th>Criada em</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminSubscriptionsBody"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <div class="split">
+              <article class="panel stack">
+                <h3 style="margin:0;">Usuários do produto</h3>
+                <div class="inline-controls">
+                  <div class="field" style="min-width:220px;">
+                    <label for="adminUsersSearch">Buscar por email ou tenant</label>
+                    <input id="adminUsersSearch" type="text" placeholder="Ex: cliente@empresa.com">
+                  </div>
+                  <button id="adminRefreshUsersBtn" type="button" class="ghost">Atualizar usuários</button>
+                </div>
+                <div id="adminUsersEmpty" class="empty" hidden>Nenhum usuário encontrado.</div>
+                <div class="table-wrap" id="adminUsersWrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Usuário</th>
+                        <th>Tenant</th>
+                        <th>Plano</th>
+                        <th>Papel</th>
+                        <th>Última sessão</th>
+                        <th>Criado em</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminUsersBody"></tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="panel stack">
+                <h3 style="margin:0;">Gestão de assinaturas</h3>
+                <div class="inline-controls">
+                  <div class="field" style="max-width:180px;">
+                    <label for="adminSubscriptionStatusFilter">Status</label>
+                    <select id="adminSubscriptionStatusFilter">
+                      <option value="">Todos</option>
+                      <option value="trialing">Trial</option>
+                      <option value="active">Ativo</option>
+                      <option value="past_due">Pendente</option>
+                      <option value="paused">Pausado</option>
+                      <option value="canceled">Cancelado</option>
+                    </select>
+                  </div>
+                  <div class="field" style="max-width:220px;">
+                    <label for="adminSubscriptionPlanFilter">Plano</label>
+                    <select id="adminSubscriptionPlanFilter">
+                      <option value="">Todos os planos</option>
+                    </select>
+                  </div>
+                  <button id="adminRefreshManagedSubscriptionsBtn" type="button" class="ghost">Atualizar assinaturas</button>
+                </div>
+                <div id="adminManagedSubscriptionsEmpty" class="empty" hidden>Nenhuma assinatura ativa para gerenciamento.</div>
+                <div class="table-wrap" id="adminManagedSubscriptionsWrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Tenant</th>
+                        <th>Plano</th>
+                        <th>Status</th>
+                        <th>Ciclo</th>
+                        <th>Uso</th>
+                        <th>Atualizada</th>
+                        <th>Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminManagedSubscriptionsBody"></tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+
+            <div class="split">
+              <article class="panel stack">
+                <h3 style="margin:0;">Faturamento</h3>
+                <div class="inline-controls">
+                  <div class="field" style="max-width:180px;">
+                    <label for="adminBillingStatus">Status</label>
+                    <select id="adminBillingStatus">
+                      <option value="">Todos</option>
+                      <option value="recorded">Registrado</option>
+                      <option value="succeeded">Sucesso</option>
+                      <option value="failed">Falha</option>
+                      <option value="pending">Pendente</option>
+                    </select>
+                  </div>
+                  <div class="field" style="max-width:180px;">
+                    <label for="adminBillingProvider">Provedor</label>
+                    <select id="adminBillingProvider">
+                      <option value="">Todos</option>
+                    </select>
+                  </div>
+                  <button id="adminRefreshBillingBtn" type="button" class="ghost">Atualizar faturamento</button>
+                </div>
+
+                <div class="admin-grid">
+                  <article class="metric-card">
+                    <div class="label">Eventos</div>
+                    <div id="adminBillingMetricEvents" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Trials</div>
+                    <div id="adminBillingMetricTrials" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Receita confirmada</div>
+                    <div id="adminBillingMetricSucceeded" class="value">R$ 0,00</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Receita líquida</div>
+                    <div id="adminBillingMetricNet" class="value">R$ 0,00</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Falhas</div>
+                    <div id="adminBillingMetricFailed" class="value">R$ 0,00</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Reembolsos</div>
+                    <div id="adminBillingMetricRefunds" class="value">R$ 0,00</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Provedores</div>
+                    <div id="adminBillingMetricProviders" class="value">0</div>
+                  </article>
+                </div>
+
+                <div id="adminBillingEmpty" class="empty" hidden>Nenhum evento de faturamento encontrado.</div>
+                <div class="table-wrap" id="adminBillingWrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Evento</th>
+                        <th>Tenant</th>
+                        <th>Plano</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Provedor</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminBillingBody"></tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="panel stack">
+                <h3 style="margin:0;">Histórico de planos</h3>
+                <div class="inline-controls">
+                  <div class="field" style="max-width:220px;">
+                    <label for="adminPlanHistoryFilter">Plano</label>
+                    <select id="adminPlanHistoryFilter">
+                      <option value="">Todos os planos</option>
+                    </select>
+                  </div>
+                  <button id="adminRefreshPlanChangesBtn" type="button" class="ghost">Atualizar histórico</button>
+                </div>
+
+                <div class="admin-grid">
+                  <article class="metric-card">
+                    <div class="label">Mudanças</div>
+                    <div id="adminPlanChangesMetricTotal" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Preços</div>
+                    <div id="adminPlanChangesMetricPrices" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Limites</div>
+                    <div id="adminPlanChangesMetricLimits" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Metadados</div>
+                    <div id="adminPlanChangesMetricMetadata" class="value">0</div>
+                  </article>
+                  <article class="metric-card">
+                    <div class="label">Status</div>
+                    <div id="adminPlanChangesMetricStatus" class="value">0</div>
+                  </article>
+                </div>
+
+                <div id="adminPlanChangesEmpty" class="empty" hidden>Nenhuma mudança de plano registrada ainda.</div>
+                <div class="table-wrap" id="adminPlanChangesWrap">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Plano</th>
+                        <th>Tipo</th>
+                        <th>Campo</th>
+                        <th>Anterior</th>
+                        <th>Novo</th>
+                        <th>Quem</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminPlanChangesBody"></tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <button id="tutorialOpenBtn" class="tutorial-fab" type="button" aria-haspopup="dialog" aria-controls="tutorialOverlay">
+    Guia MT5
+  </button>
+
+  <div id="tutorialOverlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" aria-hidden="true">
+    <section class="tutorial-modal">
+      <header class="tutorial-head">
+        <div>
+          <h3 id="tutorialTitle">Como ligar seu robô no MT5</h3>
+          <div class="muted">Passo a passo rápido, sem terminal e sem enrolação.</div>
+        </div>
+        <button id="tutorialCloseBtn" type="button" class="tutorial-close" aria-label="Fechar tutorial">X</button>
+      </header>
+
+      <div class="tutorial-content">
+        <ul class="tutorial-steps">
+          <li class="tutorial-step">
+            <strong>1) Valide o edge e crie um robô</strong>
+            <div class="text">Na aba Proteções, informe o backtest validado. Depois, em Meus robôs, crie a opção de teste.</div>
+          </li>
+          <li class="tutorial-step">
+            <strong>2) Baixe o robô pronto</strong>
+            <div class="text">Baixe o arquivo da instância. Ele já vem com a ligação pronta, scripts e atalho para abrir sem terminal.</div>
+            <div class="tutorial-actions">
+              <button id="tutorialDownloadPackageBtn" type="button">Baixar robô pronto</button>
+            </div>
+          </li>
+          <li class="tutorial-step">
+            <strong>3) Abra com duplo clique</strong>
+            <div class="text">Extraia o arquivo e abra iniciar-vuno-robo.cmd. O sistema prepara o ambiente, configura a ponte e liga o agente para você.</div>
+          </li>
+          <li class="tutorial-step">
+            <strong>4) No MT5, anexe o robô ao gráfico</strong>
+            <div class="text">Copie os arquivos do MT5 para a pasta Experts, compile e anexe no gráfico. Use no EA o mesmo InpBridgeRoot mostrado no pacote. Se quiser vários ativos sem abrir vários gráficos, preencha InpAdditionalSymbols com os símbolos exatos do seu broker.</div>
+          </li>
+          <li class="tutorial-step">
+            <strong>5) Confirme que ligou</strong>
+            <div class="text">Volte ao painel. Quando aparecer Ativo e Online, o robô está falando com o sistema.</div>
+          </li>
+        </ul>
+        <div id="tutorialActionStatus" class="tutorial-action-status">Esperando você começar.</div>
+        <div class="muted">Se um dia o suporte precisar, o código técnico continua guardado na área do robô.</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/saas-admin.js"></script>
+</body>
+</html>

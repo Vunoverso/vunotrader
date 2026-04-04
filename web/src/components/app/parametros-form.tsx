@@ -261,7 +261,7 @@ export default function ParametrosForm({
         <div>
           <h1 className="text-xl font-bold text-slate-100">Parâmetros do Robô</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Configurações que controlam o comportamento do brain Python e do EA no MT5
+            Configurações que controlam o comportamento do motor do robô, da bridge local e da execução no MT5
           </p>
         </div>
         <div className="flex items-center gap-3">

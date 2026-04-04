@@ -1,0 +1,17 @@
+Vuno Trader - pacote pronto do robo
+
+Instancia: vun bot2
+Modo: DEMO
+
+Passo a passo rapido:
+1. Extraia este zip em qualquer pasta sua.
+2. Abra agent-local/iniciar-vuno-robo.cmd com duplo clique.
+3. No MT5, copie mt5/VunoRemoteBridge.mq5 e a pasta mt5/vuno-bridge para MQL5/Experts.
+4. Compile o EA, anexe no grafico e mantenha InpBridgeRoot=VunoBridge.
+5. Durante homologacao, mantenha InpAllowRealTrading=false.
+6. Volte ao painel e confirme ACTIVE + ONLINE.
+
+Observacao: runtime/config.json ja sai preenchido com a chave desta instancia.
+
+Este pacote inclui agent-local/dist/vuno-agent.exe.
+O atalho iniciar-vuno-robo.cmd vai usar o executavel automaticamente, sem depender de Python na maquina do usuario.
